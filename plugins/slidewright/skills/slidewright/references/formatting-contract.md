@@ -14,6 +14,7 @@
 - Never emit fractional point sizes.
 - Select the largest approved size that satisfies width, height, and line-count constraints.
 - Reject content below the configured minimum. Recommend shortening or relayout.
+- Audit installed typefaces before rendering. Block missing fonts and require an explicit theme change; never silently substitute a fallback.
 - Keep single-line banners and titles on one line when the layout requires it.
 
 ## Editability

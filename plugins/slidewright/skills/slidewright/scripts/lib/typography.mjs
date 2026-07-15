@@ -111,7 +111,7 @@ export function fitText({
       maxLines,
     });
     if (measurement.fits) {
-      return { ...measurement, fontSizePt, autoSized: fontSizePt !== preferredSizePt };
+      return { ...measurement, fontSizePt, minSizePt, preferredSizePt, autoSized: fontSizePt !== preferredSizePt };
     }
   }
 
@@ -128,6 +128,8 @@ export function fitText({
       maxLines,
     }),
     fontSizePt,
+    minSizePt,
+    preferredSizePt,
     autoSized: fontSizePt !== preferredSizePt,
   };
 }

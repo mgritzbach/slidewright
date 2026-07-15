@@ -45,3 +45,11 @@ test("linter rejects fractional and nonstandard font sizes", () => {
   report = lintPlan(plan);
   assert.ok(report.diagnostics.some((item) => item.ruleId === "SW002"));
 });
+
+test("linter rejects any text size below its configured minimum", () => {
+  const plan = compileDeck(spec);
+  const body = plan.slides[0].shapes.find((shape) => shape.role === "body");
+  body.style.fontSizePt = 14;
+  const report = lintPlan(plan);
+  assert.ok(report.diagnostics.some((item) => item.ruleId === "SW009"));
+});

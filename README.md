@@ -43,6 +43,14 @@ npm run mutation
 
 It rebuilds -25% and +25% copy variants, then lints, renders, audits, overflow-tests, bundles, and verifies both decks.
 
+Missing-font and extreme-density negative controls are reproducible with:
+
+```powershell
+npm run repair
+```
+
+The command proves that missing fonts and copy that cannot fit above the configured type floor block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
+
 ## Controlled export-fidelity benchmark
 
 The competition benchmark renders six owned design specifications—invitation, brochure, and website, each in horizontal and vertical/mobile composition—through both a browser reference path and a native PowerPoint path:
@@ -74,6 +82,7 @@ GOAL_STATUS.md                          Binary release register and evidence log
 ```powershell
 node packages/cli/src/cli.mjs compile examples/demo/deck-spec.json --out outputs/demo/plan.json
 node packages/cli/src/cli.mjs lint outputs/demo/plan.json --out outputs/demo/lint-report.json
+node packages/cli/src/cli.mjs fonts outputs/demo/plan.json --out outputs/demo/font-report.json
 node packages/cli/src/cli.mjs render outputs/demo/plan.json --out outputs/demo/slidewright-demo.pptx --preview-dir outputs/demo/previews
 node packages/cli/src/cli.mjs preflight --out outputs/preflight.json
 node packages/cli/src/cli.mjs verify outputs/demo/slidewright-demo.pptx --out outputs/demo/delivery-manifest.json --preview-dir outputs/demo/previews

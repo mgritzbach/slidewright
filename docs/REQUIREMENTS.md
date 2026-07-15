@@ -38,7 +38,7 @@
 - Type scale in points: `54, 48, 44, 40, 36, 32, 28, 24, 20, 18, 16, 14, 12`
 - Default title minimum: `28 pt`
 - Default body minimum: `16 pt`
-- Font: Aptos with Arial fallback
+- Font: Arial for the portable benchmark default; any alternate requested family must pass the installed-font audit before rendering
 - Geometry tolerance: `1 px`
 
 ## Definition of done for a deck

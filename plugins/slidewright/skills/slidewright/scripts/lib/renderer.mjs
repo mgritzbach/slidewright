@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { lintPlan } from "./linter.mjs";
+import { inspectPlanFonts } from "./font-audit.mjs";
 
 async function writeBlob(filePath, blob) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -24,6 +25,11 @@ export async function renderPlan(plan, { out, previewDir }) {
   const report = lintPlan(plan);
   if (!report.valid) {
     throw new Error(`Refusing to render an invalid plan with ${report.counts.error} error(s).`);
+  }
+  const fontReport = inspectPlanFonts(plan);
+  if (!fontReport.valid) {
+    const details = fontReport.diagnostics.map((item) => `${item.message} ${item.remediation}`).join(" ");
+    throw new Error(`Refusing to render a plan with unresolved font requirements. ${details}`);
   }
 
   let artifact;

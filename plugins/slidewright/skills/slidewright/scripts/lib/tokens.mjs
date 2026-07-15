@@ -5,7 +5,7 @@ export const COMMON_FONT_SIZES_PT = Object.freeze([
 ]);
 
 export const DEFAULT_THEME = Object.freeze({
-  fontFamily: "Aptos",
+  fontFamily: "Arial",
   fallbackFontFamily: "Arial",
   colors: {
     background: "#F8FAFC",

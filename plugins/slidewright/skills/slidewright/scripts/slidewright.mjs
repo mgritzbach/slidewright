@@ -7,6 +7,7 @@ import { lintPlan } from "./lib/linter.mjs";
 import { renderPlan } from "./lib/renderer.mjs";
 import { collectPreflight } from "./lib/preflight.mjs";
 import { verifyDelivery } from "./lib/delivery.mjs";
+import { inspectPlanFonts } from "./lib/font-audit.mjs";
 
 function usage() {
   return `Slidewright
@@ -14,6 +15,7 @@ function usage() {
 Usage:
   slidewright compile <spec.json> --out <plan.json>
   slidewright lint <plan.json> --out <report.json>
+  slidewright fonts <plan.json> --out <report.json>
   slidewright render <plan.json> --out <deck.pptx> [--preview-dir <dir>]
   slidewright preflight --out <report.json>
   slidewright verify <deck.pptx> --out <manifest.json> [--preview-dir <dir>] [--montage <image>] [--handoff <file>] [--require-bundle]
@@ -60,6 +62,13 @@ export async function main(args = process.argv.slice(2)) {
     await writeJson(out, manifest);
     process.stdout.write(`Delivery verification ${manifest.valid ? "passed" : "failed"}: ${manifest.file.canonicalPath ?? input}\n`);
     return manifest.valid ? 0 : 2;
+  }
+
+  if (command === "fonts") {
+    const report = inspectPlanFonts(await readJson(input));
+    await writeJson(out, report);
+    process.stdout.write(`Font audit ${report.valid ? "passed" : "failed"}: ${report.diagnostics.length} error(s), ${report.availableFontCount} installed families detected\n`);
+    return report.valid ? 0 : 2;
   }
 
   if (command === "compile") {

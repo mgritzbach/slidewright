@@ -65,6 +65,11 @@ export function lintPlan(plan) {
           diagnostic("SW002", "error", slide.id, shape.id, `Font size ${size}pt is outside the approved scale.`, "Select the closest approved size that fits."),
         );
       }
+      if (Number.isFinite(shape.fit?.minSizePt) && size < shape.fit.minSizePt) {
+        diagnostics.push(
+          diagnostic("SW009", "error", slide.id, shape.id, `Font size ${size}pt is below the configured ${shape.fit.minSizePt}pt minimum.`, "Shorten the copy or choose a less dense layout; never bypass the minimum type size."),
+        );
+      }
       if (!shape.fit?.fits) {
         diagnostics.push(
           diagnostic("SW004", "error", slide.id, shape.id, "Text does not fit at the configured minimum size.", "Shorten the copy, enlarge the frame, or select a less dense layout."),

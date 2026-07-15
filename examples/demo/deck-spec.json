@@ -2,7 +2,7 @@
   "version": "0.1",
   "title": "Slidewright Build Week demo",
   "theme": {
-    "fontFamily": "Aptos",
+    "fontFamily": "Arial",
     "colors": {
       "accent": "#4F46E5",
       "accentSoft": "#E0E7FF"

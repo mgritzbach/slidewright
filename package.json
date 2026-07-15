@@ -13,14 +13,16 @@
     "setup:runtime": "node scripts/setup-artifact-runtime.mjs",
     "preflight": "node packages/cli/src/cli.mjs preflight --out outputs/preflight.json",
     "demo:compile": "node packages/cli/src/cli.mjs compile examples/demo/deck-spec.json --out outputs/demo/plan.json",
+    "demo:fonts": "node packages/cli/src/cli.mjs fonts outputs/demo/plan.json --out outputs/demo/font-report.json",
     "demo:lint": "node packages/cli/src/cli.mjs lint outputs/demo/plan.json --out outputs/demo/lint-report.json",
     "demo:render": "npm run setup:runtime && node packages/cli/src/cli.mjs render outputs/demo/plan.json --out outputs/demo/slidewright-demo.pptx --preview-dir outputs/demo/previews",
     "demo:audit": "python plugins/slidewright/skills/slidewright/scripts/audit_pptx.py outputs/demo/slidewright-demo.pptx --json outputs/demo/ooxml-audit.json",
-    "demo": "npm test && npm run demo:compile && npm run demo:lint && npm run demo:render && npm run demo:audit",
+    "demo": "npm test && npm run demo:compile && npm run demo:fonts && npm run demo:lint && npm run demo:render && npm run demo:audit",
     "fidelity": "node scripts/run-fidelity-benchmark.mjs",
     "mutation": "node scripts/run-copy-mutation.mjs",
+    "repair": "node scripts/run-repair-benchmark.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
-    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation"
+    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair"
   },
   "peerDependencies": {
     "@oai/artifact-tool": "*"
