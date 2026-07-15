@@ -20,11 +20,11 @@ The Build Week entry targets **Work & Productivity**. The initial vertical slice
 Once the GitHub repository is published, add its marketplace and install the plugin:
 
 ```powershell
-codex plugin marketplace add Hassanfroo/slidewright
+codex plugin marketplace add <github-owner>/slidewright
 codex plugin add slidewright@slidewright
 ```
 
-Restart the Codex desktop app and begin a new task so the bundled `$slidewright` skill is loaded. The plugin is self-contained under `plugins/slidewright/`; advanced users can also copy `plugins/slidewright/skills/slidewright/` directly into their Codex skills directory.
+Replace `<github-owner>` with the verified release owner. The submission checker blocks release while that URL is unresolved. Restart the Codex desktop app and begin a new task so the bundled `$slidewright` skill is loaded. The plugin is self-contained under `plugins/slidewright/`; advanced users can also copy `plugins/slidewright/skills/slidewright/` directly into their Codex skills directory.
 
 ### Develop locally
 
@@ -122,10 +122,10 @@ python plugins/slidewright/skills/slidewright/scripts/audit_pptx.py outputs/demo
 - [Architecture](docs/ARCHITECTURE.md)
 - [Build Week requirements](docs/BUILD_WEEK.md)
 - [Evaluation strategy](docs/EVALUATION.md)
-- [Demo and submission plan](docs/DEMO.md)
+- [Demo and submission package](submission/README.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Risk register](docs/RISK_REGISTER.md)
-- [Draft submission copy](docs/SUBMISSION_COPY.md)
+- [Copy-ready submission text](submission/SUBMISSION_COPY.md)
 - [Visual fidelity benchmark](docs/BENCHMARK.md)
 - [Hackathon and GitHub-star plan](docs/HACKATHON_PLAN.md)
 - [Current limitations](docs/LIMITATIONS.md)
