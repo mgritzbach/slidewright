@@ -6,7 +6,7 @@
 - Keep left/right and top/bottom margins equal within `1 px`.
 - Use symmetric component padding; default to `32 px`.
 - Keep every object inside the canvas.
-- Treat unintended overlap, clipping, and wrapping as build failures.
+- Treat unintended overlap, clipping, alignment drift, crowded layouts, and excess wrapping as build failures in both the planned and realized geometry.
 
 ## Typography
 
@@ -26,4 +26,4 @@
 
 ## Proof
 
-Require a passing plan lint, exported PPTX, OOXML audit, rendered previews, and full-size visual review.
+Require passing plan and rendered-layout lint, an exported PPTX, OOXML audit, rendered previews, and full-size visual review. Use stable object names to map planned objects to actual exported bounds and line counts; missing or ambiguous mappings fail the build.

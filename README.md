@@ -66,6 +66,14 @@ npm run repair
 
 The command proves that missing fonts and copy that cannot fit above the configured type floor block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
 
+To run the two-phase geometric and readability defect matrix, including a real Microsoft PowerPoint text-bound check on Windows, run:
+
+```powershell
+npm run defects
+```
+
+The matrix covers canvas and parent clipping, text overflow, unintended overlap and occlusion, contrast, compiler-declared alignment, wrapping, crowding, and bounded chart-component readability. It repeats every isolated negative three times, rejects a false fit only visible after layout export, deletes an intentionally clipped PowerPoint after the real application rejects it, and writes a content-addressed scorecard under `outputs/defects/`. Chart checks derive label, mark, collision, bounds, contrast, and orientation results from rendered native-shape child geometry; they do not claim native PowerPoint chart export.
+
 ## Template-preserving edit benchmark
 
 `npm run template` exercises the deliberately narrow existing-deck path on an MIT-licensed, PowerPoint-authored golden fixture. The editor changes only declared text nodes in two uniquely named native placeholders and refuses stale source hashes, unexpected source text, or ambiguous shapes. The audit proves that every other package part, relationship, master, layout, theme, and preserve-only slide is unchanged, then PowerPoint serializes a new file with `SaveAs`, opens it again, and rerenders the result. Five destructive controls prove that theme drift, control-slide drift, same-slide non-target drift, extra package parts, and stale edit contracts are rejected.
@@ -113,6 +121,7 @@ node packages/cli/src/cli.mjs reconstruct fixtures/independent/observed-design.j
 node packages/cli/src/cli.mjs preflight --out outputs/preflight.json
 node packages/cli/src/cli.mjs verify outputs/demo/slidewright-demo.pptx --out outputs/demo/delivery-manifest.json --preview-dir outputs/demo/previews
 python plugins/slidewright/skills/slidewright/scripts/audit_pptx.py outputs/demo/slidewright-demo.pptx --json outputs/demo/ooxml-audit.json
+npm run defects
 ```
 
 ## Product documents

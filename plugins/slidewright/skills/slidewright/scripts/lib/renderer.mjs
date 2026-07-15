@@ -3,6 +3,7 @@ import path from "node:path";
 import { lintPlan } from "./linter.mjs";
 import { inspectPlanFonts } from "./font-audit.mjs";
 import { loadArtifactTool } from "./artifact-runtime.mjs";
+import { lintRenderedLayouts } from "./rendered-linter.mjs";
 
 async function writeBlob(filePath, blob) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -76,12 +77,14 @@ export async function renderPlan(plan, { out, previewDir }) {
   await fs.mkdir(path.dirname(out), { recursive: true });
   if (previewDir) await fs.mkdir(previewDir, { recursive: true });
 
+  const renderedLayouts = [];
   for (const [index, slide] of presentation.slides.items.entries()) {
-    if (!previewDir) break;
     const stem = `slide-${String(index + 1).padStart(2, "0")}`;
-    await writeBlob(path.join(previewDir, `${stem}.png`), await presentation.export({ slide, format: "png", scale: 1 }));
+    if (previewDir) await writeBlob(path.join(previewDir, `${stem}.png`), await presentation.export({ slide, format: "png", scale: 1 }));
     const layout = await slide.export({ format: "layout" });
-    await fs.writeFile(path.join(previewDir, `${stem}.layout.json`), await layout.text(), "utf8");
+    const layoutText = await layout.text();
+    if (previewDir) await fs.writeFile(path.join(previewDir, `${stem}.layout.json`), layoutText, "utf8");
+    renderedLayouts.push(JSON.parse(layoutText));
   }
   if (previewDir) {
     await writeBlob(
@@ -90,7 +93,14 @@ export async function renderPlan(plan, { out, previewDir }) {
     );
   }
 
+  const renderedReport = lintRenderedLayouts(plan, renderedLayouts);
+  if (previewDir) await fs.writeFile(path.join(previewDir, "rendered-lint-report.json"), `${JSON.stringify(renderedReport, null, 2)}\n`, "utf8");
+  if (!renderedReport.valid) {
+    await fs.rm(out, { force: true });
+    throw new Error(`Refusing to save a rendered layout with ${renderedReport.counts.error} error(s).`);
+  }
+
   const pptx = await PresentationFile.exportPptx(presentation);
   await pptx.save(out);
-  return { out, slideCount: plan.slides.length, previewDir: previewDir ?? null };
+  return { out, slideCount: plan.slides.length, previewDir: previewDir ?? null, renderedLint: renderedReport };
 }

@@ -16,7 +16,7 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 5. Compile the specification with `scripts/slidewright.mjs compile <spec> --out <plan>`.
 6. Audit requested fonts with `scripts/slidewright.mjs fonts <plan> --out <report>`. Stop on missing families; install the font or explicitly change the theme and recompile. Never accept silent substitution.
 7. Lint the plan with `scripts/slidewright.mjs lint <plan> --out <report>`. Treat warnings as failures. Shorten copy or change layout before lowering minimum type sizes.
-8. Render native editable objects with `scripts/slidewright.mjs render <plan> --out <deck.pptx> --preview-dir <dir>`. Use the bundled OpenAI presentation artifact runtime; never rasterize text.
+8. Render native editable objects with `scripts/slidewright.mjs render <plan> --out <deck.pptx> --preview-dir <dir>`. Use the bundled OpenAI presentation artifact runtime; never rasterize text. Rendering exports actual object bounds and line counts, runs the second lint phase, and refuses to save the PPTX if the realized layout violates the contract.
 9. When groups are required, normalize the exported OOXML and verify real `p:grpSp` groups. Read [references/grouping.md](references/grouping.md).
 10. Audit the final exported PPTX with `scripts/audit_pptx.py <deck.pptx> --json <report>`. Confirm native text, whole-point approved sizes, and rich-text runs. For exact reconstructions, run the object-level audit and visual comparison described in [references/visual-fidelity.md](references/visual-fidelity.md).
 11. Inspect every rendered slide at full size. Fix all unintended overflow, clipping, wrapping, or overlap before delivery.
@@ -29,6 +29,7 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Preserve text as native editable text and emphasis as independent runs.
 - Use auto-sizing as a deterministic compile step; do not delegate uncontrolled fractional shrinking to PowerPoint.
 - Keep every object inside the slide canvas and every single-line title on one line.
+- Treat undeclared sibling overlap, child escape from padded parents, low contrast, declared alignment drift, excess wrapping, and crowded layouts as build failures.
 - Reject content that cannot fit above the configured minimum and recommend shortening or a different layout.
 - Use native charts, tables, shapes, and connectors when semantic editing matters. Rasterize only true visual assets.
 

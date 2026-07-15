@@ -51,7 +51,7 @@ export function validateDeckSpec(spec) {
   return spec;
 }
 
-function textShape({ id, role, position, value, style, theme, defaultBold = false, fit }) {
+function textShape({ id, role, parentId, constraints, position, value, style, theme, defaultBold = false, fit }) {
   const runs = normalizeRuns(value, defaultBold);
   const text = textFromRuns(runs);
   const resolvedFit = fitText({ text, width: position.width, height: position.height, ...fit });
@@ -59,6 +59,8 @@ function textShape({ id, role, position, value, style, theme, defaultBold = fals
     id,
     type: "text",
     role,
+    ...(parentId ? { parentId } : {}),
+    ...(constraints ? { constraints } : {}),
     position,
     text: { runs },
     style: {
@@ -107,6 +109,7 @@ function compileHero(slide, index, frame, theme) {
     textShape({
       id: `s${index + 1}-title`,
       role: "title",
+      constraints: { alignTo: { targetId: `s${index + 1}-eyebrow`, edge: "left" } },
       position: { left: frame.left, top: frame.top + 72, width: 900, height: 182 },
       value: slide.title,
       style: { color: theme.colors.text },
@@ -118,7 +121,8 @@ function compileHero(slide, index, frame, theme) {
     textShape({
       id: `s${index + 1}-body`,
       role: "body",
-      position: { left: frame.left, top: frame.top + 280, width: 780, height: 108 },
+      constraints: { alignTo: { targetId: `s${index + 1}-title`, edge: "left" } },
+      position: { left: frame.left, top: frame.top + 280, width: 800, height: 108 },
       value: slide.body,
       style: { color: theme.colors.muted },
       theme,
@@ -130,7 +134,7 @@ function compileHero(slide, index, frame, theme) {
     left: frame.left,
     top: frame.top + frame.height - 120,
     width: frame.width,
-    height: 120,
+    height: 132,
   };
   const padding = { top: 32, right: 32, bottom: 32, left: 32 };
   shapes.push(
@@ -146,6 +150,8 @@ function compileHero(slide, index, frame, theme) {
     textShape({
       id: `s${index + 1}-callout`,
       role: "callout",
+      parentId: `s${index + 1}-callout-surface`,
+      constraints: { alignTo: { targetId: `s${index + 1}-callout-surface`, edge: "left", offset: padding.left } },
       position: {
         left: calloutPosition.left + padding.left,
         top: calloutPosition.top + padding.top,
@@ -168,19 +174,19 @@ function compileTwoColumn(slide, index, frame, theme) {
     textShape({
       id: `s${index + 1}-title`,
       role: "title",
-      position: { left: frame.left, top: frame.top, width: frame.width, height: 88 },
+      position: { left: frame.left, top: frame.top, width: frame.width, height: 132 },
       value: slide.title,
       style: { color: theme.colors.text },
       theme,
       defaultBold: true,
-      fit: { preferredSizePt: 40, minSizePt: 28, maxLines: 2, lineHeight: 1.02 },
+      fit: { preferredSizePt: 36, minSizePt: 28, maxLines: 2, lineHeight: 1.02 },
     }),
   );
 
-  const gap = 40;
-  const cardTop = frame.top + 124;
+  const gap = 24;
+  const cardTop = frame.top + 164;
   const cardWidth = (frame.width - gap) / 2;
-  const cardHeight = frame.height - 124;
+  const cardHeight = frame.height - 164;
   const padding = { top: 32, right: 32, bottom: 32, left: 32 };
   ["left", "right"].forEach((side, sideIndex) => {
     const cardLeft = frame.left + sideIndex * (cardWidth + gap);
@@ -198,6 +204,8 @@ function compileTwoColumn(slide, index, frame, theme) {
       textShape({
         id: `s${index + 1}-${side}-heading`,
         role: "subheading",
+        parentId: `s${index + 1}-${side}-surface`,
+        constraints: { alignTo: { targetId: `s${index + 1}-${side}-surface`, edge: "left", offset: padding.left } },
         position: {
           left: card.left + padding.left,
           top: card.top + padding.top,
@@ -215,6 +223,8 @@ function compileTwoColumn(slide, index, frame, theme) {
       textShape({
         id: `s${index + 1}-${side}-body`,
         role: "body",
+        parentId: `s${index + 1}-${side}-surface`,
+        constraints: { alignTo: { targetId: `s${index + 1}-${side}-heading`, edge: "left" } },
         position: {
           left: card.left + padding.left,
           top: card.top + padding.top + 100,

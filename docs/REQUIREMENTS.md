@@ -12,7 +12,7 @@
 | F06 | Preserve minimum readable sizes | Content that cannot fit above the minimum produces an error and a relayout/shortening suggestion |
 | F07 | Preserve editability | Text renders as PowerPoint text nodes and semantic objects are not flattened into slide images |
 | F08 | Preserve rich-text emphasis | Mixed bold and regular runs survive export and remain independently editable |
-| F09 | Detect geometric defects | Out-of-bounds objects and estimated text overflow fail lint; general unintended-overlap detection remains pending |
+| F09 | Detect geometric defects | Plan and rendered-layout lint reject canvas/parent clipping, text overflow, unintended overlap, contrast, declared alignment, wrapping, crowding, and bounded chart-readability defects |
 | F10 | Emit build evidence | Every build can output plan JSON, lint JSON, rendered previews, and OOXML audit JSON |
 | F11 | Package the workflow as a Codex plugin/skill | Repo-local marketplace, valid plugin manifest, valid skill metadata, and judge-ready setup instructions |
 | F12 | Respect source templates | Proven narrowly: named-placeholder text edits preserve every non-target package part and pass a PowerPoint round trip on the MIT golden fixture; broader structural import remains outside the release claim |
@@ -21,7 +21,7 @@
 
 | ID | Requirement | Target |
 | --- | --- | --- |
-| Q01 | Compiler unit test coverage | Every layout rule and diagnostic has at least one positive and one negative fixture |
+| Q01 | Compiler unit test coverage | Every release-credited layout rule has an explicit positive path and isolated negative fixture with stable diagnostics |
 | Q02 | Determinism | Zero plan diff across three consecutive builds from identical input |
 | Q03 | Visual integrity | Zero unintended overflow, clipping, or overlap in the demo deck |
 | Q04 | Typography consistency | 100% of audited text sizes are whole point values in the approved scale |
@@ -43,4 +43,4 @@
 
 ## Definition of done for a deck
 
-A deck is done only when the specification compiles, lint has no errors or warnings, the PPTX exports, OOXML audit passes, each slide is rendered, and every rendered slide is inspected at full size.
+A deck is done only when the specification compiles, plan lint has no errors or warnings, actual exported layout metadata passes the second lint phase, the PPTX exports, OOXML audit passes, each slide is rendered, and every rendered slide is inspected at full size.
