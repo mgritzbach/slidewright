@@ -19,7 +19,7 @@ Create at least 20 deck specifications spanning:
 - symmetric and intentionally asymmetric layouts;
 - empty, invalid, and over-dense content;
 - two font families and three themes;
-- imported-template fixtures once that path exists.
+- the current named-placeholder golden-template fixture plus additional complex imported-template fixtures as that path expands.
 
 Each fixture records expected compile status, selected type sizes, diagnostic IDs, and structural properties of the exported PPTX.
 

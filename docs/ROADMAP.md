@@ -10,8 +10,8 @@
 ## July 15 — Template fidelity
 
 - Add source-deck inspection and theme-token extraction.
-- Build one owned/licensed template fixture.
-- Add deviation log and golden-file assertions.
+- Completed: build one MIT-licensed, PowerPoint-authored template fixture.
+- Completed: add an exact deviation log, golden-file assertions, PowerPoint round trip, and four destructive controls.
 
 ## July 16 — Product experience
 

@@ -1,0 +1,19 @@
+{
+  "version": "0.1",
+  "license": "MIT",
+  "authoringApplication": "Microsoft PowerPoint for Windows",
+  "source": "slidewright-mit-template.pptx",
+  "expected": {
+    "slides": 2,
+    "masters": 1,
+    "layoutsMinimum": 1,
+    "themes": 1,
+    "targetSlide": 1,
+    "preserveOnlySlide": 2,
+    "layoutName": "Slidewright MIT Title and Content",
+    "footerText": "SLIDEWRIGHT MIT TEMPLATE",
+    "targetShapes": ["MIT Fixture Title", "MIT Fixture Body"],
+    "protectedMasterShape": "SW Master Chrome",
+    "protectedLayoutShape": "SW Layout Accent"
+  }
+}

@@ -15,7 +15,7 @@
 | F09 | Detect geometric defects | Out-of-bounds objects and estimated text overflow fail lint; general unintended-overlap detection remains pending |
 | F10 | Emit build evidence | Every build can output plan JSON, lint JSON, rendered previews, and OOXML audit JSON |
 | F11 | Package the workflow as a Codex plugin/skill | Repo-local marketplace, valid plugin manifest, valid skill metadata, and judge-ready setup instructions |
-| F12 | Respect source templates | Planned: existing deck editing follows source typography, spacing, palette, and chrome; G10 remains blocked until a golden-template proof exists |
+| F12 | Respect source templates | Proven narrowly: named-placeholder text edits preserve every non-target package part and pass a PowerPoint round trip on the MIT golden fixture; broader structural import remains outside the release claim |
 
 ## Quality requirements
 

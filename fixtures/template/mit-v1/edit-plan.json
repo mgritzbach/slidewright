@@ -1,0 +1,27 @@
+{
+  "version": "0.1",
+  "source": "slidewright-mit-template.pptx",
+  "sourceSha256": "a76776ce9a106f2976ca448a8fb92e97e7c9c44f5733caac7e67b32624959038",
+  "expectedCoreAuthor": "Slidewright contributors",
+  "targetSlide": 1,
+  "edits": [
+    {
+      "shapeName": "MIT Fixture Title",
+      "placeholderType": "title",
+      "placeholderIndex": 0,
+      "before": "Quarterly operating review",
+      "after": "Annual operating review"
+    },
+    {
+      "shapeName": "MIT Fixture Body",
+      "placeholderType": "body",
+      "placeholderIndex": 1,
+      "before": "Three priorities\nOne accountable owner\nA decision by Friday",
+      "after": "Four priorities\nOne accountable owner\nA decision by Thursday"
+    }
+  ],
+  "preserveOnlySlides": [2],
+  "allowedDeviation": [
+    "edited a:t values in the two named slide-1 placeholder shapes"
+  ]
+}

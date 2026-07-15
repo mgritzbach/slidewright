@@ -22,8 +22,9 @@
     "mutation": "node scripts/run-copy-mutation.mjs",
     "repair": "node scripts/run-repair-benchmark.mjs",
     "ingestion": "node scripts/run-independent-ingestion.mjs",
+    "template": "node scripts/run-template-preservation.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
-    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion"
+    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion && npm run template"
   },
   "peerDependencies": {
     "@oai/artifact-tool": "*"

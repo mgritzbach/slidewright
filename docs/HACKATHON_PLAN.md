@@ -6,15 +6,15 @@
 
 The moat is not another slide generator. It is a formatting compiler and evidence pipeline: native text, deterministic geometry, conventional typography, real groups, rendering, and machine-readable audits.
 
-Current proof boundary: the six-fixture suite validates deterministic export from a shared design manifest. Independent visual-reference ingestion remains G21 and must be demonstrated before the thesis becomes a release claim.
+Current proof boundary: the six-fixture suite validates deterministic export from a shared design manifest; one independent opaque-image fixture validates anti-circular reconstruction; and one MIT golden template validates exact named-placeholder copy edits. These narrow proofs do not establish broad multi-domain image understanding or general structural PPTX import.
 
 ## Release blockers
 
 1. Expand the public benchmark from 6 to at least 20 licensed or owned fixtures.
-2. Add a genuine independent image-ingestion fixture whose geometry is not shared with the renderer.
-3. Add copy mutation tests at -25% and +25% length with relayout before font reduction.
-4. Add missing-font fixtures and actionable diagnostics.
-5. Implement real source-deck/template preservation or remove that claim from all public copy.
+2. Expand independent image ingestion beyond the current one-fixture proof.
+3. Expand copy mutation beyond the current -25% and +25% English fixtures to translation and dense-copy relayout.
+4. Expand missing-font proof to licensed embedding and cross-platform substitution behavior.
+5. Expand the exact named-placeholder golden-template path to complex licensed decks and structural edits.
 6. Exercise compile, lint, render, audit, and fidelity checks in CI on supported platforms.
 7. Record a 2:30 demo: reference → generation → ungroup/edit → rerender → scorecard.
 8. Run five target-user tests and measure cleanup minutes and first-open acceptance.
