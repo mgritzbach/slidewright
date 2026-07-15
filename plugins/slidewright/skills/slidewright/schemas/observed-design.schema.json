@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/observed-design.schema.json",
+  "title": "Slidewright observed design",
+  "description": "Vision-derived observations from an opaque raster. This is not a ground-truth geometry manifest.",
+  "type": "object",
+  "required": ["version", "input", "canvas", "objects", "uncertainties"],
+  "properties": {
+    "version": { "const": "0.1" },
+    "input": {
+      "type": "object",
+      "required": ["sha256", "widthPx", "heightPx"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+        "widthPx": { "type": "integer", "minimum": 1 },
+        "heightPx": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "canvas": {
+      "type": "object",
+      "required": ["width", "height", "background"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "background": { "$ref": "#/$defs/color" }
+      },
+      "additionalProperties": false
+    },
+    "palette": { "type": "array" },
+    "objects": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/object" }
+    },
+    "groups": { "type": "array" },
+    "uncertainties": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "bbox": {
+      "type": "object",
+      "required": ["left", "top", "width", "height", "units"],
+      "properties": {
+        "left": { "type": "number", "minimum": 0, "maximum": 1 },
+        "top": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "units": { "const": "normalized" }
+      },
+      "additionalProperties": false
+    },
+    "object": {
+      "type": "object",
+      "required": ["id", "type", "bbox", "zIndex", "editable", "confidence"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "type": { "enum": ["shape", "text"] },
+        "bbox": { "$ref": "#/$defs/bbox" },
+        "rotationDeg": { "type": "number" },
+        "zIndex": { "type": "integer" },
+        "editable": { "const": true },
+        "shape": { "type": "object" },
+        "text": { "type": "object" },
+        "confidence": { "type": "object" }
+      }
+    }
+  }
+}

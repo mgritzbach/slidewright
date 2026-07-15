@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { lintPlan } from "./linter.mjs";
 import { inspectPlanFonts } from "./font-audit.mjs";
+import { loadArtifactTool } from "./artifact-runtime.mjs";
 
 async function writeBlob(filePath, blob) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -32,15 +33,7 @@ export async function renderPlan(plan, { out, previewDir }) {
     throw new Error(`Refusing to render a plan with unresolved font requirements. ${details}`);
   }
 
-  let artifact;
-  try {
-    artifact = await import("@oai/artifact-tool");
-  } catch (error) {
-    throw new Error(
-      "@oai/artifact-tool is unavailable. Initialize the Codex presentation workspace for this repository before rendering.",
-      { cause: error },
-    );
-  }
+  const artifact = await loadArtifactTool();
   const { Presentation, PresentationFile } = artifact;
   const presentation = Presentation.create({ slideSize: plan.canvas });
 

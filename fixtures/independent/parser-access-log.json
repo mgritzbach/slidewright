@@ -1,0 +1,22 @@
+{
+  "parserTask": "/root/vision_parser",
+  "forkTurns": "none",
+  "contextInherited": false,
+  "initialFilesRead": [
+    "fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png"
+  ],
+  "correctionFilesRead": [
+    "fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png",
+    "fixtures/independent/observed-design.json"
+  ],
+  "filesWritten": [
+    "fixtures/independent/observed-design.json"
+  ],
+  "sourceBuilderDeletedBeforeParsing": true,
+  "initialParserOutputSha256": "02b250e06309cf4b086ca5b0a7a4e9be82c546d24db3f28defb6f963efea49b4",
+  "finalParserOutputSha256": "b4a041bbfcdcf07d5d8ac8604477793b31f04629e62a48e9936e50fc05ccaa1f",
+  "schemaCorrectionBeforeRenderingOrScoring": true,
+  "postScoreSourceOnlyTypographyReassessmentReverted": true,
+  "readDeclaration": "Initial pass viewed only the opaque PNG. Corrections read only the opaque PNG and the parser's own observation JSON; no renderer, score, diff, overlay, source builder, or implementation file was exposed.",
+  "writeDeclaration": "Both passes wrote only observed-design.json."
+}

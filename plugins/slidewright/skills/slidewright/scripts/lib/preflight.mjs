@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { findArtifactSetupScript } from "./artifact-runtime.mjs";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -81,7 +82,7 @@ export function buildPreflightReport(probes) {
     { id: "skill", required: true, ok: probes.skill, detail: probes.skillPath, remediation: "Install the Slidewright plugin or run from its repository root." },
     { id: "node", required: true, ok: Number.parseInt(probes.nodeVersion.split(".")[0], 10) >= 20, detail: `Node ${probes.nodeVersion}`, remediation: "Install Node.js 20 or newer." },
     { id: "python", required: true, ok: probes.python.available, detail: probes.python.detail, remediation: "Install Python 3.11+ or set SLIDEWRIGHT_PYTHON to a working executable." },
-    { id: "artifact-tool", required: true, ok: Boolean(probes.artifactTool), detail: probes.artifactTool, remediation: "Run npm run setup:runtime from a Codex environment with the presentation runtime installed." },
+    { id: "artifact-tool", required: true, ok: Boolean(probes.artifactTool), detail: probes.artifactTool, remediation: probes.artifactBootstrap ? "Run 'node <slidewright-skill>/scripts/slidewright.mjs bootstrap' in the target workspace, then rerun preflight." : "Install or repair Codex's bundled presentation runtime; no bootstrap script was found." },
     { id: "presentation-renderer", required: true, ok: Boolean(probes.presentationRuntime), detail: probes.presentationRuntime, remediation: "Install or repair the bundled Codex presentations runtime; render_slides.py and slides_test.py are required." },
     { id: "fonts", required: true, ok: Object.values(probes.fonts).every(Boolean), detail: probes.fonts, remediation: `Install the missing required fonts: ${Object.entries(probes.fonts).filter(([, ok]) => !ok).map(([name]) => name).join(", ") || "none"}.` },
     { id: "powerpoint", required: false, ok: probes.powerPoint.available, detail: probes.powerPoint.detail, remediation: "Optional: install Microsoft PowerPoint for application-level round-trip tests." },
@@ -113,6 +114,7 @@ export async function collectPreflight({ cwd = process.cwd(), env = process.env,
     nodeVersion: process.versions.node,
     python: commandProbe(pythonCommand),
     artifactTool: await findArtifactTool(cwd),
+    artifactBootstrap: await findArtifactSetupScript(env),
     presentationRuntime: await findPresentationRuntime(env),
     fonts: await fontProbe(platform),
     powerPoint: platform === "win32" && await exists(commonPowerPoint) ? { available: true, detail: commonPowerPoint } : { available: false, detail: null },

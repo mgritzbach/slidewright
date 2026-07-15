@@ -10,8 +10,8 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 ## Workflow
 
 1. Define the communication job in one sentence: audience, intended outcome, and central takeaway.
-2. Apply the public reliability requirements in [references/complaint-contract.md](references/complaint-contract.md). Run `scripts/slidewright.mjs preflight --out <report>` and stop on required capability failures. State optional unsupported paths before generation.
-3. If following an existing deck or visual reference, inspect the complete source and preserve its typography, palette, spacing, placeholders, footers, and chrome. Read [references/template-fidelity.md](references/template-fidelity.md) and [references/visual-fidelity.md](references/visual-fidelity.md). Existing-deck import is not yet proven; never imply it is.
+2. Apply the public reliability requirements in [references/complaint-contract.md](references/complaint-contract.md). Run `node scripts/slidewright.mjs bootstrap` once in a fresh target workspace, then `node scripts/slidewright.mjs preflight --out <report>`. Stop on required capability failures. State optional unsupported paths before generation.
+3. If following an existing deck, inspect the complete source and preserve its typography, palette, spacing, placeholders, footers, and chrome. Read [references/template-fidelity.md](references/template-fidelity.md) and [references/visual-fidelity.md](references/visual-fidelity.md). Existing-deck import is not yet proven; never imply it is. If the only source is an image, follow [references/image-ingestion.md](references/image-ingestion.md): emit a vision-derived observation record, label font identity as a guess, and keep source geometry isolated from rendering and scoring.
 4. Create a versioned deck specification. Read [references/deck-spec.md](references/deck-spec.md) and begin from `assets/demo-deck-spec.json` when useful.
 5. Compile the specification with `scripts/slidewright.mjs compile <spec> --out <plan>`.
 6. Audit requested fonts with `scripts/slidewright.mjs fonts <plan> --out <report>`. Stop on missing families; install the font or explicitly change the theme and recompile. Never accept silent substitution.
@@ -38,5 +38,6 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Read [references/formatting-contract.md](references/formatting-contract.md) when changing layout or typography rules.
 - Read [references/template-fidelity.md](references/template-fidelity.md) for any existing-deck or source-template task.
 - Read [references/visual-fidelity.md](references/visual-fidelity.md) for reference reconstruction and comparison.
+- Read [references/image-ingestion.md](references/image-ingestion.md) when reconstructing an opaque raster reference.
 - Read [references/grouping.md](references/grouping.md) when objects must group or ungroup in PowerPoint.
 - Read [references/complaint-contract.md](references/complaint-contract.md) before capability preflight, delivery, or iteration.

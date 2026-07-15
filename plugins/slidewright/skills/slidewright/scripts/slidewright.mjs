@@ -8,15 +8,19 @@ import { renderPlan } from "./lib/renderer.mjs";
 import { collectPreflight } from "./lib/preflight.mjs";
 import { verifyDelivery } from "./lib/delivery.mjs";
 import { inspectPlanFonts } from "./lib/font-audit.mjs";
+import { renderObservedDesign } from "./benchmark/render_observed_design.mjs";
+import { bootstrapArtifactWorkspace } from "./lib/artifact-runtime.mjs";
 
 function usage() {
   return `Slidewright
 
 Usage:
+  slidewright bootstrap
   slidewright compile <spec.json> --out <plan.json>
   slidewright lint <plan.json> --out <report.json>
   slidewright fonts <plan.json> --out <report.json>
   slidewright render <plan.json> --out <deck.pptx> [--preview-dir <dir>]
+  slidewright reconstruct <observed-design.json> --out <deck.pptx> [--preview-dir <dir>]
   slidewright preflight --out <report.json>
   slidewright verify <deck.pptx> --out <manifest.json> [--preview-dir <dir>] [--montage <image>] [--handoff <file>] [--require-bundle]
 `;
@@ -40,6 +44,11 @@ export async function main(args = process.argv.slice(2)) {
   const [command, input] = args;
   if (!command || ["-h", "--help"].includes(command)) {
     process.stdout.write(usage());
+    return 0;
+  }
+  if (command === "bootstrap") {
+    const report = await bootstrapArtifactWorkspace();
+    process.stdout.write(`Linked Codex presentation runtime ${report.runtimeVersion} into ${report.cwd}\n`);
     return 0;
   }
   const out = option(args, "--out");
@@ -89,6 +98,16 @@ export async function main(args = process.argv.slice(2)) {
       previewDir: option(args, "--preview-dir"),
     });
     process.stdout.write(`Rendered ${result.slideCount} editable slides to ${result.out}\n`);
+    return 0;
+  }
+  if (command === "reconstruct") {
+    const previewDir = option(args, "--preview-dir");
+    const result = await renderObservedDesign({
+      input,
+      out,
+      preview: previewDir ? path.join(previewDir, "slide-1.png") : undefined,
+    });
+    process.stdout.write(`Reconstructed ${result.design.objects.length} editable objects to ${result.out}\n`);
     return 0;
   }
   throw new Error(`Unknown command '${command}'.\n${usage()}`);

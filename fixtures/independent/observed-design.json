@@ -1,0 +1,481 @@
+{
+  "version": "0.1",
+  "input": {
+    "sha256": "7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8",
+    "widthPx": 1280,
+    "heightPx": 720
+  },
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "background": "#192A40"
+  },
+  "palette": [
+    "#192A40",
+    "#F4ECD9",
+    "#DC4B40",
+    "#00877F",
+    "#F2A528",
+    "#AAB1B4"
+  ],
+  "objects": [
+    {
+      "id": "card-field",
+      "type": "shape",
+      "bbox": { "left": 0.0141, "top": 0.0250, "width": 0.9719, "height": 0.9500, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 0,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "#F4ECD9",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "inner-frame",
+      "type": "shape",
+      "bbox": { "left": 0.0258, "top": 0.0458, "width": 0.9484, "height": 0.9083, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 1,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "none",
+        "line": { "color": "#192A40", "width": 2 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "top-sun",
+      "type": "shape",
+      "bbox": { "left": 0.6563, "top": 0.0000, "width": 0.1500, "height": 0.2125, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 2,
+      "editable": true,
+      "confidence": { "geometry": 0.88, "style": 0.88 },
+      "shape": {
+        "geometry": "ellipse",
+        "fill": "#F2A528",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 96
+      }
+    },
+    {
+      "id": "coral-diagonal-accent",
+      "type": "shape",
+      "bbox": { "left": 0.5391, "top": 0.8535, "width": 0.1734, "height": 0.0903, "units": "normalized" },
+      "rotationDeg": -52,
+      "zIndex": 3,
+      "editable": true,
+      "confidence": { "geometry": 0.78, "style": 0.78 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "#DC4B40",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "teal-diagonal-accent",
+      "type": "shape",
+      "bbox": { "left": 0.6234, "top": 0.8722, "width": 0.0891, "height": 0.0444, "units": "normalized" },
+      "rotationDeg": 18,
+      "zIndex": 4,
+      "editable": true,
+      "confidence": { "geometry": 0.69, "style": 0.69 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "#00877F",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "left-bottom-rule",
+      "type": "shape",
+      "bbox": { "left": 0.0563, "top": 0.8847, "width": 0.5078, "height": 0.0083, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 5,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "#00877F",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "information-panel",
+      "type": "shape",
+      "bbox": { "left": 0.6438, "top": 0.0944, "width": 0.3047, "height": 0.8361, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 6,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "rect",
+        "fill": "#192A40",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "header-dot",
+      "type": "shape",
+      "bbox": { "left": 0.0531, "top": 0.0847, "width": 0.0172, "height": 0.0306, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 7,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "ellipse",
+        "fill": "#DC4B40",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 11
+      }
+    },
+    {
+      "id": "field-notes-label",
+      "type": "text",
+      "bbox": { "left": 0.0766, "top": 0.0972, "width": 0.1719, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 8,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "FIELD NOTES / 07",
+        "runs": [
+          { "text": "FIELD NOTES / 07", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 14, "color": "#DC4B40" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 14,
+        "color": "#DC4B40",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "eyebrow",
+      "type": "text",
+      "bbox": { "left": 0.0766, "top": 0.2153, "width": 0.3375, "height": 0.0306, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 9,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "AN EVENING FOR CURIOUS BUILDERS",
+        "runs": [
+          { "text": "AN EVENING FOR CURIOUS BUILDERS", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 12, "color": "#00877F" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 12,
+        "color": "#00877F",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "event-title",
+      "type": "text",
+      "bbox": { "left": 0.0703, "top": 0.2597, "width": 0.3867, "height": 0.2250, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 10,
+      "editable": true,
+      "confidence": { "text": 0.97, "geometry": 0.97, "style": 0.97 },
+      "text": {
+        "value": "Design\nAfter Dark",
+        "runs": [
+          { "text": "Design\n", "bold": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 64, "color": "#192A40" },
+          { "text": "After", "italic": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 64, "color": "#DC4B40" },
+          { "text": " Dark", "bold": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 64, "color": "#192A40" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Georgia",
+        "fontSizePtGuess": 64,
+        "color": "#192A40",
+        "lineHeight": 0.82,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "event-description",
+      "type": "text",
+      "bbox": { "left": 0.0766, "top": 0.5222, "width": 0.4117, "height": 0.0875, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 11,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "Small ideas, bright rooms, and the people shaping\nwhat comes next.",
+        "runs": [
+          { "text": "Small ideas, bright rooms, and the people shaping\nwhat comes next.", "italic": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 18, "color": "#263B50" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Georgia",
+        "fontSizePtGuess": 18,
+        "color": "#263B50",
+        "italic": true,
+        "lineHeight": 1.25,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "season-label",
+      "type": "text",
+      "bbox": { "left": 0.7781, "top": 0.1375, "width": 0.1414, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 12,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "SF · SUMMER 2026",
+        "runs": [
+          { "text": "SF · SUMMER 2026", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 10, "color": "#F2A528" }
+        ],
+        "alignment": "right",
+        "verticalAlignment": "middle",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 10,
+        "color": "#F2A528",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "date-label",
+      "type": "text",
+      "bbox": { "left": 0.6719, "top": 0.2736, "width": 0.0625, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 13,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "DATE",
+        "runs": [
+          { "text": "DATE", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 10, "color": "#F2A528" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 10,
+        "color": "#F2A528",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "date-value",
+      "type": "text",
+      "bbox": { "left": 0.7578, "top": 0.2681, "width": 0.1516, "height": 0.0847, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 14,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "Thursday\nJuly 30",
+        "runs": [
+          { "text": "Thursday\nJuly 30", "bold": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 20, "color": "#F4ECD9" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Georgia",
+        "fontSizePtGuess": 20,
+        "color": "#F4ECD9",
+        "bold": true,
+        "lineHeight": 1.05,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "time-label",
+      "type": "text",
+      "bbox": { "left": 0.6719, "top": 0.3806, "width": 0.0625, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 15,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "TIME",
+        "runs": [
+          { "text": "TIME", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 10, "color": "#F2A528" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 10,
+        "color": "#F2A528",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "time-value",
+      "type": "text",
+      "bbox": { "left": 0.7578, "top": 0.3778, "width": 0.1578, "height": 0.0819, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 16,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "6:30 PM\ndoors open",
+        "runs": [
+          { "text": "6:30 PM\ndoors open", "bold": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 20, "color": "#F4ECD9" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Georgia",
+        "fontSizePtGuess": 20,
+        "color": "#F4ECD9",
+        "bold": true,
+        "lineHeight": 1.05,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "place-label",
+      "type": "text",
+      "bbox": { "left": 0.6719, "top": 0.4875, "width": 0.0625, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 17,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "PLACE",
+        "runs": [
+          { "text": "PLACE", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 10, "color": "#F2A528" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 10,
+        "color": "#F2A528",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "place-value",
+      "type": "text",
+      "bbox": { "left": 0.7578, "top": 0.4847, "width": 0.1531, "height": 0.1264, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 18,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "The\nGlasshouse\nPier 27",
+        "runs": [
+          { "text": "The\nGlasshouse\nPier 27", "bold": true, "fontFamilyGuess": "Georgia", "fontSizePtGuess": 20, "color": "#F4ECD9" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "fontFamilyGuess": "Georgia",
+        "fontSizePtGuess": 20,
+        "color": "#F4ECD9",
+        "bold": true,
+        "lineHeight": 1.02,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "panel-divider",
+      "type": "shape",
+      "bbox": { "left": 0.6719, "top": 0.8028, "width": 0.2484, "height": 0.0014, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 19,
+      "editable": true,
+      "confidence": { "geometry": 0.98, "style": 0.98 },
+      "shape": {
+        "geometry": "line",
+        "fill": "none",
+        "line": { "color": "#AAB1B4", "width": 1 },
+        "radiusPx": 0
+      }
+    },
+    {
+      "id": "rsvp-label",
+      "type": "text",
+      "bbox": { "left": 0.6719, "top": 0.8292, "width": 0.1469, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 20,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "RSVP BY JULY 24",
+        "runs": [
+          { "text": "RSVP BY JULY 24", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 9, "color": "#F4ECD9" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 9,
+        "color": "#F4ECD9",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "website-label",
+      "type": "text",
+      "bbox": { "left": 0.6719, "top": 0.8611, "width": 0.1828, "height": 0.0278, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 21,
+      "editable": true,
+      "confidence": { "text": 0.99, "geometry": 0.99, "style": 0.99 },
+      "text": {
+        "value": "fieldnotes.studio/dark",
+        "runs": [
+          { "text": "fieldnotes.studio/dark", "bold": true, "fontFamilyGuess": "Arial", "fontSizePtGuess": 9, "color": "#F4ECD9" }
+        ],
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "fontFamilyGuess": "Arial",
+        "fontSizePtGuess": 9,
+        "color": "#F4ECD9",
+        "bold": true,
+        "lineHeight": 1,
+        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+      }
+    },
+    {
+      "id": "panel-footer-dot",
+      "type": "shape",
+      "bbox": { "left": 0.9266, "top": 0.8736, "width": 0.0172, "height": 0.0306, "units": "normalized" },
+      "rotationDeg": 0,
+      "zIndex": 22,
+      "editable": true,
+      "confidence": { "geometry": 0.99, "style": 0.99 },
+      "shape": {
+        "geometry": "ellipse",
+        "fill": "#F2A528",
+        "line": { "color": "none", "width": 0 },
+        "radiusPx": 11
+      }
+    }
+  ],
+  "groups": [],
+  "uncertainties": [
+    "Exact typefaces are inferred from appearance; Arial and Georgia are the closest allowed guesses.",
+    "The top orange circle continues behind the navy panel and beyond the canvas, so its hidden bounds are estimated.",
+    "The coral and teal lower accents are partly occluded by the information panel and cropped by the canvas; their editable rotated-rectangle bounds are approximate.",
+    "Colors are sampled visually from the rendered pixels and may differ slightly from source values.",
+    "Text box bounds and font sizes are estimated from the raster image; visible line breaks and wording are preserved."
+  ]
+}

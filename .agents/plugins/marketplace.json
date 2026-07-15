@@ -1,7 +1,7 @@
 {
-  "name": "personal",
+  "name": "slidewright",
   "interface": {
-    "displayName": "Personal"
+    "displayName": "Slidewright"
   },
   "plugins": [
     {
