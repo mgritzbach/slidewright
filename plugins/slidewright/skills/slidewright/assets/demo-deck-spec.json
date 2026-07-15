@@ -1,0 +1,18 @@
+{
+  "version": "0.1",
+  "title": "Slidewright demo",
+  "slides": [
+    {
+      "layout": "hero",
+      "eyebrow": "Editable by design",
+      "title": {
+        "runs": [
+          { "text": "Formatting ", "bold": false },
+          { "text": "without cleanup", "bold": true }
+        ]
+      },
+      "body": "Compile ideas into native PowerPoint objects with deterministic spacing and typography.",
+      "callout": "The file remains yours to edit."
+    }
+  ]
+}

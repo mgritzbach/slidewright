@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slidewright"
+  short_description: "Build editable, formatting-safe PowerPoint decks"
+  default_prompt: "Use $slidewright to turn this idea into a polished, editable PowerPoint deck."

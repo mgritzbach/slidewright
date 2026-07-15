@@ -1,0 +1,55 @@
+{
+  "version": "0.1",
+  "title": "Slidewright Build Week demo",
+  "theme": {
+    "fontFamily": "Aptos",
+    "colors": {
+      "accent": "#4F46E5",
+      "accentSoft": "#E0E7FF"
+    }
+  },
+  "slides": [
+    {
+      "id": "promise",
+      "layout": "hero",
+      "eyebrow": "OpenAI Build Week 2026",
+      "title": {
+        "runs": [
+          { "text": "Ideas in. ", "bold": false },
+          { "text": "PowerPoint out.", "bold": true },
+          { "text": " Formatting intact.", "bold": false }
+        ]
+      },
+      "body": "Slidewright compiles content into native editable slides and verifies the formatting contract before delivery.",
+      "callout": "The editable artifact—not the screenshot—is the product."
+    },
+    {
+      "id": "difference",
+      "layout": "two-column",
+      "title": "AI slide generation should eliminate cleanup, not relocate it",
+      "left": {
+        "heading": "Typical output",
+        "body": "Uneven margins, arbitrary type sizes, clipped copy, flattened visuals, and formatting that breaks after the first edit."
+      },
+      "right": {
+        "heading": "Slidewright output",
+        "body": "Symmetric geometry, integer type scales, deterministic text fitting, native rich text, and an evidence bundle for every build."
+      }
+    },
+    {
+      "id": "proof",
+      "layout": "hero",
+      "eyebrow": "A formatting contract you can inspect",
+      "title": {
+        "runs": [
+          { "text": "Compile. ", "bold": true },
+          { "text": "Lint. ", "bold": false },
+          { "text": "Render. ", "bold": true },
+          { "text": "Prove.", "bold": false }
+        ]
+      },
+      "body": "Each build emits exact geometry, fit decisions, rendered previews, and an OOXML audit of editability and typography.",
+      "callout": "If content cannot fit above the quality floor, Slidewright fails with a useful fix instead of silently shrinking."
+    }
+  ]
+}

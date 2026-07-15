@@ -1,0 +1,25 @@
+{
+  "name": "slidewright",
+  "version": "0.1.0",
+  "description": "Compile ideas into formatting-safe, native editable PowerPoint decks and verify the exported artifact.",
+  "author": {
+    "name": "Michael Gritzbach"
+  },
+  "license": "MIT",
+  "keywords": ["powerpoint", "presentations", "layout", "productivity"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Slidewright",
+    "shortDescription": "Build editable, formatting-safe PowerPoint decks",
+    "longDescription": "Turn ideas, outlines, and source material into polished native PowerPoint files with deterministic margins, text fitting, typography, editability, and automated quality evidence.",
+    "developerName": "Michael Gritzbach",
+    "category": "Productivity",
+    "capabilities": ["Write", "Interactive"],
+    "brandColor": "#4F46E5",
+    "defaultPrompt": [
+      "Turn this outline into an editable PowerPoint deck.",
+      "Repair the formatting of this presentation.",
+      "Audit this deck for spacing and text-fit problems."
+    ]
+  }
+}

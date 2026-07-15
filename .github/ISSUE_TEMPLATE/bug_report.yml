@@ -1,0 +1,23 @@
+name: Formatting bug
+description: Report a reproducible Slidewright formatting or editability failure
+title: "[bug] "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Reproduction
+      description: Include the command, minimal input, platform, and renderer.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected invariant
+      description: State the expected layout, formatting, grouping, or editability behavior.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Evidence
+      description: Attach audit output, render, and source/reference only when licensed to share.
+    validations:
+      required: true
