@@ -80,6 +80,16 @@ The matrix covers canvas and parent clipping, text overflow, unintended overlap 
 
 This is evidence for exact named-placeholder copy edits, not a claim of general PowerPoint import or arbitrary deck restructuring. The generated deviation log is written to `outputs/template/deviation-log.json`.
 
+## Optional direct PowerPoint adapter
+
+On Windows hosts with Microsoft PowerPoint installed, run:
+
+```powershell
+npm run powerpoint:adapter
+```
+
+The bounded adapter opens a generated deck in PowerPoint, ungroups a named native group, selects and verifies one named text shape, changes its native text and bold state, regroups the same 16 members, saves, reopens, verifies the edit, and records before/after hashes. It also runs a negative control proving that an unavailable PowerPoint adapter leaves normal PPTX generation and delivery verification enabled. The adapter is optional and Windows-only; generation does not depend on PowerPoint or computer-use tooling.
+
 ## Controlled export-fidelity benchmark
 
 The competition benchmark renders six owned design specifications—invitation, brochure, and website, each in horizontal and vertical/mobile composition—through both a browser reference path and a native PowerPoint path:
@@ -122,6 +132,7 @@ node packages/cli/src/cli.mjs preflight --out outputs/preflight.json
 node packages/cli/src/cli.mjs verify outputs/demo/slidewright-demo.pptx --out outputs/demo/delivery-manifest.json --preview-dir outputs/demo/previews
 python plugins/slidewright/skills/slidewright/scripts/audit_pptx.py outputs/demo/slidewright-demo.pptx --json outputs/demo/ooxml-audit.json
 npm run defects
+npm run powerpoint:adapter
 ```
 
 ## Product documents

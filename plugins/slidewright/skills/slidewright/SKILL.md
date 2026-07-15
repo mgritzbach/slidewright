@@ -18,9 +18,10 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 7. Lint the plan with `scripts/slidewright.mjs lint <plan> --out <report>`. Treat warnings as failures. Shorten copy or change layout before lowering minimum type sizes.
 8. Render native editable objects with `scripts/slidewright.mjs render <plan> --out <deck.pptx> --preview-dir <dir>`. Use the bundled OpenAI presentation artifact runtime; never rasterize text. Rendering exports actual object bounds and line counts, runs the second lint phase, and refuses to save the PPTX if the realized layout violates the contract.
 9. When groups are required, normalize the exported OOXML and verify real `p:grpSp` groups. Read [references/grouping.md](references/grouping.md).
-10. Audit the final exported PPTX with `scripts/audit_pptx.py <deck.pptx> --json <report>`. Confirm native text, whole-point approved sizes, and rich-text runs. For exact reconstructions, run the object-level audit and visual comparison described in [references/visual-fidelity.md](references/visual-fidelity.md).
-11. Inspect every rendered slide at full size. Fix all unintended overflow, clipping, wrapping, or overlap before delivery.
-12. Create a montage from the rendered slides, then run `scripts/slidewright.mjs verify <deck.pptx> --out <manifest> --preview-dir <dir> --montage <image> --handoff <file> --require-bundle`. Report success only when the manifest confirms a nonempty PPTX ZIP with required package parts, at least one slide, matching per-slide previews, a montage, external-open instructions, a canonical path, and a content hash.
+10. If the user explicitly wants direct in-application editing and Windows PowerPoint is available, use the optional named-object adapter described in [references/powerpoint-adapter.md](references/powerpoint-adapter.md). Its absence must never disable generation.
+11. Audit the final exported PPTX with `scripts/audit_pptx.py <deck.pptx> --json <report>`. Confirm native text, whole-point approved sizes, and rich-text runs. For exact reconstructions, run the object-level audit and visual comparison described in [references/visual-fidelity.md](references/visual-fidelity.md).
+12. Inspect every rendered slide at full size. Fix all unintended overflow, clipping, wrapping, or overlap before delivery.
+13. Create a montage from the rendered slides, then run `scripts/slidewright.mjs verify <deck.pptx> --out <manifest> --preview-dir <dir> --montage <image> --handoff <file> --require-bundle`. Report success only when the manifest confirms a nonempty PPTX ZIP with required package parts, at least one slide, matching per-slide previews, a montage, external-open instructions, a canonical path, and a content hash.
 
 ## Formatting contract
 
@@ -41,4 +42,5 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Read [references/visual-fidelity.md](references/visual-fidelity.md) for reference reconstruction and comparison.
 - Read [references/image-ingestion.md](references/image-ingestion.md) when reconstructing an opaque raster reference.
 - Read [references/grouping.md](references/grouping.md) when objects must group or ungroup in PowerPoint.
+- Read [references/powerpoint-adapter.md](references/powerpoint-adapter.md) when direct Windows PowerPoint selection/edit/save is requested.
 - Read [references/complaint-contract.md](references/complaint-contract.md) before capability preflight, delivery, or iteration.
