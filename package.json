@@ -27,8 +27,9 @@
     "submission:check": "node submission/check-submission.mjs",
     "defects": "npm run setup:runtime && node scripts/run-defect-benchmark.mjs",
     "powerpoint:adapter": "node scripts/run-powerpoint-adapter.mjs",
+    "iteration": "node scripts/run-fine-grained-iteration.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
-    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter"
+    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration"
   },
   "peerDependencies": {
     "@oai/artifact-tool": "*"

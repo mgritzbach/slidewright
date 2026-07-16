@@ -10,6 +10,7 @@ import { verifyDelivery } from "./lib/delivery.mjs";
 import { inspectPlanFonts } from "./lib/font-audit.mjs";
 import { renderObservedDesign } from "./benchmark/render_observed_design.mjs";
 import { bootstrapArtifactWorkspace } from "./lib/artifact-runtime.mjs";
+import { applyNamedEditManifest } from "./lib/named-edits.mjs";
 
 function usage() {
   return `Slidewright
@@ -17,6 +18,7 @@ function usage() {
 Usage:
   slidewright bootstrap
   slidewright compile <spec.json> --out <plan.json>
+  slidewright iterate <plan.json> --manifest <edit.json> --out <updated-plan.json>
   slidewright lint <plan.json> --out <report.json>
   slidewright fonts <plan.json> --out <report.json>
   slidewright render <plan.json> --out <deck.pptx> [--preview-dir <dir>]
@@ -84,6 +86,14 @@ export async function main(args = process.argv.slice(2)) {
     const plan = compileDeck(await readJson(input));
     await writeJson(out, plan);
     process.stdout.write(`Compiled ${plan.slides.length} slides to ${out}\n`);
+    return 0;
+  }
+  if (command === "iterate") {
+    const manifestPath = option(args, "--manifest");
+    if (!manifestPath) throw new Error("--manifest is required for named iteration.");
+    const result = applyNamedEditManifest(await readJson(input), await readJson(manifestPath));
+    await writeJson(out, result.plan);
+    process.stdout.write(`Applied named edit '${result.manifestId}' to ${result.changedIds.length} object(s): ${result.changedIds.join(", ")}\n`);
     return 0;
   }
   if (command === "lint") {

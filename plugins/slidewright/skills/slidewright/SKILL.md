@@ -14,6 +14,7 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 3. If following an existing deck, inspect the complete source and preserve its typography, palette, spacing, placeholders, footers, and chrome. Read [references/template-fidelity.md](references/template-fidelity.md) and [references/visual-fidelity.md](references/visual-fidelity.md). The verified template path is limited to declared text edits in uniquely named native placeholders; general existing-deck import and structural editing are not proven. If the only source is an image, follow [references/image-ingestion.md](references/image-ingestion.md): emit a vision-derived observation record, label font identity as a guess, and keep source geometry isolated from rendering and scoring.
 4. Create a versioned deck specification. Read [references/deck-spec.md](references/deck-spec.md) and begin from `assets/demo-deck-spec.json` when useful.
 5. Compile the specification with `scripts/slidewright.mjs compile <spec> --out <plan>`.
+   For a bounded follow-up change, use `scripts/slidewright.mjs iterate <plan> --manifest <edit> --out <updated-plan>` and follow [references/iteration.md](references/iteration.md). Never broaden the editor-derived change closure.
 6. Audit requested fonts with `scripts/slidewright.mjs fonts <plan> --out <report>`. Stop on missing families; install the font or explicitly change the theme and recompile. Never accept silent substitution.
 7. Lint the plan with `scripts/slidewright.mjs lint <plan> --out <report>`. Treat warnings as failures. Shorten copy or change layout before lowering minimum type sizes.
 8. Render native editable objects with `scripts/slidewright.mjs render <plan> --out <deck.pptx> --preview-dir <dir>`. Use the bundled OpenAI presentation artifact runtime; never rasterize text. Rendering exports actual object bounds and line counts, runs the second lint phase, and refuses to save the PPTX if the realized layout violates the contract.
@@ -42,5 +43,6 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Read [references/visual-fidelity.md](references/visual-fidelity.md) for reference reconstruction and comparison.
 - Read [references/image-ingestion.md](references/image-ingestion.md) when reconstructing an opaque raster reference.
 - Read [references/grouping.md](references/grouping.md) when objects must group or ungroup in PowerPoint.
+- Read [references/iteration.md](references/iteration.md) for stale-safe named text, run, color, position, chart-component, or two-column-gap edits.
 - Read [references/powerpoint-adapter.md](references/powerpoint-adapter.md) when direct Windows PowerPoint selection/edit/save is requested.
 - Read [references/complaint-contract.md](references/complaint-contract.md) before capability preflight, delivery, or iteration.

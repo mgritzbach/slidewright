@@ -1,5 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { lintPlan } from "./linter.mjs";
 import { inspectPlanFonts } from "./font-audit.mjs";
 import { loadArtifactTool } from "./artifact-runtime.mjs";
@@ -21,6 +24,84 @@ function toArtifactTextRuns(shape) {
       color: run.color ?? shape.style.color,
     },
   }));
+}
+const normalizerPath = fileURLToPath(new URL("./normalize_pptx.py", import.meta.url));
+
+function semanticMetadata(plan) {
+  return {
+    version: "slidewright-semantic-v1",
+    slides: plan.slides.map((slide, slideIndex) => ({
+      slideIndex: slideIndex + 1,
+      shapes: slide.shapes.flatMap((shape) => {
+        if (shape.semanticType === "chart-component") {
+          return [{
+            id: shape.id,
+            title: "Slidewright native-shape chart component",
+            payload: {
+              kind: "chart-component",
+              representation: "native-shapes",
+              officeChart: false,
+              orientation: shape.chart.orientation,
+              categories: shape.chart.categories,
+              maximum: shape.chart.maximum,
+              plotExtentPx: shape.chart.plotExtentPx,
+              series: shape.chart.series,
+            },
+          }];
+        }
+        if (shape.role === "chart-mark") {
+          return [{
+            id: shape.id,
+            title: "Slidewright native-shape chart mark",
+            payload: {
+              kind: "chart-mark",
+              representation: "native-shape",
+              officeChart: false,
+              parentId: shape.parentId,
+              seriesId: shape.chartSeriesId,
+              category: shape.chartCategory,
+              value: shape.chartValue,
+            },
+          }];
+        }
+        return [];
+      }),
+    })),
+  };
+}
+
+async function normalizePptx(out, plan) {
+  const bundledPython = path.join(
+    os.homedir(),
+    ".cache",
+    "codex-runtimes",
+    "codex-primary-runtime",
+    "dependencies",
+    "python",
+    process.platform === "win32" ? "python.exe" : "bin/python",
+  );
+  let python = process.env.SLIDEWRIGHT_PYTHON || "python";
+  try {
+    await fs.access(bundledPython);
+    if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython;
+  } catch {
+    // Use the configured or PATH Python selected by preflight.
+  }
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-semantic-"));
+  const metadataPath = path.join(directory, "metadata.json");
+  try {
+    await fs.writeFile(metadataPath, `${JSON.stringify(semanticMetadata(plan), null, 2)}\n`, "utf8");
+    const result = spawnSync(python, [normalizerPath, out, "--metadata-json", metadataPath], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    if (result.error || result.status !== 0) {
+      throw result.error ?? new Error(`PPTX normalization failed: ${result.stderr || result.stdout}`);
+    }
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
 }
 
 export async function renderPlan(plan, { out, previewDir }) {
@@ -102,5 +183,6 @@ export async function renderPlan(plan, { out, previewDir }) {
 
   const pptx = await PresentationFile.exportPptx(presentation);
   await pptx.save(out);
+  await normalizePptx(out, plan);
   return { out, slideCount: plan.slides.length, previewDir: previewDir ?? null, renderedLint: renderedReport };
 }

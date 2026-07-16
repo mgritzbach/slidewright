@@ -90,6 +90,19 @@ npm run powerpoint:adapter
 
 The bounded adapter opens a generated deck in PowerPoint, ungroups a named native group, selects and verifies one named text shape, changes its native text and bold state, regroups the same 16 members, saves, reopens, verifies the edit, and records before/after hashes. It also runs a negative control proving that an unavailable PowerPoint adapter leaves normal PPTX generation and delivery verification enabled. The adapter is optional and Windows-only; generation does not depend on PowerPoint or computer-use tooling.
 
+## Fine-grained named iteration
+
+Use a stale-safe `c16-v1` manifest to update one named object or one bounded layout contract without rebuilding unrelated slide content:
+
+```powershell
+node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs iterate outputs/demo/plan.json --manifest edit.json --out outputs/demo/updated-plan.json
+```
+
+The editor derives its own exact change closure; a caller-provided allowlist cannot broaden it. Version 1 supports single-run text, run-level bold, fill/text color, position, a semantic native-shape chart value plus its mark, and the gap in a named two-column layout. Always lint, render, audit, and compare the updated plan before delivery. The C16 benchmark exercises every mutation independently, rejects stale/no-op/collateral changes, and checks a real PowerPoint save/reopen. Native-shape chart components remain distinct from Office `c:chart` objects.
+
+Run the complete evidence bundle with `npm run iteration`.
+
+
 ## Controlled export-fidelity benchmark
 
 The competition benchmark renders six owned design specifications—invitation, brochure, and website, each in horizontal and vertical/mobile composition—through both a browser reference path and a native PowerPoint path:

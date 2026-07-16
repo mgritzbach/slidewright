@@ -35,6 +35,9 @@ export function validateDeckSpec(spec) {
     if (!["hero", "two-column"].includes(slide.layout)) {
       throw new Error(`slides[${index}].layout must be 'hero' or 'two-column'.`);
     }
+    if (slide.columnGap != null && (!Number.isFinite(slide.columnGap) || slide.columnGap < 16 || slide.columnGap > 96)) {
+      throw new Error(`slides[${index}].columnGap must be between 16 and 96.`);
+    }
     if (slide.layout === "hero") {
       assertString(slide.eyebrow, `slides[${index}].eyebrow`);
       normalizeRuns(slide.title);
@@ -183,7 +186,7 @@ function compileTwoColumn(slide, index, frame, theme) {
     }),
   );
 
-  const gap = 24;
+  const gap = slide.columnGap ?? 24;
   const cardTop = frame.top + 164;
   const cardWidth = (frame.width - gap) / 2;
   const cardHeight = frame.height - 164;
@@ -255,6 +258,7 @@ export function compileDeck(input) {
   const slides = spec.slides.map((slide, index) => ({
     id: slide.id ?? `slide-${index + 1}`,
     layout: slide.layout,
+    ...(slide.layout === "two-column" ? { layoutContract: { type: "two-column", columnGap: slide.columnGap ?? 24 } } : {}),
     background: theme.colors.background,
     frame,
     shapes:
