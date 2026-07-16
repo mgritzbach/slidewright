@@ -31,6 +31,7 @@ Restart the Codex desktop app and begin a new task so the bundled `$slidewright`
 Requirements: Node.js 20+, Python 3.11+, and a Codex environment with the bundled `@oai/artifact-tool` presentation runtime.
 
 ```powershell
+python -m pip install -r requirements-ci.txt
 npm run setup:runtime
 npm run preflight
 npm test
