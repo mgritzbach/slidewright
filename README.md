@@ -1,5 +1,7 @@
 # Slidewright
 
+[![Core CI](https://github.com/mgritzbach/slidewright/actions/workflows/ci.yml/badge.svg)](https://github.com/mgritzbach/slidewright/actions/workflows/ci.yml)
+
 **Editable decks, engineered rather than approximated.**
 
 Slidewright is a Codex plugin and deterministic layout compiler that turns ideas and structured content into native, editable PowerPoint decks without the usual formatting damage. It treats slide generation like a build pipeline: compile constraints, render native objects, lint the result, inspect the exported OOXML, and retain evidence.
