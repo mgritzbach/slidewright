@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "license": "MIT",
+  "authoringApplication": "Microsoft PowerPoint for Windows",
+  "source": "slidewright-design-profile-source.pptx",
+  "designIntent": "design-intent.json",
+  "expected": {
+    "slides": 2,
+    "masters": 1,
+    "layoutsMinimum": 2,
+    "themes": 1,
+    "nativeEditableText": true,
+    "nativeGroupedLogo": true,
+    "verticalGuides": 2,
+    "horizontalGuides": 2,
+    "exactSymmetryPairs": 4,
+    "declaredAsymmetricPairs": 1
+  }
+}

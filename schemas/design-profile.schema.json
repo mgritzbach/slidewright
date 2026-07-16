@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/design-profile-g22-v1.json",
+  "title": "Slidewright source-bound design profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "source", "reusePolicy", "theme", "archetypes"],
+  "properties": {
+    "version": { "const": "g22-v1" },
+    "id": { "$ref": "#/$defs/stableId" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "fileName", "sha256", "slideCount", "canvas"],
+      "properties": {
+        "kind": { "const": "native-pptx" },
+        "fileName": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+        "slideCount": { "type": "integer", "minimum": 1 },
+        "canvas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["widthEmu", "heightEmu", "orientation"],
+          "properties": {
+            "widthEmu": { "type": "integer", "minimum": 1 },
+            "heightEmu": { "type": "integer", "minimum": 1 },
+            "orientation": { "enum": ["landscape", "portrait", "square"] }
+          }
+        }
+      }
+    },
+    "reusePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "preserveUndeclaredObjects", "allowArbitraryImport"],
+      "properties": {
+        "mode": { "const": "clone-source-deck" },
+        "preserveUndeclaredObjects": { "const": true },
+        "allowArbitraryImport": { "const": false }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fonts", "colors", "commonFontSizesPt"],
+      "properties": {
+        "fonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["major", "minor", "families"],
+          "properties": {
+            "major": { "type": "string", "minLength": 1 },
+            "minor": { "type": "string", "minLength": 1 },
+            "families": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "colors": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+        },
+        "commonFontSizesPt": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 8, "maximum": 96 }
+        }
+      }
+    },
+    "logos": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "shapeName", "sha256", "slideNumbers"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "shapeName": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+          "slideNumbers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "guides": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verticalPt", "horizontalPt"],
+      "properties": {
+        "verticalPt": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "horizontalPt": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "archetypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/archetype" }
+    }
+  },
+  "$defs": {
+    "stableId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "placeholder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "shapeName", "placeholderType", "placeholderIndex", "sourceText", "allowedEdits"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "shapeName": { "type": "string", "minLength": 1 },
+        "placeholderType": { "enum": ["title", "body", "subtitle", "footer", "date", "slide-number", "other"] },
+        "placeholderIndex": { "type": "integer", "minimum": 0 },
+        "sourceText": { "type": "string" },
+        "allowedEdits": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "const": "text" }
+        },
+        "required": { "type": "boolean", "default": false },
+        "maxCharacters": { "type": "integer", "minimum": 1 },
+        "maxLines": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "rimMember": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "shapeName", "widthPt", "insetPt", "color", "dash"],
+      "properties": {
+        "side": { "enum": ["left", "right", "top", "bottom"] },
+        "shapeName": { "type": "string", "minLength": 1 },
+        "widthPt": { "type": "number", "exclusiveMinimum": 0, "maximum": 24 },
+        "insetPt": { "type": "number", "minimum": 0 },
+        "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "dash": { "enum": ["solid", "dash", "dot", "dash-dot"] }
+      }
+    },
+    "rimPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "symmetryPolicy", "members"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "role": { "enum": ["rim", "limiting", "orientation", "divider"] },
+        "symmetryPolicy": { "enum": ["equal", "preserve-source-asymmetry"] },
+        "sourceAsymmetryReason": { "type": "string", "minLength": 1 },
+        "sourceContract": { "type": "object" },
+        "members": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/rimMember" }
+        }
+      }
+    },
+    "archetype": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceSlide", "sourceSlideId", "orientation", "placeholders", "chrome"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "sourceSlide": { "type": "integer", "minimum": 1 },
+        "sourceSlideId": { "type": "string", "minLength": 1 },
+        "layoutName": { "type": "string", "minLength": 1 },
+        "masterName": { "type": "string", "minLength": 1 },
+        "orientation": { "enum": ["landscape", "portrait", "square"] },
+        "tags": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/stableId" } },
+        "placeholders": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/placeholder" } },
+        "chrome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preservedShapeNames", "rimPairs"],
+          "properties": {
+            "preservedShapeNames": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "rimPairs": { "type": "array", "items": { "$ref": "#/$defs/rimPair" } }
+          }
+        }
+      }
+    }
+  }
+}

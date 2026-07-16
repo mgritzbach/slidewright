@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "first": "SW Declared Rule Left",
+      "part": "ppt/slideLayouts/slideLayout3.xml",
+      "reason": "Source-authored paired section rules use different thickness to encode primary and secondary emphasis.",
+      "second": "SW Declared Rule Right",
+      "sourceObjectSha256": {
+        "SW Declared Rule Left": "c4b47933a433f1e88e6ed146e4b672e5bd342ef122a4c0d86a897bc02763fc5f",
+        "SW Declared Rule Right": "9401f2c2d718df5a93dc35041f11d46da5758e4e9be4f1de3430eb56caf1b471"
+      }
+    }
+  ],
+  "schemaVersion": "slidewright-asymmetry/v1",
+  "sourceSha256": "0f1719c14b8a1fbc910c3b8f46cf5c8cf5e5a0b7ba9843a9e04ed23653dec5ed"
+}

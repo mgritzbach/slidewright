@@ -2,6 +2,14 @@
 
 Slidewright's controlled exporter-conformance benchmark uses owned, deterministic browser ground truth rather than subjective screenshots. Six references cover an invitation, an information brochure, and a website in horizontal and vertical/mobile compositions. The browser and PowerPoint paths share a machine-readable design manifest; this isolates export fidelity but does not prove independent image understanding or ingestion.
 
+## Existing-deck design-profile benchmark
+
+Run `npm run design-profile` to exercise the source-bound `g22-v1` path on the synthetic, PowerPoint-authored fixture under `fixtures/design-profile/mit-v1/`. The benchmark extracts the source twice and requires byte-identical profiles, adapts the raw OOXML inventory into a clone-only reuse contract, derives a stale-safe named-placeholder edit plan, edits a source copy, and audits the result.
+
+The structural gate covers slide dimensions, theme and visible fonts, integer type sizes, palette, presentation guides, masters, layouts, placeholders, editable logo groups, recurring chrome, and rim/limiter geometry. Four rim/limiter pairs must be exactly symmetric in EMUs; one deliberately unequal 3pt/5pt divider pair is accepted only through its source-SHA and object-hash-bound asymmetry manifest. Pair equality is evaluated in exact EMUs. Eight destructive controls cover guide deletion, a one-EMU side-rail drift, limiter-color drift, logo rename, theme-font drift, undeclared same-slide drift, profile-integrity tampering, and a visibly widened rim whose rendered pixels must fail an exact comparator; every control must be rejected. Microsoft PowerPoint then saves and reopens the derived deck, after which structural state and both slide renders must match exactly. Source-to-derived comparison masks only the declared replacement text.
+
+This benchmark proves bounded reuse inside a clone of the source deck. It does not prove arbitrary structural import, chart/table/diagram reconstruction, or synthesis of unrelated layouts.
+
 Run the complete evidence pipeline:
 
 ```powershell

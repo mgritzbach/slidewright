@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { compileDeck } from "./lib/compiler.mjs";
 import { lintPlan } from "./lib/linter.mjs";
@@ -11,6 +13,8 @@ import { inspectPlanFonts } from "./lib/font-audit.mjs";
 import { renderObservedDesign } from "./benchmark/render_observed_design.mjs";
 import { bootstrapArtifactWorkspace } from "./lib/artifact-runtime.mjs";
 import { applyNamedEditManifest } from "./lib/named-edits.mjs";
+import { adaptExtractedProfile } from "./lib/design-profile.mjs";
+import { compileProfileContentSpec } from "./lib/compile_profile_derivation.mjs";
 
 function usage() {
   return `Slidewright
@@ -19,6 +23,8 @@ Usage:
   slidewright bootstrap
   slidewright compile <spec.json> --out <plan.json>
   slidewright iterate <plan.json> --manifest <edit.json> --out <updated-plan.json>
+  slidewright profile <source.pptx> --out <profile.json> [--asymmetry-manifest <manifest.json>]
+  slidewright derive <profile.json> --intent <design-intent.json> --content <content-spec.json> --out <edit-plan.json>
   slidewright lint <plan.json> --out <report.json>
   slidewright fonts <plan.json> --out <report.json>
   slidewright render <plan.json> --out <deck.pptx> [--preview-dir <dir>]
@@ -86,6 +92,27 @@ export async function main(args = process.argv.slice(2)) {
     const plan = compileDeck(await readJson(input));
     await writeJson(out, plan);
     process.stdout.write(`Compiled ${plan.slides.length} slides to ${out}\n`);
+    return 0;
+  }
+  if (command === "profile") {
+    const extractor = path.join(path.dirname(fileURLToPath(import.meta.url)), "design_profile", "extract_design_profile.py");
+    const extractorArgs = [extractor, input, "--out", out, "--quiet"];
+    const asymmetryManifest = option(args, "--asymmetry-manifest");
+    if (asymmetryManifest) extractorArgs.push("--asymmetry-manifest", asymmetryManifest);
+    const result = spawnSync(process.env.SLIDEWRIGHT_PYTHON || "python", extractorArgs, { stdio: "inherit" });
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error("Design-profile extraction failed with status " + result.status + ".");
+    process.stdout.write("Extracted source-bound design profile to " + out + ".\n");
+    return 0;
+  }
+  if (command === "derive") {
+    const intentPath = option(args, "--intent");
+    const contentPath = option(args, "--content");
+    if (!intentPath || !contentPath) throw new Error("--intent and --content are required for profile derivation.");
+    const reuseProfile = adaptExtractedProfile(await readJson(input), await readJson(intentPath));
+    const plan = compileProfileContentSpec(reuseProfile, await readJson(contentPath));
+    await writeJson(out, plan);
+    process.stdout.write("Compiled source-bound edit plan for slide " + plan.targetSlide + " with " + plan.edits.length + " edit(s).\n");
     return 0;
   }
   if (command === "iterate") {

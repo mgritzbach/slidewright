@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "source": "slidewright-design-profile-source.pptx",
+  "expected": {
+    "slideSize": { "widthPt": 960, "heightPt": 540 },
+    "fonts": ["Arial"],
+    "integerFontSizes": [11, 12, 18, 20, 30, 36],
+    "paletteRgb": ["2F263F", "3D53E5", "4A4552", "E36B3D", "F7F3EA"],
+    "layouts": ["SW Profile Content", "SW Profile Section"],
+    "logoGroup": "SW Logo Group",
+    "guides": { "verticalPt": [120, 840], "horizontalPt": [72, 468] },
+    "symmetryPairs": [
+      { "id": "master-side-rails", "left": "SW Rail Left", "right": "SW Rail Right", "axis": "vertical" },
+      { "id": "master-top-bottom-rails", "left": "SW Rail Top", "right": "SW Rail Bottom", "axis": "horizontal" },
+      { "id": "content-limiters", "left": "SW Limiter Left", "right": "SW Limiter Right", "axis": "vertical" },
+      { "id": "section-limiters", "left": "SW Section Limiter Left", "right": "SW Section Limiter Right", "axis": "vertical" }
+    ],
+    "declaredAsymmetryPairs": [
+      {
+        "id": "section-emphasis-rules",
+        "left": "SW Declared Rule Left",
+        "right": "SW Declared Rule Right",
+        "axis": "vertical",
+        "reason": "Source-authored paired section rules use different thickness to encode primary and secondary emphasis."
+      }
+    ],
+    "declaredAsymmetry": [
+      {
+        "id": "section-accent",
+        "shape": "SW Declared Asymmetric Accent",
+        "reason": "Source-authored section emphasis; not a paired rim or limiting line."
+      }
+    ],
+    "editablePlaceholders": ["SW Content Title", "SW Content Body", "SW Section Title", "SW Section Body"],
+    "footerText": "SLIDEWRIGHT DESIGN PROFILE",
+    "slideNumbers": true
+  }
+}

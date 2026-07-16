@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "source": "slidewright-design-profile-source.pptx",
+  "archetype": "SW Profile Content",
+  "targetSlide": 1,
+  "replacements": [
+    {
+      "shapeName": "SW Content Title",
+      "before": "Operating review",
+      "after": "Launch readiness review"
+    },
+    {
+      "shapeName": "SW Content Body",
+      "before": "Three priorities\nOne accountable owner\nA decision by Friday",
+      "after": "Three workstreams\nOne release owner\nA go or no-go Friday"
+    }
+  ]
+}
