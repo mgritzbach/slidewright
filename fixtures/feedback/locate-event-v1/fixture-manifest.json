@@ -1,0 +1,43 @@
+{
+  "version": "locate-event-feedback-v1",
+  "source": "Direct user feedback in the Codex task titled Locate event info",
+  "sourceTemplateFixture": "../inherited-bullets-v1/slidewright-inherited-empty-bullets.pptx",
+  "topicCount": 17,
+  "requiredSlidesPerTopic": ["divider", "substantive"],
+  "topics": [
+    { "id": "what-is-codex", "title": "What is Codex?" },
+    { "id": "codex-vs-work", "title": "Codex vs. Work" },
+    { "id": "capabilities", "title": "What can it do?" },
+    { "id": "why-use-it", "title": "Why should you use it?" },
+    { "id": "setup", "title": "How do you get and set it up?" },
+    { "id": "work-structure", "title": "Projects, folders, threads, agents, and outputs" },
+    { "id": "instruction-contract", "title": "Goal, Context, Constraints, Done" },
+    { "id": "models", "title": "Sol, Terra, Luna, reasoning, Max, and Ultra" },
+    { "id": "agents", "title": "Single versus multiple agents" },
+    { "id": "recurring-work", "title": "Goals, recurring tasks, Automations, and Remote" },
+    { "id": "extensions", "title": "Skills, plugins, apps, and connectors" },
+    { "id": "artifacts", "title": "Documents, Excel and Google Sheets, slides, and image generation" },
+    { "id": "building", "title": "Sites, web apps, Android and cross-platform apps, and testing" },
+    { "id": "research", "title": "Web research, structured extraction, and responsible scraping" },
+    { "id": "demonstration", "title": "Narrated event-organization demonstration" },
+    { "id": "verification", "title": "Verification, judgment, and the first repeatable workflow" },
+    { "id": "life-sciences", "title": "Optional appendix with exactly two Life Sciences examples" }
+  ],
+  "negativeControls": [
+    { "id": "waived-text-overlap", "ruleId": "SW018" },
+    { "id": "text-in-reserved-region", "ruleId": "SW018" },
+    { "id": "shortened-headline", "ruleId": "SW019" },
+    { "id": "undersized-title-backing", "ruleId": "SW020" },
+    { "id": "missing-topic-divider", "ruleId": "SW021" },
+    { "id": "missing-topic-content", "ruleId": "SW021" },
+    { "id": "topic-order-inversion", "ruleId": "SW021" },
+    { "id": "merged-topic-ownership", "ruleId": "SW021" },
+    { "id": "reinserted-empty-paragraph", "ruleId": "SW022" },
+    { "id": "ooxml-text-overlap", "ruleId": "OOXML_G24" },
+    { "id": "ooxml-shortened-headline", "ruleId": "OOXML_G25", "visualMutation": "headline width reduced to one third" },
+    { "id": "ooxml-undersized-backing", "ruleId": "OOXML_G26", "visualMutation": "title backing height reduced by half" },
+    { "id": "ooxml-missing-topic-title", "ruleId": "OOXML_G27" },
+    { "id": "ooxml-empty-bullet", "ruleId": "OOXML_G28" }
+  ],
+  "deterministicRepetitions": 3
+}

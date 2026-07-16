@@ -12,4 +12,10 @@ Public complaints about Codex presentation work establish these mandatory behavi
 8. Use robust defaults so ordinary prompts cannot bypass the formatting workflow. Reject conflicting instructions with a concise explanation.
 9. Publish exact quality evidence and remaining deviations. Do not use “pixel-perfect,” “template-preserving,” or “cross-platform” without the named proof.
 
+10. Reject every positive-area text/text or text/reserved-region intersection; a generic overlap allowance cannot waive text safety.
+11. Use the complete headline safe interval unless a real center or two-thirds structural divider reserves one side.
+12. Grow title and callout backing surfaces with realized text height plus symmetric padding.
+13. Require one unique divider and substantive slide for every topic declared in a coverage manifest.
+14. Remove empty paragraphs before fitting, including bullets inherited from source masters, while preserving non-empty native paragraph formatting.
+
 Until a contract item is implemented, surface it as a limitation rather than improvising a weaker substitute.

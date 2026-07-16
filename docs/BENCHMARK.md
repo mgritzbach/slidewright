@@ -2,6 +2,16 @@
 
 Slidewright's controlled exporter-conformance benchmark uses owned, deterministic browser ground truth rather than subjective screenshots. Six references cover an invitation, an information brochure, and a website in horizontal and vertical/mobile compositions. The browser and PowerPoint paths share a machine-readable design manifest; this isolates export fidelity but does not prove independent image understanding or ingestion.
 
+## Feedback-contract benchmark
+
+Run `npm run feedback-contract` for the `locate-event-feedback-v1` suite. It freezes the exact 17-topic outline recovered from direct user feedback and requires 34 native-editable slides: one unique divider and one unique substantive slide per topic, in manifest order.
+
+The plan and realized-layout gates enforce `SW018` absolute text/reserved-region separation, `SW019` exact headline safe intervals, `SW020` exact text-backing growth, `SW021` topic ownership and sequence, and `SW022` empty-paragraph hygiene. Three deterministic compilations must match. Nine plan mutations and five exported-OOXML mutations must be rejected; the overlap, one-third-width headline, and half-height title-backing controls are also visibly wrong in their rendered target slides.
+
+G28 adds a separate source-bound fixture whose body placeholder receives bullet formatting from the PowerPoint master body style. The sanitizer pins the source SHA-256, removes exactly three empty inherited bullet paragraphs, preserves canonical hashes for three non-empty paragraphs, changes only `ppt/slides/slide1.xml`, and leaves every relationship, master, layout, theme, and preserve-only slide byte-identical. Six destructive controls must fail. Microsoft PowerPoint then saves and reopens the sanitized deck with all three native inherited bullets visible, zero empty paragraphs, exact semantic state, and exact rerendered pixels.
+
+The current scorecard hash is `3d4686a79e1ff261af4a11393e03010b5a2e61ed17ad9c907b0e037e4beae7fe`. This bounded suite proves the named contracts, not universal layout quality or arbitrary third-party template ingestion.
+
 ## Existing-deck design-profile benchmark
 
 Run `npm run design-profile` to exercise the source-bound `g22-v1` path on the synthetic, PowerPoint-authored fixture under `fixtures/design-profile/mit-v1/`. The benchmark extracts the source twice and requires byte-identical profiles, adapts the raw OOXML inventory into a clone-only reuse contract, derives a stale-safe named-placeholder edit plan, edits a source copy, and audits the result.

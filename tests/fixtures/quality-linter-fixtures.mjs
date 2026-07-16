@@ -132,8 +132,8 @@ export const negativeQualityFixtures = [
   },
   {
     id: "overlap",
-    ruleId: "SW010",
-    expectedDiagnostic: { ruleId: "SW010", severity: "error", slideId: "promise", objectId: "s1-title|s1-body", message: "Undeclared overlap between 's1-title' and 's1-body'.", suggestion: "Move the objects apart or declare the intentional overlap explicitly on one object." },
+    ruleId: "SW018",
+    expectedDiagnostic: { ruleId: "SW018", severity: "error", slideId: "promise", objectId: "s1-title|s1-body", message: "Text boxes 's1-title' and 's1-body' intersect.", suggestion: "Relayout the slide; text-to-text and text-to-reserved-region intersections can never be waived." },
     build() {
       const plan = validDemoPlan();
       plan.slides[0].shapes.find((shape) => shape.role === "body").position.top = 170;
@@ -207,6 +207,7 @@ export const negativeQualityFixtures = [
         fill: "#FFFFFF",
         editable: true,
       }];
+      delete slide.layoutContract.headline;
       return plan;
     },
   },

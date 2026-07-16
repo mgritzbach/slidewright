@@ -1,4 +1,5 @@
 import { measureText, textFromRuns } from "./typography.mjs";
+import { fitSurfaceExpectation, headlineSafeInterval, positiveIntersection, shapeRect } from "./layout-contract.mjs";
 
 export const QUALITY_THRESHOLDS = Object.freeze({
   geometryTolerancePx: 1,
@@ -159,9 +160,58 @@ export function lintPlan(plan) {
   const tolerance = plan.layout?.geometryTolerance ?? QUALITY_THRESHOLDS.geometryTolerancePx;
   const approved = new Set(plan.layout?.approvedFontSizesPt ?? []);
 
+  if (plan.coverage) {
+    const topics = plan.coverage.topics ?? [];
+    const topicIds = topics.map((topic) => topic.id);
+    const reasons = [];
+    if (!topics.length) reasons.push("coverage manifest has no topics");
+    if (new Set(topicIds).size !== topicIds.length) reasons.push("coverage manifest contains duplicate topic ids");
+    const slides = plan.slides ?? [];
+    for (const slide of slides) if (!topicIds.includes(slide.topicId) || !["divider", "substantive"].includes(slide.coverageRole)) reasons.push(`slide '${slide.id}' has invalid topic ownership or role`);
+    let previousDivider = -1;
+    for (const topic of topics) {
+      const owned = slides.map((slide, index) => ({ slide, index })).filter((item) => item.slide.topicId === topic.id);
+      const dividers = owned.filter((item) => item.slide.coverageRole === "divider");
+      const substantive = owned.filter((item) => item.slide.coverageRole === "substantive");
+      if (dividers.length !== 1) reasons.push(`topic '${topic.id}' requires exactly one divider, found ${dividers.length}`);
+      if (!substantive.length) reasons.push(`topic '${topic.id}' requires at least one substantive slide`);
+      if (dividers.length === 1 && substantive.some((item) => item.index < dividers[0].index)) reasons.push(`topic '${topic.id}' has substantive content before its divider`);
+      if (dividers.length === 1 && dividers[0].index <= previousDivider) reasons.push(`topic '${topic.id}' is out of manifest order`);
+      if (dividers.length === 1) previousDivider = dividers[0].index;
+    }
+    if (reasons.length) diagnostics.push(diagnostic(
+      "SW021", "error", null, null,
+      `Topic coverage failed: ${[...new Set(reasons)].join("; ")}.`,
+      "Give every declared topic one ordered divider and at least one uniquely owned substantive slide.",
+    ));
+  }
+
   for (const slide of plan.slides ?? []) {
     const shapes = slide.shapes ?? [];
     const byId = new Map(shapes.map((shape) => [shape.id, shape]));
+    const safeHeadline = headlineSafeInterval(slide, byId);
+    if (safeHeadline) {
+      const headline = byId.get(slide.layoutContract?.headline?.shapeId);
+      const position = headline?.position;
+      const actualRight = position ? position.left + position.width : Number.NaN;
+      if (safeHeadline.error || !position || !nearlyEqual(position.left, safeHeadline.left, 1e-6) || !nearlyEqual(actualRight, safeHeadline.right, 1e-6)) diagnostics.push(
+        diagnostic(
+          "SW019", "error", slide.id, slide.layoutContract?.headline?.shapeId ?? null,
+          safeHeadline.error ?? `Headline does not use its full ${safeHeadline.split} safe interval [${safeHeadline.left}, ${safeHeadline.right}].`,
+          "Extend the headline to both safe edges unless an active center or two-thirds structural split reserves the adjacent region.",
+        ),
+      );
+    }
+    for (const contract of slide.layoutContract?.fitSurfaces ?? []) {
+      const expectation = fitSurfaceExpectation(byId, contract);
+      if (expectation.error || !nearlyEqual(expectation.actualBottom, expectation.expectedBottom, 1e-6)) diagnostics.push(
+        diagnostic(
+          "SW020", "error", slide.id, contract.surfaceId,
+          expectation.error ?? `Text backing ends at ${expectation.actualBottom}px but content and symmetric padding require ${expectation.expectedBottom}px.`,
+          "Grow the backing region with its text and preserve symmetric padding before positioning downstream content.",
+        ),
+      );
+    }
     const outer = {
       left: slide.frame.left,
       top: slide.frame.top,
@@ -289,14 +339,33 @@ export function lintPlan(plan) {
           diagnostic("SW008", "error", slide.id, shape.id, "Text object is empty.", "Remove the object or provide audience-facing copy."),
         );
       }
+      const emptyParagraph = (shape.text?.paragraphs ?? []).some((paragraph) => textFromRuns(paragraph.runs ?? []).replace(/[\u00a0\s]/gu, "") === "");
+      if (emptyParagraph) diagnostics.push(
+        diagnostic("SW022", "error", slide.id, shape.id, "Text object contains an empty inherited paragraph.", "Strip empty inherited paragraphs before fitting so they cannot emit blank bullets or consume layout space."),
+      );
     }
 
     for (let leftIndex = 0; leftIndex < shapes.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < shapes.length; rightIndex += 1) {
         const leftShape = shapes[leftIndex];
         const rightShape = shapes[rightIndex];
-        const leftRect = rect(leftShape);
-        const rightRect = rect(rightShape);
+        const leftRect = shapeRect(leftShape);
+        const rightRect = shapeRect(rightShape);
+        const exactIntersection = positiveIntersection(leftRect, rightRect);
+        if (!exactIntersection) continue;
+        const reservedIds = new Set(slide.layoutContract?.reservedRegionIds ?? []);
+        const chartLabelPair = leftShape.role === "chart-label" && rightShape.role === "chart-label" && leftShape.parentId === rightShape.parentId;
+        const textText = leftShape.type === "text" && rightShape.type === "text" && !chartLabelPair;
+        const textReserved = (leftShape.type === "text" && (reservedIds.has(rightShape.id) || rightShape.type === "image" || rightShape.role === "reserved-region"))
+          || (rightShape.type === "text" && (reservedIds.has(leftShape.id) || leftShape.type === "image" || leftShape.role === "reserved-region"));
+        if (textText || textReserved) {
+          diagnostics.push(diagnostic(
+            "SW018", "error", slide.id, `${leftShape.id}|${rightShape.id}`,
+            textText ? `Text boxes '${leftShape.id}' and '${rightShape.id}' intersect.` : `Text intersects reserved region in '${leftShape.id}|${rightShape.id}'.`,
+            "Relayout the slide; text-to-text and text-to-reserved-region intersections can never be waived.",
+          ));
+          continue;
+        }
         if (overlapArea(leftRect, rightRect) <= tolerance * tolerance) continue;
         const allowedByContract = leftShape.constraints?.allowOverlapWith?.includes(rightShape.id)
           || rightShape.constraints?.allowOverlapWith?.includes(leftShape.id)
@@ -327,8 +396,12 @@ export function lintPlan(plan) {
     let smallestGap = Number.POSITIVE_INFINITY;
     for (let leftIndex = 0; leftIndex < topLevelShapes.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < topLevelShapes.length; rightIndex += 1) {
-        const a = rect(topLevelShapes[leftIndex]);
-        const b = rect(topLevelShapes[rightIndex]);
+        const leftPeer = topLevelShapes[leftIndex];
+        const rightPeer = topLevelShapes[rightIndex];
+        const structuralSplitIds = new Set((slide.layoutContract?.structuralSplits ?? []).map((split) => split.shapeId));
+        if (structuralSplitIds.has(leftPeer.id) || structuralSplitIds.has(rightPeer.id)) continue;
+        const a = rect(leftPeer);
+        const b = rect(rightPeer);
         if (overlapArea(a, b) > tolerance * tolerance) continue;
         const dx = Math.max(0, a.left - b.right, b.left - a.right);
         const dy = Math.max(0, a.top - b.bottom, b.top - a.bottom);

@@ -12,7 +12,7 @@
     { "id": "clipping", "ruleId": "SW001" },
     { "id": "parent-inner-clipping", "ruleId": "SW016" },
     { "id": "overflow", "ruleId": "SW004" },
-    { "id": "overlap", "ruleId": "SW010" },
+    { "id": "overlap", "ruleId": "SW018" },
     { "id": "contrast", "ruleId": "SW011" },
     { "id": "alignment", "ruleId": "SW012" },
     { "id": "opaque-occlusion", "ruleId": "SW010" },

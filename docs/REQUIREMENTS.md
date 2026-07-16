@@ -16,6 +16,11 @@
 | F10 | Emit build evidence | Every build can output plan JSON, lint JSON, rendered previews, and OOXML audit JSON |
 | F11 | Package the workflow as a Codex plugin/skill | Repo-local marketplace, valid plugin manifest, valid skill metadata, and judge-ready setup instructions |
 | F12 | Respect source templates | Proven narrowly: named-placeholder text edits preserve every non-target package part and pass a PowerPoint round trip on the MIT golden fixture; broader structural import remains outside the release claim |
+| F13 | Forbid visible text collisions | Any positive-area text/text or text/reserved-region intersection fails both plan and realized-layout lint; generic overlap declarations cannot waive the rule |
+| F14 | Consume headline safe width | Headline geometry equals the complete safe interval unless an actual center or two-thirds divider intersects the headline zone and reserves one side |
+| F15 | Grow text-backed regions | A title or callout surface reaches the realized text bottom plus symmetric padding; under-height fixtures fail before delivery |
+| F16 | Preserve declared topic coverage | A versioned coverage manifest maps every topic, in order, to one unique divider and at least one unique substantive slide |
+| F17 | Remove inherited empty bullets | Empty source paragraphs are removed before fitting; master-inherited bullet fixtures preserve non-empty paragraphs and reject blank-bullet reinsertion |
 
 ## Quality requirements
 

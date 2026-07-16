@@ -19,14 +19,31 @@ for (const fixture of negativeQualityFixtures) {
   });
 }
 
-test("quality linter allows only explicitly declared or parent-contained overlap", () => {
+test("quality linter permits declared shape overlap but never text-box overlap", () => {
   const plan = validDemoPlan();
+  const decorationA = {
+    id: "declared-decoration-a",
+    type: "shape",
+    geometry: "rect",
+    position: { left: 1180, top: 680, width: 20, height: 20 },
+    fill: "#FFFFFF",
+    line: { color: "#FFFFFF", width: 0 },
+    editable: true,
+  };
+  const decorationB = {
+    ...structuredClone(decorationA),
+    id: "declared-decoration-b",
+    constraints: { allowOverlapWith: [decorationA.id] },
+  };
+  plan.slides[0].shapes.push(decorationA, decorationB);
+  assert.equal(lintPlan(plan).diagnostics.some((item) => item.ruleId === "SW010" && item.objectId === [decorationA.id, decorationB.id].join("|")), false);
+
   const title = plan.slides[0].shapes.find((shape) => shape.role === "title");
   const body = plan.slides[0].shapes.find((shape) => shape.role === "body");
   body.position.top = 170;
   body.constraints = { allowOverlapWith: [title.id] };
   const report = lintPlan(plan);
-  assert.equal(report.diagnostics.some((item) => item.ruleId === "SW010"), false, JSON.stringify(report.diagnostics, null, 2));
+  assert.ok(report.diagnostics.some((item) => item.ruleId === "SW018" && item.objectId === [title.id, body.id].join("|")), JSON.stringify(report.diagnostics, null, 2));
 });
 
 function syntheticLayouts(plan) {

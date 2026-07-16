@@ -90,6 +90,7 @@ export function buildIterationPlan() {
     position: { left: 1128, top: 112, width: 48, height: 48 },
     fill: "#F97316",
     line: { color: "#F97316", width: 0 },
+    constraints: { allowOverlapWith: ["s1-title"] },
     editable: true,
   });
   plan.slides = [plan.slides[0], plan.slides[1], chartSlide(), plan.slides[2]];

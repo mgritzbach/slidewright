@@ -26,6 +26,21 @@ function run(command, args) {
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed with ${result.status}`);
 }
 
+async function runRenderWithRetry(command, args, outputDir, attempts = 3) {
+  let lastFailure = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (attempt > 1) {
+      await fs.rm(outputDir, { recursive: true, force: true });
+      await new Promise((resolve) => setTimeout(resolve, 750 * attempt));
+    }
+    const result = spawnSync(command, args, { cwd: root, stdio: "inherit" });
+    if (!result.error && result.status === 0) return;
+    lastFailure = result.error ?? new Error(`${command} ${args.join(" ")} failed with ${result.status}`);
+    process.stderr.write(`Template render attempt ${attempt}/${attempts} failed for ${path.basename(args[args.length - 1])}; ${attempt < attempts ? "retrying" : "no retries remain"}.\n`);
+  }
+  throw lastFailure;
+}
+
 async function findTool(name) {
   const cacheRoot = path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "plugins", "cache", "openai-primary-runtime", "presentations");
   const versions = (await fs.readdir(cacheRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
@@ -46,15 +61,15 @@ run(python, [path.join(templateScripts, "template_negative_controls.py"), source
 const renderTool = await findTool("render_slides.py");
 const slidesTest = await findTool("slides_test.py");
 const montageTool = await findTool("create_montage.py");
-for (const deck of [sourceCopy, edited]) {
-  run(python, [renderTool, deck]);
+for (const [deck, renderDir] of [[sourceCopy, sourceRenders], [edited, editedRenders]]) {
+  await runRenderWithRetry(python, [renderTool, deck], renderDir);
   run(python, [slidesTest, deck]);
 }
 run(python, [path.join(templateScripts, "compare_template_renders.py"), source, plan, sourceRenders, editedRenders, "--json", path.join(output, "visual-audit.json"), "--out-dir", path.join(output, "visual-diff")]);
 const powerPoint = "C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE";
 try { await fs.access(powerPoint); } catch { throw new Error("Microsoft PowerPoint is required for the G10 golden-template round trip."); }
 run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(templateScripts, "powerpoint_template_roundtrip.ps1"), "-InputPptx", edited, "-OutputPptx", roundtrip, "-ReportJson", path.join(output, "powerpoint-roundtrip.json")]);
-run(python, [renderTool, roundtrip]);
+await runRenderWithRetry(python, [renderTool, roundtrip], roundtripRenders);
 run(python, [slidesTest, roundtrip]);
 run(python, [path.join(templateScripts, "compare_exact_renders.py"), editedRenders, roundtripRenders, "--slides", "2", "--json", path.join(output, "roundtrip-visual-audit.json"), "--out-dir", path.join(output, "roundtrip-visual-diff")]);
 const montage = path.join(output, "montage.png");

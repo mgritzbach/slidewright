@@ -1,0 +1,16 @@
+{
+  "version": "g28-v1",
+  "source": "slidewright-inherited-empty-bullets.pptx",
+  "sourceSha256": "99f48399b2766285a64e063894c6f864f130770be0115857cb6fc7146f73df5f",
+  "targetSlide": 1,
+  "shapeName": "MIT Fixture Body",
+  "placeholderType": "body",
+  "placeholderIndex": 1,
+  "expectedBulletSource": "master-body-style",
+  "expectedRemovedParagraphs": 3,
+  "expectedRemainingText": [
+    "Three priorities",
+    "One accountable owner",
+    "A decision by Friday"
+  ]
+}

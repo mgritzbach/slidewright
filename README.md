@@ -17,14 +17,14 @@ The Build Week entry targets **Work & Productivity**. The initial vertical slice
 
 ### Install in Codex
 
-Once the GitHub repository is published, add its marketplace and install the plugin:
+Add the public Slidewright marketplace and install the plugin:
 
 ```powershell
-codex plugin marketplace add <github-owner>/slidewright
+codex plugin marketplace add mgritzbach/slidewright
 codex plugin add slidewright@slidewright
 ```
 
-Replace `<github-owner>` with the verified release owner. The submission checker blocks release while that URL is unresolved. Restart the Codex desktop app and begin a new task so the bundled `$slidewright` skill is loaded. The plugin is self-contained under `plugins/slidewright/`; advanced users can also copy `plugins/slidewright/skills/slidewright/` directly into their Codex skills directory.
+Restart the Codex desktop app and begin a new task so the bundled `$slidewright` skill is loaded. The plugin is self-contained under `plugins/slidewright/`; advanced users can also copy `plugins/slidewright/skills/slidewright/` directly into their Codex skills directory.
 
 ### Develop locally
 
@@ -114,6 +114,18 @@ npm run design-profile
 
 The verified `g22-v1` policy is deliberately clone-only: it edits declared native placeholder text inside a copy of the source deck and preserves undeclared objects. It does not claim arbitrary structural import or unrestricted generation from someone else's template. The benchmark uses a synthetic PowerPoint-authored fixture, exact-EMU geometry audits, eight destructive controls—including a rendered rim-geometry mutation—real PowerPoint save/reopen, and full-size visual review. Read the [design-profile contract](plugins/slidewright/skills/slidewright/references/design-profile.md) before applying it to an existing deck.
 
+
+## Feedback-safe layout contracts
+
+Run `npm run feedback-contract` to exercise the five hard layout rules recovered from the `Locate event info` failure analysis:
+
+- native text boxes and reserved media regions may never intersect;
+- a headline uses the complete safe width unless an actual center or two-thirds structural split reserves space;
+- a background or title band grows to the realized text height plus symmetric padding;
+- every declared topic owns an explicit divider and substantive slide in manifest order;
+- empty paragraphs are removed before fitting, including blank bullets inherited from a real PowerPoint master.
+
+The benchmark builds 34 editable slides for the exact 17-topic outline, repeats compilation three times, runs nine plan and five OOXML destructive controls, renders every positive and negative deck, and performs a real PowerPoint save/reopen. A separate PowerPoint-authored fixture proves that three empty bullet paragraphs inherited from the master are removed while all three non-empty native paragraphs, the layout/master/theme, relationships, and preserve-only slide remain unchanged. Six source-template controls reject stale input, a wrong placeholder, blank-bullet reinsertion, non-empty paragraph deletion, same-slide drift, and master-bullet mutation. The current content-addressed scorecard is `3d4686a79e1ff261af4a11393e03010b5a2e61ed17ad9c907b0e037e4beae7fe`.
 
 ## Controlled export-fidelity benchmark
 

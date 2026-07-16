@@ -26,32 +26,65 @@ export function textFromRuns(runs) {
   return runs.map((run) => run.text).join("");
 }
 
+export function normalizeParagraphs(value, defaultBold = false) {
+  if (!value || !Array.isArray(value.paragraphs)) {
+    const runs = normalizeRuns(value, defaultBold);
+    return { paragraphs: [{ runs, bullet: false, level: 0 }], removedEmptyParagraphs: 0 };
+  }
+  const paragraphs = [];
+  let removedEmptyParagraphs = 0;
+  value.paragraphs.forEach((paragraph, index) => {
+    if (!paragraph || !Array.isArray(paragraph.runs)) throw new Error(`Paragraph ${index} must contain a runs array.`);
+    const runs = normalizeRuns({ runs: paragraph.runs }, defaultBold);
+    if (textFromRuns(runs).replace(/[\u00a0\s]/gu, "") === "") {
+      removedEmptyParagraphs += 1;
+      return;
+    }
+    const level = paragraph.level ?? 0;
+    if (!Number.isInteger(level) || level < 0 || level > 4) throw new Error(`Paragraph ${index} level must be an integer from 0 to 4.`);
+    paragraphs.push({ runs, bullet: paragraph.bullet === true, level });
+  });
+  if (!paragraphs.length) throw new Error("Text content cannot become empty after paragraph hygiene.");
+  return { paragraphs, removedEmptyParagraphs };
+}
+
+export function flattenParagraphs(paragraphs) {
+  const runs = [];
+  paragraphs.forEach((paragraph, index) => {
+    if (index > 0) runs.push({ text: "\n", bold: false, italic: false });
+    if (paragraph.bullet) runs.push({ text: `${"  ".repeat(paragraph.level)}\u2022 `, bold: false, italic: false });
+    runs.push(...paragraph.runs);
+  });
+  return runs;
+}
+
 function estimateWrappedLines(text, availableWidthPx, fontSizePt, glyphFactor) {
   if (!text) return 0;
   const averageGlyphWidthPx = fontSizePt * PT_TO_PX * glyphFactor;
   const maxUnits = Math.max(1, Math.floor(availableWidthPx / averageGlyphWidthPx));
-  let lines = 1;
-  let used = 0;
-
-  for (const rawWord of text.split(/\s+/u)) {
-    const word = rawWord || " ";
-    const units = word.length;
-    if (units > maxUnits) {
-      const remaining = Math.max(0, maxUnits - used);
-      const overflow = Math.max(0, units - remaining);
-      lines += Math.ceil(overflow / maxUnits);
-      used = overflow % maxUnits;
-      continue;
+  return text.split(/\r?\n/u).reduce((total, explicitLine) => {
+    let lines = 1;
+    let used = 0;
+    for (const rawWord of explicitLine.split(/\s+/u)) {
+      const word = rawWord || " ";
+      const units = word.length;
+      if (units > maxUnits) {
+        const remaining = Math.max(0, maxUnits - used);
+        const overflow = Math.max(0, units - remaining);
+        lines += Math.ceil(overflow / maxUnits);
+        used = overflow % maxUnits;
+        continue;
+      }
+      const required = units + (used > 0 ? 1 : 0);
+      if (used + required > maxUnits) {
+        lines += 1;
+        used = units;
+      } else {
+        used += required;
+      }
     }
-    const required = units + (used > 0 ? 1 : 0);
-    if (used + required > maxUnits) {
-      lines += 1;
-      used = units;
-    } else {
-      used += required;
-    }
-  }
-  return lines;
+    return total + lines;
+  }, 0);
 }
 
 export function measureText({
