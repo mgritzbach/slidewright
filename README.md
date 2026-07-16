@@ -134,6 +134,8 @@ The benchmark builds 34 editable slides for the exact 17-topic outline, repeats 
 
 Run `npm run evidence:ci` on a fresh host to execute the portable test, compiler, linter, and destructive-control layer and verify the committed content-addressed release scorecards. Public GitHub Actions runs the same command on Ubuntu and Windows and publishes the complete logs, fresh-host scorecard, replication report, and evidence verification as downloadable artifacts. See [public quality evidence](evidence/README.md) for exact capable-host regeneration commands and explicit scope limitations.
 
+The first independently aggregated replication is recorded in [the C22 fresh-machine report](evidence/c22/v1/FRESH_MACHINE_REPLICATION.md).
+
 ## Controlled export-fidelity benchmark
 
 The competition benchmark renders six owned design specifications—invitation, brochure, and website, each in horizontal and vertical/mobile composition—through both a browser reference path and a native PowerPoint path:

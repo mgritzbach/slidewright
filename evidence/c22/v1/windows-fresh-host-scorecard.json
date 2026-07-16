@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "slidewright-fresh-host-scorecard/v1",
+  "valid": true,
+  "environment": {
+    "platform": "Windows",
+    "osPlatform": "win32",
+    "architecture": "x64",
+    "node": "v22.23.1",
+    "python": "Python 3.12.10",
+    "gitSha": "bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+    "githubRunId": "29530184850",
+    "repository": "mgritzbach/slidewright",
+    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29530184850"
+  },
+  "portableResult": {
+    "testsPassed": 80,
+    "minimumTests": 75,
+    "requiredTestsVerified": 15,
+    "requiredTestsExpected": 15,
+    "demoSlides": 3,
+    "errors": 0,
+    "warnings": 0,
+    "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+    "scorecardsVerified": 3
+  },
+  "portableResultHash": "d6e16366a868e7e558f45f95ea28b1f32932b5450a6be3fe5d67d69ce9984753",
+  "tests": {
+    "passed": 80,
+    "minimum": 75,
+    "required": [
+      "G24 rejects text overlap even when a generic waiver is present",
+      "G25 rejects shortened headlines and accepts active center and two-thirds boundaries",
+      "G26 rejects a title backing that is one pixel too short",
+      "G27 rejects missing, unsequenced, and merged-away topic coverage",
+      "G28 strips inherited empty paragraphs before fitting and rejects reinsertion",
+      "G28 source-template controls reject stale, collateral, destructive, and reinserted-bullet changes",
+      "missing font fails visibly and offers an explicit installed fallback",
+      "delivery manifest rejects missing, empty, corrupt, and non-PPTX outputs",
+      "quality linter rejects clipping",
+      "quality linter rejects overflow",
+      "quality linter rejects overlap",
+      "quality linter rejects contrast",
+      "quality linter rejects wrapping",
+      "quality linter rejects crowding",
+      "quality linter rejects chart-label-collision"
+    ],
+    "missingRequiredTests": []
+  },
+  "demo": {
+    "slides": 3,
+    "errors": 0,
+    "warnings": 0
+  },
+  "publicEvidence": {
+    "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+    "scorecards": 3
+  },
+  "commands": [
+    {
+      "id": "tests",
+      "command": "npm test",
+      "exitCode": 0,
+      "durationMs": 1452
+    },
+    {
+      "id": "demo-compile",
+      "command": "npm run demo:compile",
+      "exitCode": 0,
+      "durationMs": 277
+    },
+    {
+      "id": "demo-lint",
+      "command": "npm run demo:lint",
+      "exitCode": 0,
+      "durationMs": 275
+    },
+    {
+      "id": "public-evidence",
+      "command": "node scripts/verify-public-evidence.mjs --out outputs/public-evidence/windows/verified-evidence.json",
+      "exitCode": 0,
+      "durationMs": 69
+    }
+  ],
+  "limitations": [
+    "This fresh-host job reproduces the portable compiler, linter, unit/destructive-control tests, and public-evidence integrity checks.",
+    "PowerPoint-only and Codex-runtime rendering scorecards are verified as content-addressed curated evidence; they require the documented capable-host commands to regenerate."
+  ],
+  "scorecardHash": "6721a4c36fc11c3e1accefe74aa3362abf119207774b668077e1a5505fd8bffd"
+}

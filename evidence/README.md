@@ -40,3 +40,5 @@ Microsoft PowerPoint is required for the capable-host round-trip stages. The pub
 ## Scope
 
 The committed evidence proves only the scopes and limitations stated inside each scorecard. Fresh public CI reproduces the portable compiler, linter, and destructive-control layer and validates the content-addressed capable-host evidence. It does not pretend that GitHub-hosted runners contain PowerPoint or Codex's private presentation runtime.
+
+The immutable Linux/Windows scorecards, cross-platform aggregate, public artifact IDs and digests, and replication report from the first complete public run are committed under [`c22/v1`](c22/v1/). Their verifier is part of `npm test` and `npm run evidence:verify`.

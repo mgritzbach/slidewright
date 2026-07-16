@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "slidewright-c22-artifact-manifest/v1",
+  "valid": true,
+  "repository": "mgritzbach/slidewright",
+  "runId": "29530184850",
+  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29530184850",
+  "sourceCommit": "bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+  "artifacts": [
+    {
+      "id": 8388299620,
+      "name": "slidewright-public-evidence-Linux-bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+      "sizeInBytes": 7499,
+      "digest": "sha256:7b7ea45c9f627b47dae2810c8586477d7e23e397ac9c3cf6b4876167c98afd7b"
+    },
+    {
+      "id": 8388312071,
+      "name": "slidewright-public-evidence-Windows-bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+      "sizeInBytes": 7419,
+      "digest": "sha256:4599ff153c2fd2a8fb08a6cae8fe8f26b9471859763a376eea1e264c4ecbeb5d"
+    },
+    {
+      "id": 8388319066,
+      "name": "slidewright-cross-platform-replication-bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+      "sizeInBytes": 1732,
+      "digest": "sha256:fef921e7ad3f9e6e77f3274916a7fd816082f512aa59be65c8995494424859ee"
+    }
+  ],
+  "files": [
+    {
+      "path": "c22/v1/linux-fresh-host-scorecard.json",
+      "bytes": 3141,
+      "sha256": "27a36b28765a895fba94af69bc63a48bdab1cab97a89ad44d6375e501e77484f"
+    },
+    {
+      "path": "c22/v1/windows-fresh-host-scorecard.json",
+      "bytes": 3146,
+      "sha256": "e1b5f0910585fe4701cc839fd8c3860d3a67ac57da656f955fb7c0b113bdc7dc"
+    },
+    {
+      "path": "c22/v1/aggregate-scorecard.json",
+      "bytes": 2132,
+      "sha256": "bc1f4f77a97449bea5d8b3067f305c9944939914b1fd60b03b5c45226b47521c"
+    },
+    {
+      "path": "c22/v1/FRESH_MACHINE_REPLICATION.md",
+      "bytes": 957,
+      "sha256": "722408c950b391595a8be17d93b0c7d386f02f4d9c2fa058136bbd6a4e55c0b9"
+    }
+  ],
+  "manifestHash": "0b7f182609ec620a4257c3ee708b77c3b02797bd24a2f8b0102c8030a1d022ea"
+}

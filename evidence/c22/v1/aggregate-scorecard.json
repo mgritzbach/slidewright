@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "slidewright-cross-platform-replication/v1",
+  "valid": true,
+  "repository": "mgritzbach/slidewright",
+  "runId": "29530184850",
+  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29530184850",
+  "gitSha": "bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
+  "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+  "portableResultHash": "d6e16366a868e7e558f45f95ea28b1f32932b5450a6be3fe5d67d69ce9984753",
+  "platforms": [
+    {
+      "platform": "Linux",
+      "osPlatform": "linux",
+      "architecture": "x64",
+      "node": "v22.23.1",
+      "python": "Python 3.12.13",
+      "scorecardHash": "7c864f086665198bd9d7763f5127797b502dc6b39a42467e150c238a02cb45e2",
+      "portableResult": {
+        "testsPassed": 80,
+        "minimumTests": 75,
+        "requiredTestsVerified": 15,
+        "requiredTestsExpected": 15,
+        "demoSlides": 3,
+        "errors": 0,
+        "warnings": 0,
+        "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+        "scorecardsVerified": 3
+      }
+    },
+    {
+      "platform": "Windows",
+      "osPlatform": "win32",
+      "architecture": "x64",
+      "node": "v22.23.1",
+      "python": "Python 3.12.10",
+      "scorecardHash": "6721a4c36fc11c3e1accefe74aa3362abf119207774b668077e1a5505fd8bffd",
+      "portableResult": {
+        "testsPassed": 80,
+        "minimumTests": 75,
+        "requiredTestsVerified": 15,
+        "requiredTestsExpected": 15,
+        "demoSlides": 3,
+        "errors": 0,
+        "warnings": 0,
+        "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+        "scorecardsVerified": 3
+      }
+    }
+  ],
+  "failures": [],
+  "scope": {
+    "reproducedOnBothHosts": "Portable compiler, linter, unit/destructive-control tests, and committed public-evidence integrity.",
+    "capableHostSnapshots": "PowerPoint/Codex-runtime scorecards are content-addressed snapshots with exact regeneration commands; they are not re-executed on GitHub runners."
+  },
+  "aggregateHash": "a57bf6eeb0ccef28d7eb1a5f0496aee83a0f28a5104702488dd013314811f00e"
+}
