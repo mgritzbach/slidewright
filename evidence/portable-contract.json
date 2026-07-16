@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "slidewright-portable-evidence-contract/v1",
+  "minimumTestCount": 75,
+  "demoSlides": 3,
+  "maximumErrors": 0,
+  "maximumWarnings": 0,
+  "requiredTestNames": [
+    "G24 rejects text overlap even when a generic waiver is present",
+    "G25 rejects shortened headlines and accepts active center and two-thirds boundaries",
+    "G26 rejects a title backing that is one pixel too short",
+    "G27 rejects missing, unsequenced, and merged-away topic coverage",
+    "G28 strips inherited empty paragraphs before fitting and rejects reinsertion",
+    "G28 source-template controls reject stale, collateral, destructive, and reinserted-bullet changes",
+    "missing font fails visibly and offers an explicit installed fallback",
+    "delivery manifest rejects missing, empty, corrupt, and non-PPTX outputs",
+    "quality linter rejects clipping",
+    "quality linter rejects overflow",
+    "quality linter rejects overlap",
+    "quality linter rejects contrast",
+    "quality linter rejects wrapping",
+    "quality linter rejects crowding",
+    "quality linter rejects chart-label-collision"
+  ]
+}

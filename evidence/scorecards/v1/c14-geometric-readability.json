@@ -1,0 +1,179 @@
+{
+  "schemaVersion": "slidewright-public-scorecard/v1",
+  "suiteId": "c14-geometric-readability",
+  "valid": true,
+  "sourceCommand": "npm run defects",
+  "proofScope": "Plan, realized-layout, rendered, and PowerPoint-bounds defect controls.",
+  "limitations": "Native Office charts and arbitrary third-party decks are outside this scorecard.",
+  "requiredEnvironment": [
+    "Codex presentation runtime",
+    "Python",
+    "PowerPoint for the final bounds control"
+  ],
+  "sourceScorecardSha256": "1e02ddbeab58ddaa8dbef84ae8a33f4461b063efd3e9d7f568a14a155d6d39d1",
+  "scorecard": {
+    "valid": true,
+    "fixtureVersion": "c14-v1",
+    "positivePlanFixtures": 3,
+    "positiveProofFixtures": 5,
+    "negativePlanFixtures": 12,
+    "negativeProofFixtures": 14,
+    "negativeRules": [
+      {
+        "id": "clipping",
+        "ruleId": "SW001"
+      },
+      {
+        "id": "parent-inner-clipping",
+        "ruleId": "SW016"
+      },
+      {
+        "id": "overflow",
+        "ruleId": "SW004"
+      },
+      {
+        "id": "overlap",
+        "ruleId": "SW018"
+      },
+      {
+        "id": "contrast",
+        "ruleId": "SW011"
+      },
+      {
+        "id": "alignment",
+        "ruleId": "SW012"
+      },
+      {
+        "id": "opaque-occlusion",
+        "ruleId": "SW010"
+      },
+      {
+        "id": "wrapping",
+        "ruleId": "SW013"
+      },
+      {
+        "id": "crowding",
+        "ruleId": "SW014"
+      },
+      {
+        "id": "chart-small-label",
+        "ruleId": "SW015"
+      },
+      {
+        "id": "chart-label-collision",
+        "ruleId": "SW015"
+      },
+      {
+        "id": "chart-invisible-marks",
+        "ruleId": "SW015"
+      }
+    ],
+    "negativeProofs": [
+      {
+        "id": "clipping",
+        "ruleId": "SW001"
+      },
+      {
+        "id": "parent-inner-clipping",
+        "ruleId": "SW016"
+      },
+      {
+        "id": "overflow",
+        "ruleId": "SW004"
+      },
+      {
+        "id": "overlap",
+        "ruleId": "SW018"
+      },
+      {
+        "id": "contrast",
+        "ruleId": "SW011"
+      },
+      {
+        "id": "alignment",
+        "ruleId": "SW012"
+      },
+      {
+        "id": "opaque-occlusion",
+        "ruleId": "SW010"
+      },
+      {
+        "id": "wrapping",
+        "ruleId": "SW013"
+      },
+      {
+        "id": "crowding",
+        "ruleId": "SW014"
+      },
+      {
+        "id": "chart-small-label",
+        "ruleId": "SW015"
+      },
+      {
+        "id": "chart-label-collision",
+        "ruleId": "SW015"
+      },
+      {
+        "id": "chart-invisible-marks",
+        "ruleId": "SW015"
+      },
+      {
+        "id": "false-fit-after-render",
+        "ruleId": "SW013"
+      },
+      {
+        "id": "actual-powerpoint-text-clipping",
+        "ruleId": "POWERPOINT_TEXT_BOUNDS"
+      }
+    ],
+    "deterministicRepetitions": 3,
+    "renderedClean": {
+      "valid": true,
+      "slides": 3
+    },
+    "renderedChartComponents": {
+      "valid": true,
+      "slides": 2,
+      "nativeEditableObjects": 18
+    },
+    "renderedFalseFit": {
+      "rejected": true,
+      "emittedPptx": false,
+      "ruleId": "SW013",
+      "objectId": "s1-title"
+    },
+    "powerPointTextBounds": {
+      "valid": true,
+      "slides": 3,
+      "textShapes": 13
+    },
+    "powerPointChartTextBounds": {
+      "valid": true,
+      "slides": 2,
+      "textShapes": 8
+    },
+    "powerPointClippingNegative": {
+      "rejected": true,
+      "emittedPptx": false,
+      "shape": "s1-title"
+    },
+    "thresholds": {
+      "geometryTolerancePx": 1,
+      "normalTextContrast": 4.5,
+      "largeTextContrast": 3,
+      "maximumOccupancyRatio": 0.94,
+      "maximumTopLevelObjects": 12,
+      "minimumPeerGapPx": 12,
+      "minimumChartFramePx": [
+        240,
+        160
+      ],
+      "minimumChartLabelPt": 12,
+      "minimumChartMarkThicknessPx": 8,
+      "maximumChartCategories": 12,
+      "maximumChartSeries": 6
+    },
+    "scorecardHash": "a980820b5974119151b639f1370279fd1ed4f8925481b1cf86e2c9b15c76ee70"
+  },
+  "publishedHash": "a559877a6938ac15cafc0a81f4b3a3f412ec446304b24f80162a33a0ef2bdc35"
+}

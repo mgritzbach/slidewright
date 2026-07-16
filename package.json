@@ -34,8 +34,12 @@
     "iteration": "node scripts/run-fine-grained-iteration.mjs",
     "design-profile": "node scripts/run-design-profile-benchmark.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
-    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration && npm run design-profile && npm run feedback-contract",
-    "feedback-contract": "node scripts/run-feedback-contract-benchmark.mjs"
+    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration && npm run design-profile && npm run feedback-contract && npm run evidence:verify",
+    "feedback-contract": "node scripts/run-feedback-contract-benchmark.mjs",
+    "evidence:publish": "node scripts/publish-public-evidence.mjs",
+    "evidence:verify": "node scripts/verify-public-evidence.mjs",
+    "evidence:ci": "node scripts/run-public-evidence-ci.mjs",
+    "evidence:aggregate": "node scripts/aggregate-public-evidence.mjs"
   },
   "peerDependencies": {
     "@oai/artifact-tool": "*"

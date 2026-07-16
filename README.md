@@ -130,6 +130,10 @@ Run `npm run feedback-contract` to exercise the five hard layout rules recovered
 
 The benchmark builds 34 editable slides for the exact 17-topic outline, repeats compilation three times, runs nine plan and five OOXML destructive controls, renders every positive and negative deck, and performs a real PowerPoint save/reopen. A separate PowerPoint-authored fixture proves that three empty bullet paragraphs inherited from the master are removed while all three non-empty native paragraphs, the layout/master/theme, relationships, and preserve-only slide remain unchanged. Six source-template controls reject stale input, a wrong placeholder, blank-bullet reinsertion, non-empty paragraph deletion, same-slide drift, and master-bullet mutation. The current content-addressed scorecard is `3d4686a79e1ff261af4a11393e03010b5a2e61ed17ad9c907b0e037e4beae7fe`.
 
+## Public reproducibility
+
+Run `npm run evidence:ci` on a fresh host to execute the portable test, compiler, linter, and destructive-control layer and verify the committed content-addressed release scorecards. Public GitHub Actions runs the same command on Ubuntu and Windows and publishes the complete logs, fresh-host scorecard, replication report, and evidence verification as downloadable artifacts. See [public quality evidence](evidence/README.md) for exact capable-host regeneration commands and explicit scope limitations.
+
 ## Controlled export-fidelity benchmark
 
 The competition benchmark renders six owned design specifications—invitation, brochure, and website, each in horizontal and vertical/mobile composition—through both a browser reference path and a native PowerPoint path:

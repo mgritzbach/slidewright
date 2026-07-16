@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "slidewright-public-evidence-manifest/v1",
+  "valid": true,
+  "policy": {
+    "scorecardsAreCuratedReleaseFixtures": true,
+    "generatedOutputsRemainIgnored": true,
+    "exactCommandsRequired": true,
+    "destructiveControlsRequired": true,
+    "machineSpecificPathsForbidden": true
+  },
+  "portableVerificationCommand": "npm run evidence:verify",
+  "freshHostCommand": "npm run evidence:ci",
+  "entries": [
+    {
+      "id": "c14-geometric-readability",
+      "file": "scorecards/v1/c14-geometric-readability.json",
+      "sourceOutput": "outputs/defects/scorecard.json",
+      "command": "npm run defects",
+      "publishedHash": "a559877a6938ac15cafc0a81f4b3a3f412ec446304b24f80162a33a0ef2bdc35",
+      "fileSha256": "e41ef04eb05fbdf0a85eea815654cb846a0d58eb8127ca91aad8fa0d5b94f93d"
+    },
+    {
+      "id": "g22-g23-design-profile",
+      "file": "scorecards/v1/g22-g23-design-profile.json",
+      "sourceOutput": "outputs/design-profile/scorecard.json",
+      "command": "npm run design-profile",
+      "publishedHash": "e8ca699d53c860d5bcc915e9131e98def08f8bd78fe0818914a7dfc63648abb6",
+      "fileSha256": "5443eea6796ceaa17e3f74d33c6ea67ec11a8f75c7ad450765b2581286da884c"
+    },
+    {
+      "id": "g24-g28-feedback-contracts",
+      "file": "scorecards/v1/g24-g28-feedback-contracts.json",
+      "sourceOutput": "outputs/feedback-contract/scorecard.json",
+      "command": "npm run feedback-contract",
+      "publishedHash": "72cc0f8a547683b001322830cbb11431f2fe70af2063d2d59e27da6ca7ed3d46",
+      "fileSha256": "fa62be04aea23fc089939cc4d691420eee9ec7fa9d5ad3e1378ceb52f58f2cd2"
+    }
+  ],
+  "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d"
+}

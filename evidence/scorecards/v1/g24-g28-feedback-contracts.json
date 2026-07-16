@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "slidewright-public-scorecard/v1",
+  "suiteId": "g24-g28-feedback-contracts",
+  "valid": true,
+  "sourceCommand": "npm run feedback-contract",
+  "proofScope": "Text separation, headline safe width, backing growth, exact topic coverage, and inherited-bullet hygiene.",
+  "limitations": "The suite proves the frozen 34-slide contract and source fixture, not universal layout quality.",
+  "requiredEnvironment": [
+    "Codex presentation runtime",
+    "Python",
+    "PowerPoint"
+  ],
+  "sourceScorecardSha256": "10243816798cecf250d63b74a646f33a59154495e140320d89de025c84b197e4",
+  "scorecard": {
+    "valid": true,
+    "fixtureVersion": "locate-event-feedback-v1",
+    "topics": 17,
+    "slides": 34,
+    "deterministicRepetitions": 3,
+    "planLint": {
+      "valid": true,
+      "negativeControls": [
+        {
+          "id": "waived-text-overlap",
+          "ruleId": "SW018"
+        },
+        {
+          "id": "text-in-reserved-region",
+          "ruleId": "SW018"
+        },
+        {
+          "id": "shortened-headline",
+          "ruleId": "SW019"
+        },
+        {
+          "id": "undersized-title-backing",
+          "ruleId": "SW020"
+        },
+        {
+          "id": "missing-topic-divider",
+          "ruleId": "SW021"
+        },
+        {
+          "id": "missing-topic-content",
+          "ruleId": "SW021"
+        },
+        {
+          "id": "topic-order-inversion",
+          "ruleId": "SW021"
+        },
+        {
+          "id": "merged-topic-ownership",
+          "ruleId": "SW021"
+        },
+        {
+          "id": "reinserted-empty-paragraph",
+          "ruleId": "SW022"
+        }
+      ]
+    },
+    "renderedLint": {
+      "valid": true,
+      "slides": 34
+    },
+    "headlineSafeWidths": {
+      "noSplit": 32,
+      "centerSplit": 1,
+      "twoThirdsSplit": 1
+    },
+    "paragraphHygiene": {
+      "removedGeneratedEmptyParagraphs": 2,
+      "sourceTemplate": {
+        "bulletSource": "master-body-style",
+        "removedEmptyParagraphs": 3,
+        "preservedNativeParagraphs": 3,
+        "negativeControlsRejected": 6,
+        "powerPointStatePreserved": true,
+        "powerPointRenderExact": true
+      }
+    },
+    "ooxml": {
+      "valid": true,
+      "nativeTextShapes": 110,
+      "negativeControls": [
+        {
+          "id": "ooxml-text-overlap",
+          "ruleId": "OOXML_G24"
+        },
+        {
+          "id": "ooxml-shortened-headline",
+          "ruleId": "OOXML_G25"
+        },
+        {
+          "id": "ooxml-undersized-backing",
+          "ruleId": "OOXML_G26"
+        },
+        {
+          "id": "ooxml-missing-topic-title",
+          "ruleId": "OOXML_G27"
+        },
+        {
+          "id": "ooxml-empty-bullet",
+          "ruleId": "OOXML_G28"
+        }
+      ]
+    },
+    "powerPoint": {
+      "valid": true,
+      "serializedBySaveAs": true,
+      "exactStatePreserved": true,
+      "sharedProcessPreserved": true,
+      "renderExact": true
+    },
+    "scorecardHash": "3d4686a79e1ff261af4a11393e03010b5a2e61ed17ad9c907b0e037e4beae7fe"
+  },
+  "publishedHash": "72cc0f8a547683b001322830cbb11431f2fe70af2063d2d59e27da6ca7ed3d46"
+}

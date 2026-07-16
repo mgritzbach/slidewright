@@ -1,0 +1,207 @@
+{
+  "schemaVersion": "slidewright-public-scorecard/v1",
+  "suiteId": "g22-g23-design-profile",
+  "valid": true,
+  "sourceCommand": "npm run design-profile",
+  "proofScope": "Source-bound design-profile extraction, clone-only reuse, exact rim symmetry, and PowerPoint round trip.",
+  "limitations": "This is clone-only source reuse, not arbitrary structural import.",
+  "requiredEnvironment": [
+    "Codex presentation runtime",
+    "Python",
+    "PowerPoint"
+  ],
+  "sourceScorecardSha256": "343d7aca2f1e0c0d978dd14fe83c1666467025d78351b53052ed2b781f782822",
+  "scorecard": {
+    "schemaVersion": "slidewright-design-profile-scorecard/v1",
+    "valid": true,
+    "sourceSha256": "0f1719c14b8a1fbc910c3b8f46cf5c8cf5e5a0b7ba9843a9e04ed23653dec5ed",
+    "profileSha256": "16225b3f3e99a11d0120b6e5d3aeb6014581928357d15cd27130ebdbb5b3771b",
+    "deterministicProfile": true,
+    "slideSize": {
+      "heightEmu": 6858000,
+      "type": "",
+      "widthEmu": 12192000
+    },
+    "guides": [
+      {
+        "attributes": {
+          "pos": "960"
+        },
+        "order": 0,
+        "orientation": "vertical",
+        "positionEmu": 1524000,
+        "positionPt": 120,
+        "rawPosition": 960
+      },
+      {
+        "attributes": {
+          "pos": "6720"
+        },
+        "order": 1,
+        "orientation": "vertical",
+        "positionEmu": 10668000,
+        "positionPt": 840,
+        "rawPosition": 6720
+      },
+      {
+        "attributes": {
+          "orient": "horz",
+          "pos": "576"
+        },
+        "order": 2,
+        "orientation": "horizontal",
+        "positionEmu": 914400,
+        "positionPt": 72,
+        "rawPosition": 576
+      },
+      {
+        "attributes": {
+          "orient": "horz",
+          "pos": "3744"
+        },
+        "order": 3,
+        "orientation": "horizontal",
+        "positionEmu": 5943600,
+        "positionPt": 468,
+        "rawPosition": 3744
+      }
+    ],
+    "theme": {
+      "uniqueColors": [
+        "2F263F",
+        "3D53E5",
+        "4A4552",
+        "E36B3D",
+        "F7F3EA"
+      ],
+      "fonts": [
+        "Arial"
+      ]
+    },
+    "layouts": [
+      "SW Profile Content",
+      "SW Profile Section"
+    ],
+    "logos": [
+      "SW Logo Group"
+    ],
+    "symmetryContracts": [
+      {
+        "id": "ea5355239ba2952f21878247",
+        "first": "SW Limiter Left",
+        "second": "SW Limiter Right",
+        "thicknessEmu": [
+          25400,
+          25400
+        ],
+        "offsetsEmu": [
+          1524000,
+          1524000
+        ],
+        "symmetric": true,
+        "declaredAsymmetry": false
+      },
+      {
+        "id": "63a15bdf578cdedf692e82e5",
+        "first": "SW Declared Rule Left",
+        "second": "SW Declared Rule Right",
+        "thicknessEmu": [
+          38100,
+          63500
+        ],
+        "offsetsEmu": [
+          2336800,
+          2336800
+        ],
+        "symmetric": false,
+        "declaredAsymmetry": true
+      },
+      {
+        "id": "39a7dc5a145cf1e3a97eff4f",
+        "first": "SW Section Limiter Left",
+        "second": "SW Section Limiter Right",
+        "thicknessEmu": [
+          25400,
+          25400
+        ],
+        "offsetsEmu": [
+          1524000,
+          1524000
+        ],
+        "symmetric": true,
+        "declaredAsymmetry": false
+      },
+      {
+        "id": "23d0b3b5f4f22e42f5765b44",
+        "first": "SW Rail Top",
+        "second": "SW Rail Bottom",
+        "thicknessEmu": [
+          50800,
+          50800
+        ],
+        "offsetsEmu": [
+          0,
+          0
+        ],
+        "symmetric": true,
+        "declaredAsymmetry": false
+      },
+      {
+        "id": "c66ef406035792a306542628",
+        "first": "SW Rail Left",
+        "second": "SW Rail Right",
+        "thicknessEmu": [
+          76200,
+          76200
+        ],
+        "offsetsEmu": [
+          0,
+          0
+        ],
+        "symmetric": true,
+        "declaredAsymmetry": false
+      }
+    ],
+    "auditValid": true,
+    "planBoundPreservation": true,
+    "negativeControls": [
+      {
+        "name": "guide-delete",
+        "rejected": true
+      },
+      {
+        "name": "side-rail-plus-one-emu",
+        "rejected": true
+      },
+      {
+        "name": "limiter-color-drift",
+        "rejected": true
+      },
+      {
+        "name": "logo-rename",
+        "rejected": true
+      },
+      {
+        "name": "theme-font-drift",
+        "rejected": true
+      },
+      {
+        "name": "target-slide-undeclared-drift",
+        "rejected": true
+      },
+      {
+        "name": "profile-integrity",
+        "rejected": true
+      },
+      {
+        "name": "rendered-rim-geometry-drift",
+        "rejected": true
+      }
+    ],
+    "powerpointRoundtripValid": true,
+    "visualAuditValid": true,
+    "powerpointVisualAuditValid": true,
+    "scorecardHash": "cc5bdb072e737a6b2e636caf81de5fa4559ec14e14dd1bc0ec8eb402529d4c9c"
+  },
+  "publishedHash": "e8ca699d53c860d5bcc915e9131e98def08f8bd78fe0818914a7dfc63648abb6"
+}

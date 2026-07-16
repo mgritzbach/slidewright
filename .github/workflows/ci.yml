@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   deterministic-core:
@@ -20,10 +21,17 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-ci.txt
+      - run: npm ci
       - run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
-      - run: npm test
-      - run: npm run demo:compile
-      - run: npm run demo:lint
+      - run: npm run evidence:ci
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: slidewright-public-evidence-${{ runner.os }}-${{ github.sha }}
+          path: outputs/public-evidence/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
 
   windows-core:
     runs-on: windows-latest
@@ -37,7 +45,35 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-ci.txt
+      - run: npm ci
       - run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
-      - run: npm test
-      - run: npm run demo:compile
-      - run: npm run demo:lint
+      - run: npm run evidence:ci
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: slidewright-public-evidence-${{ runner.os }}-${{ github.sha }}
+          path: outputs/public-evidence/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  cross-platform-evidence:
+    needs: [deterministic-core, windows-core]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: slidewright-public-evidence-*-${{ github.sha }}
+          path: outputs/ci-evidence
+      - run: npm run evidence:aggregate -- --input outputs/ci-evidence --out outputs/public-evidence-aggregate
+      - uses: actions/upload-artifact@v7
+        with:
+          name: slidewright-cross-platform-replication-${{ github.sha }}
+          path: outputs/public-evidence-aggregate/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
