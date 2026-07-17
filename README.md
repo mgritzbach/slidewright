@@ -21,11 +21,12 @@ The Build Week entry targets **Work & Productivity**. The initial vertical slice
 
 ### Install in Codex
 
-Add the public Slidewright marketplace and install the plugin:
+Add the public Slidewright marketplace and install the plugin from a terminal:
 
 ```powershell
 codex plugin marketplace add mgritzbach/slidewright
 codex plugin add slidewright@slidewright
+codex plugin list
 ```
 
 Restart the Codex desktop app and begin a new task so the bundled `$slidewright` skill is loaded. The plugin is self-contained under `plugins/slidewright/`; advanced users can also copy `plugins/slidewright/skills/slidewright/` directly into their Codex skills directory.
@@ -51,7 +52,7 @@ npm run demo
 
 `npm run setup:runtime` discovers the installed Codex presentation runtime rather than relying on a version-specific local path.
 
-The installed skill has the same self-contained bootstrap as `node <slidewright-skill>/scripts/slidewright.mjs bootstrap`; it links the already bundled Codex runtime into the active workspace and does not download or silently switch renderers. Codex CLI 0.118.0 on the current Windows test host does not yet expose the documented `codex plugin` subcommand; use the desktop Plugins directory or copy the skill folder directly on older CLI builds.
+The installed skill has the same self-contained bootstrap as `node <slidewright-skill>/scripts/slidewright.mjs bootstrap`; it links the already bundled Codex runtime into the active workspace and does not download or silently switch renderers. Slidewright's clean-home installation benchmark verifies real CLI installation plus Desktop- and VS Code-identified **app-server backend discovery** without relying on marketplace UI clicks; it does not claim to launch either GUI client. The pinned harness is isolated under `tools/installation/` and runs with `npm ci --prefix tools/installation` followed by `node scripts/run-installation-benchmark.mjs`. If an older Codex build does not expose `codex plugin`, update Codex before installing Slidewright.
 
 Outputs are written to `outputs/demo/` and include the editable PPTX, rendered previews, compiled layout plan, and QA reports.
 

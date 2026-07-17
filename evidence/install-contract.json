@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "slidewright-install-contract/v1",
+  "codexPackage": "@openai/codex",
+  "codexVersion": "0.144.5",
+  "publicRepository": "mgritzbach/slidewright",
+  "marketplaceName": "slidewright",
+  "pluginName": "slidewright",
+  "pluginId": "slidewright@slidewright",
+  "pluginVersion": "0.1.0",
+  "skillName": "slidewright",
+  "qualifiedSkillName": "slidewright:slidewright",
+  "requiredSurfaces": ["cli", "desktop-app-server-backend", "ide-app-server-backend"],
+  "requiredHostPlatforms": ["linux", "win32", "darwin"],
+  "requiredControlIds": [
+    "empty-home-has-no-plugins",
+    "install-before-marketplace-rejected",
+    "unknown-plugin-rejected",
+    "installed-path-confined-to-codex-home",
+    "marketplace-ui-not-used"
+  ],
+  "requiredCommands": [
+    { "id": "verify-codex", "argv": ["codex", "--version"], "exitCode": 0 },
+    { "id": "pristine-list", "argv": ["codex", "plugin", "list", "--available", "--json"], "exitCode": 0 },
+    { "id": "missing-before-marketplace", "argv": ["codex", "plugin", "add", "slidewright@slidewright", "--json"], "exitCode": 1 },
+    {
+      "id": "marketplace-add",
+      "argvBySourceKind": {
+        "local": ["codex", "plugin", "marketplace", "add", "<LOCAL_MARKETPLACE>", "--json"],
+        "git": ["codex", "plugin", "marketplace", "add", "<PUBLIC_REPOSITORY>", "--ref", "<GIT_SHA>", "--json"]
+      },
+      "exitCode": 0
+    },
+    { "id": "marketplace-list", "argv": ["codex", "plugin", "marketplace", "list", "--json"], "exitCode": 0 },
+    { "id": "available-list", "argv": ["codex", "plugin", "list", "--available", "--json"], "exitCode": 0 },
+    { "id": "plugin-add", "argv": ["codex", "plugin", "add", "slidewright@slidewright", "--json"], "exitCode": 0 },
+    { "id": "installed-list", "argv": ["codex", "plugin", "list", "--json"], "exitCode": 0 },
+    { "id": "wrong-plugin", "argv": ["codex", "plugin", "add", "slidewright-missing@slidewright", "--json"], "exitCode": 1 }
+  ],
+  "minimumPluginFiles": 50,
+  "requiredPluginFiles": [
+    ".codex-plugin/plugin.json",
+    "skills/slidewright/SKILL.md",
+    "skills/slidewright/scripts/slidewright.mjs",
+    "skills/slidewright/scripts/audit_pptx.py"
+  ],
+  "expectedMarketplacePolicy": {
+    "installation": "AVAILABLE",
+    "authentication": "ON_INSTALL",
+    "category": "Productivity"
+  }
+}

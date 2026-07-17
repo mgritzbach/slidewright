@@ -77,3 +77,51 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
+
+  installation-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix tools/installation
+      - run: node --test tests/installation.test.mjs
+      - run: node scripts/run-installation-benchmark.mjs
+        env:
+          SLIDEWRIGHT_MARKETPLACE_SOURCE: ${{ github.repository }}
+          SLIDEWRIGHT_MARKETPLACE_REF: ${{ github.sha }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: slidewright-installation-${{ runner.os }}-${{ github.sha }}
+          path: outputs/installation/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  installation-aggregate:
+    needs: [installation-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: slidewright-installation-*-${{ github.sha }}
+          path: outputs/installation-hosts
+      - run: node scripts/aggregate-installation-evidence.mjs --input outputs/installation-hosts --out outputs/installation-aggregate
+      - uses: actions/upload-artifact@v7
+        with:
+          name: slidewright-installation-aggregate-${{ github.sha }}
+          path: outputs/installation-aggregate/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
