@@ -29,6 +29,8 @@ VOLATILE_PART_CONTENT = {
     "ppt/viewProps.xml",
 }
 DASH_STYLE_TO_OOXML = {4: "dash", 5: "dashDot"}
+P14 = "http://schemas.microsoft.com/office/powerpoint/2010/main"
+POWERPOINT_MODIFICATION_EXTENSION = "{D42A27DB-BD31-4B8C-83A1-F6EECF244321}"
 
 
 def sha256_file(path: Path) -> str:
@@ -342,12 +344,62 @@ def mask_transform_geometry(element: ET.Element) -> None:
     ext.set("cy", "0")
 
 
+def remove_powerpoint_modification_id(element: ET.Element) -> None:
+    """Remove only PowerPoint's save-time modification ID from one declared object."""
+
+    mod_id_tag = f"{{{P14}}}modId"
+    for non_visual in element.findall(".//p:nvPr", NS):
+        extension_list = non_visual.find("p:extLst", NS)
+        if extension_list is None:
+            continue
+        for extension in list(extension_list):
+            if (extension.tag != qname("p", "ext")
+                    or extension.get("uri") != POWERPOINT_MODIFICATION_EXTENSION
+                    or len(extension) != 1
+                    or extension[0].tag != mod_id_tag):
+                continue
+            extension_list.remove(extension)
+        if len(extension_list) == 0:
+            non_visual.remove(extension_list)
+
+
+def normalized_text_properties(element: ET.Element) -> bytes:
+    clone = ET.fromstring(ET.tostring(element, encoding="utf-8"))
+    clone.tag = qname("a", "rPr")
+    clone.attrib.pop("lang", None)
+    return canonical_xml_bytes(clone)
+
+
+def normalize_declared_table_cell_bookkeeping(cell: ET.Element) -> None:
+    """Normalize non-visual metadata PowerPoint adds while editing one table cell.
+
+    A redundant end-paragraph style is removed only when it is semantically
+    identical to the paragraph's sole run style after ignoring spellcheck
+    locale metadata. Any visible formatting difference remains protected.
+    """
+
+    paragraphs = cell.findall("a:txBody/a:p", NS)
+    for paragraph in paragraphs:
+        runs = paragraph.findall("a:r", NS)
+        end_properties = paragraph.find("a:endParaRPr", NS)
+        if len(runs) == 1 and end_properties is not None:
+            run_properties = runs[0].find("a:rPr", NS)
+            if run_properties is not None and normalized_text_properties(run_properties) == normalized_text_properties(end_properties):
+                paragraph.remove(end_properties)
+        for properties in paragraph.findall(".//a:rPr", NS):
+            properties.attrib.pop("lang", None)
+        remaining_end = paragraph.find("a:endParaRPr", NS)
+        if remaining_end is not None:
+            remaining_end.attrib.pop("lang", None)
+
+
 def normalized_slide_part(value: bytes, mutation_case: dict[str, Any]) -> bytes:
     root = ET.fromstring(value)
     operation = mutation_case.get("operation")
     target = str(mutation_case.get("target", ""))
     if operation == "replace-table-cell":
         frame = require_named_element(root, target)
+        remove_powerpoint_modification_id(frame)
         table = frame.find("a:graphic/a:graphicData/a:tbl", NS)
         if table is None:
             raise ValueError("Declared table target has no native table XML.")
@@ -360,7 +412,9 @@ def normalized_slide_part(value: bytes, mutation_case: dict[str, Any]) -> bytes:
         cells = rows[row_index].findall("a:tc", NS)
         if column_index not in range(len(cells)):
             raise ValueError("Declared table column is outside the native table.")
-        texts = cells[column_index].findall("a:txBody/a:p//a:t", NS)
+        declared_cell = cells[column_index]
+        normalize_declared_table_cell_bookkeeping(declared_cell)
+        texts = declared_cell.findall("a:txBody/a:p//a:t", NS)
         if not texts:
             raise ValueError("Declared table cell has no native text leaf.")
         for index, text in enumerate(texts):

@@ -15,6 +15,28 @@ export function captureWorkerIdentity(processId, { platform = process.platform }
   return { processId, processName: null, processStartTime: null };
 }
 
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+export async function captureWorkerIdentityWithRetry(processId, {
+  platform = process.platform,
+  timeoutMs = 5_000,
+  pollMs = 100,
+  capture = captureWorkerIdentity,
+} = {}) {
+  if (!Number.isInteger(processId) || processId < 1) return null;
+  const deadline = Date.now() + timeoutMs;
+  do {
+    const identity = capture(processId, { platform });
+    if (identity?.processId === processId
+      && (platform !== "win32" || (typeof identity.processName === "string" && typeof identity.processStartTime === "string"))) {
+      return identity;
+    }
+    if (Date.now() >= deadline) break;
+    await delay(pollMs);
+  } while (true);
+  return null;
+}
+
 export function terminateExactWorker(processId, expected, { platform = process.platform } = {}) {
   if (!Number.isInteger(processId) || processId < 1) return { matched: false, terminated: false, reason: "invalid-worker-pid" };
   if (platform !== "win32") {

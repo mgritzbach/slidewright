@@ -167,6 +167,18 @@ from xml.etree import ElementTree as ET
 assert audit.table_details(ET.fromstring(table_xml.format("Verified")))["cells"][0]["staticFits"] is True
 assert audit.table_details(ET.fromstring(table_xml.format("W" * 320)))["cells"][0]["staticFits"] is False
 
+table_slide = '''<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><p:cSld><p:spTree><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="12" name="surface-03-table"/><p:cNvGraphicFramePr/><p:nvPr>{}</p:nvPr></p:nvGraphicFramePr><p:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></p:xfrm><a:graphic><a:graphicData><a:tbl><a:tblGrid><a:gridCol w="1828800"/></a:tblGrid><a:tr h="762000"><a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:rPr {} sz="1500"><a:solidFill><a:srgbClr val="172033"/></a:solidFill></a:rPr><a:t>{}</a:t></a:r>{}</a:p></a:txBody><a:tcPr marL="152400" marR="152400" marT="95250" marB="95250"/></a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame><p:sp><p:nvSpPr><p:cNvPr id="13" name="unrelated"/><p:cNvSpPr/><p:nvPr>{}</p:nvPr></p:nvSpPr><p:spPr/></p:sp></p:spTree></p:cSld></p:sld>'''
+table_case = {"operation":"replace-table-cell","target":"surface-03-table","slide":3,"cell":{"row":1,"column":1}}
+baseline_table_slide = table_slide.format("", "", "Exact", "", "")
+powerpoint_bookkeeping = '<p:extLst><p:ext uri="{D42A27DB-BD31-4B8C-83A1-F6EECF244321}"><p14:modId val="2995016105"/></p:ext></p:extLst>'
+redundant_end_style = '<a:endParaRPr sz="1500"><a:solidFill><a:srgbClr val="172033"/></a:solidFill></a:endParaRPr>'
+powerpoint_table_slide = table_slide.format(powerpoint_bookkeeping, 'lang="de-DE"', "Verified", redundant_end_style, "")
+assert audit.normalized_slide_part(baseline_table_slide.encode(), table_case) == audit.normalized_slide_part(powerpoint_table_slide.encode(), table_case)
+visible_style_drift = table_slide.format(powerpoint_bookkeeping, 'lang="de-DE"', "Verified", redundant_end_style.replace('sz="1500"', 'sz="1400"'), "")
+assert audit.normalized_slide_part(baseline_table_slide.encode(), table_case) != audit.normalized_slide_part(visible_style_drift.encode(), table_case)
+unrelated_mod_id = table_slide.format("", "", "Verified", "", powerpoint_bookkeeping)
+assert audit.normalized_slide_part(baseline_table_slide.encode(), table_case) != audit.normalized_slide_part(unrelated_mod_id.encode(), table_case)
+
 good_labels = [{"index":1,"text":"36","leftPoints":10,"topPoints":10,"widthPoints":20,"heightPoints":10},{"index":2,"text":"28","leftPoints":40,"topPoints":10,"widthPoints":20,"heightPoints":10}]
 assert audit.powerpoint_label_checks(good_labels, [36,28], 100, 50)[:3] == (True, True, True)
 outside = copy.deepcopy(good_labels); outside[1]["leftPoints"] = 90
@@ -202,17 +214,20 @@ print("semantic mutation no-PowerPoint guarantees passed")
 
 test("C18 runner renders before measuring, auditing, and destructive controls", async () => {
   const source = await fs.readFile(runnerPath, "utf8");
+  assert.match(source, /copiedBaselinePptxSha256: copiedBaselineSha256/u);
   const mutation = source.indexOf("powerpoint_semantic_mutation.ps1");
   const renders = source.indexOf("const renderEvidence = []");
   const measures = source.indexOf('"--measure-render"');
   const audits = source.indexOf('"--render-evidence"');
   const negatives = source.indexOf("negativeControlsScript,", audits);
-  const overflow = source.indexOf('findPresentationTool("slides_test.py")');
+  const overflow = source.indexOf("const overflowChecks = []");
   assert.ok(mutation >= 0 && mutation < renders && renders < measures && measures < audits && audits < negatives && negatives < overflow);
   assert.match(source, /semantic-surface["']?,[\s\S]*current\.json/);
   assert.match(source, /powerpoint-roundtrip\.pptx/);
   assert.match(source, /requires a current hardened C08 baseline/);
   assert.match(source, /refusing to publish evidence against a superseded baseline/);
+  assert.match(source, /slidewright-semantic-surface-scorecard\/v2/);
+  assert.match(source, /verifySemanticSurfaceEvidence/);
 });
 
 test("C18 review finalizer binds all 24 full-size decisions to immutable render hashes", async () => {

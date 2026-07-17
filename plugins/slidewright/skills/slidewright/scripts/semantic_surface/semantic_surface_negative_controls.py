@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import posixpath
 from pathlib import Path
@@ -62,6 +63,14 @@ def write_package(path: Path, infos: list[zipfile.ZipInfo], parts: dict[str, byt
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o600 << 16
             archive.writestr(info, parts[name])
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def serialize(root: ET.Element) -> bytes:
@@ -399,9 +408,14 @@ def main() -> int:
         output = args.output_dir / f"{control_id}.pptx"
         write_package(output, infos, parts)
         report = audit_semantic_surface(output, manifest)
+        audit_path = args.output_dir / f"{control_id}.audit.json"
+        audit_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         results.append({
             "id": control_id,
-            "output": str(output.resolve()),
+            "output": output.name,
+            "outputSha256": sha256_file(output),
+            "audit": audit_path.name,
+            "auditSha256": sha256_file(audit_path),
             "rejected": not report["valid"],
             "failureCodes": sorted({item["code"] for item in report["failures"]}),
             "failureCount": len(report["failures"]),

@@ -1,12 +1,25 @@
 #!/usr/bin/env node
 import crypto from "node:crypto";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { cleanupOwnedPowerPoint } from "./lib/owned-process-cleanup.mjs";
-import { publishVersionedEvidence } from "./lib/versioned-evidence-publish.mjs";
 import { captureWorkerIdentity, terminateExactWorker } from "./lib/exact-worker-process.mjs";
+import { startRunnerWatchdog } from "./lib/runner-watchdog.mjs";
+import {
+  canonicalHash,
+  captureCleanGit,
+  captureSemanticImplementation,
+  captureSemanticRuntime,
+  collectReceiptTree,
+  normalizeCommandArgument,
+  publishVerifiedSemanticEvidence,
+  runForcedParentWatchdogControl,
+  sha256File,
+  verifySemanticSurfaceEvidence,
+} from "./lib/semantic-surface-evidence.mjs";
 
 const root = process.cwd();
 const publishedOutput = path.join(root, "outputs", "semantic-surface");
@@ -18,6 +31,7 @@ const watchdogScript = path.join(semantic, "powerpoint_runner_watchdog.ps1");
 const watchdogCompletionMarker = path.join(root, "outputs", `.semantic-watchdog-${process.pid}.complete`);
 const watchdogReadyMarker = path.join(root, "outputs", `.semantic-watchdog-${process.pid}.ready`);
 const watchdogRecoveryReport = path.join(root, "outputs", `.semantic-watchdog-${process.pid}.json`);
+const watchdogDiagnosticLog = path.join(root, "outputs", `.semantic-watchdog-${process.pid}.log`);
 const contractPath = path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json");
 const assetPath = path.join(root, "fixtures", "independent", "7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png");
 const manifestPath = path.join(output, "frozen-manifest.json");
@@ -28,7 +42,12 @@ let python = process.env.SLIDEWRIGHT_PYTHON || "python";
 try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
 
 const activeWorkers = new Map();
+const commandReceipts = [];
 let signalCleanupStarted = false;
+
+function logicalArgument(value) {
+  return normalizeCommandArgument(root, value);
+}
 
 function terminateWorkerOnly(workerPid, expectedIdentity) {
   return terminateExactWorker(workerPid, expectedIdentity);
@@ -47,11 +66,17 @@ function cleanupForSignal(signal) {
 process.once("SIGINT", () => cleanupForSignal("SIGINT"));
 process.once("SIGTERM", () => cleanupForSignal("SIGTERM"));
 
-function run(command, args, { capture = false, timeoutMs = 120_000, ownershipRecordPath = null } = {}) {
+function run(command, args, {
+  capture = false,
+  timeoutMs = 120_000,
+  ownershipRecordPath = null,
+  timeoutStartMarkerPath = null,
+  timeoutStartDeadlineMs = 120_000,
+} = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
-      stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
     const identity = child.pid ? captureWorkerIdentity(child.pid) : null;
@@ -62,35 +87,61 @@ function run(command, args, { capture = false, timeoutMs = 120_000, ownershipRec
     let timeoutCleanup = null;
     let workerTermination = null;
     let settled = false;
-    if (capture) {
-      child.stdout.setEncoding("utf8");
-      child.stderr.setEncoding("utf8");
-      child.stdout.on("data", (chunk) => { stdout += chunk; });
-      child.stderr.on("data", (chunk) => { stderr += chunk; });
-    }
-    const timer = setTimeout(() => {
+    let timeoutPhase = null;
+    let timeoutLimitMs = timeoutMs;
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; if (!capture) process.stdout.write(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += chunk; if (!capture) process.stderr.write(chunk); });
+    const timeoutWorker = (phase, limitMs) => {
+      if (settled || timedOut) return;
       timedOut = true;
+      timeoutPhase = phase;
+      timeoutLimitMs = limitMs;
       // Terminate only the worker. PowerPoint is never force-killed; after the
       // worker's COM reference is gone, the presentation-aware cleanup may
       // close only allowlisted hidden worker decks and observe natural exit.
       const terminationIdentity = identity ?? captureWorkerIdentity(child.pid);
       workerTermination = terminateWorkerOnly(child.pid, terminationIdentity);
       if (ownershipRecordPath) timeoutCleanup = cleanupOwnedPowerPoint(ownershipRecordPath, { root });
-    }, timeoutMs);
+    };
+    let timer = null;
+    let readinessTimer = null;
+    let readinessPoll = null;
+    if (timeoutStartMarkerPath) {
+      readinessTimer = setTimeout(() => timeoutWorker("readiness", timeoutStartDeadlineMs), timeoutStartDeadlineMs);
+      readinessPoll = setInterval(() => {
+        if (!fsSync.existsSync(timeoutStartMarkerPath)) return;
+        clearInterval(readinessPoll);
+        readinessPoll = null;
+        clearTimeout(readinessTimer);
+        readinessTimer = null;
+        timer = setTimeout(() => timeoutWorker("execution", timeoutMs), timeoutMs);
+      }, 100);
+    } else {
+      timer = setTimeout(() => timeoutWorker("execution", timeoutMs), timeoutMs);
+    }
+    const clearRunTimers = () => {
+      if (timer) clearTimeout(timer);
+      if (readinessTimer) clearTimeout(readinessTimer);
+      if (readinessPoll) clearInterval(readinessPoll);
+    };
     child.once("error", (error) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      commandReceipts.push({ command: logicalArgument(command), args: args.map(logicalArgument), exitCode: null, signal: null, error: error.message, stdoutSha256: crypto.createHash("sha256").update(stdout).digest("hex"), stderrSha256: crypto.createHash("sha256").update(stderr).digest("hex") });
       reject(error);
     });
     child.once("close", (status, signal) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      commandReceipts.push({ command: logicalArgument(command), args: args.map(logicalArgument), exitCode: status, signal: signal ?? null, timedOut, stdoutSha256: crypto.createHash("sha256").update(stdout).digest("hex"), stderrSha256: crypto.createHash("sha256").update(stderr).digest("hex") });
       if (timedOut) {
-        const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutMs} ms; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
+        const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutLimitMs} ms during ${timeoutPhase}; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
         error.timeoutCleanup = timeoutCleanup;
         error.workerTermination = workerTermination;
         error.workerIdentity = identity;
@@ -153,45 +204,6 @@ function normalizedFilePath(value) {
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
-async function startRunnerWatchdog() {
-  if (process.platform !== "win32") return { enabled: false, reason: "non-windows" };
-  await Promise.all([
-    fs.rm(watchdogCompletionMarker, { force: true }),
-    fs.rm(watchdogReadyMarker, { force: true }),
-    fs.rm(watchdogRecoveryReport, { force: true }),
-  ]);
-  const startResult = spawnSync("powershell", [
-    "-NoProfile", "-Command",
-    `(Get-Process -Id ${process.pid} -ErrorAction Stop).StartTime.ToUniversalTime().ToString('o')`,
-  ], { cwd: root, encoding: "utf8", windowsHide: true });
-  if (startResult.status !== 0) throw new Error(`Could not resolve runner process start time: ${startResult.stderr}`);
-  const watchdog = spawn("powershell", [
-    "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", watchdogScript,
-    "-ParentProcessId", String(process.pid),
-    "-ParentProcessStartTime", startResult.stdout.trim(),
-    "-StagingDir", output,
-    "-CompletionMarker", watchdogCompletionMarker,
-    "-ReadyMarker", watchdogReadyMarker,
-    "-RecoveryReportJson", watchdogRecoveryReport,
-    "-CleanupScript", path.join(semantic, "cleanup_owned_powerpoint.ps1"),
-  ], { cwd: root, detached: true, windowsHide: true, stdio: "ignore" });
-  watchdog.unref();
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    try { await fs.access(watchdogReadyMarker); return { enabled: true, processId: watchdog.pid }; } catch { await delay(100); }
-  }
-  throw new Error("PowerPoint runner watchdog did not become ready within ten seconds.");
-}
-
-function canonicalHash(value) {
-  const normalize = (item) => Array.isArray(item)
-    ? item.map(normalize)
-    : item && typeof item === "object"
-      ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, normalize(item[key])]))
-      : item;
-  return crypto.createHash("sha256").update(JSON.stringify(normalize(value))).digest("hex");
-}
-
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 async function waitForPowerPointQuiescence(timeoutMs = 120_000) {
@@ -231,10 +243,26 @@ async function findPresentationTool(name) {
   throw new Error(`Could not locate presentation tool ${name}.`);
 }
 
-const runnerWatchdog = await startRunnerWatchdog();
 await fs.mkdir(publishedRuns, { recursive: true });
 await fs.rm(output, { recursive: true, force: true });
 await fs.mkdir(output, { recursive: true });
+const gitBefore = captureCleanGit(root);
+const implementationBefore = await captureSemanticImplementation(root);
+const runnerWatchdog = await startRunnerWatchdog({
+  root,
+  stagingDir: output,
+  watchdogScript,
+  cleanupScript: path.join(semantic, "cleanup_owned_powerpoint.ps1"),
+  completionMarker: watchdogCompletionMarker,
+  readyMarker: watchdogReadyMarker,
+  recoveryReport: watchdogRecoveryReport,
+  diagnosticLog: watchdogDiagnosticLog,
+});
+const normalWatchdogDir = path.join(output, "watchdog", "normal");
+await fs.mkdir(normalWatchdogDir, { recursive: true });
+await fs.copyFile(`${watchdogDiagnosticLog}.identity.json`, path.join(normalWatchdogDir, "identity-receipt.json"));
+await fs.copyFile(watchdogReadyMarker, path.join(normalWatchdogDir, "ready.marker"));
+const forcedParentWatchdog = await runForcedParentWatchdogControl({ root, output, semanticDir: semantic });
 const contract = await readJson(contractPath);
 if (contract.deterministicExports !== 3) throw new Error("The semantic contract must require exactly three deterministic exports.");
 
@@ -282,6 +310,7 @@ if (!powerPointQuiescence.valid) {
 const workerIntents = [];
 const timeoutProbeRecordPath = path.join(output, "powerpoint-timeout-probe-ownership.json");
 const timeoutProbeIntentPath = workerIntentPath("powerpoint-timeout-probe");
+const timeoutProbeReadyPath = path.join(output, "powerpoint-timeout-probe.ready");
 let timeoutProbeRejected = false;
 let timeoutProbeError = "";
 let timeoutProbeFirstCleanup = null;
@@ -291,24 +320,34 @@ try {
     "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(semantic, "powerpoint_timeout_probe.ps1"),
     "-OwnershipRecordJson", timeoutProbeRecordPath,
     "-WorkerIntentJson", timeoutProbeIntentPath,
+    "-ReadyMarker", timeoutProbeReadyPath,
     "-HoldSeconds", "120",
-  ], { capture: true, timeoutMs: 5_000, ownershipRecordPath: timeoutProbeRecordPath });
+  ], {
+    capture: true,
+    timeoutMs: 5_000,
+    timeoutStartMarkerPath: timeoutProbeReadyPath,
+    timeoutStartDeadlineMs: 120_000,
+    ownershipRecordPath: timeoutProbeRecordPath,
+  });
 } catch (error) {
   timeoutProbeError = error.message;
   timeoutProbeFirstCleanup = error.timeoutCleanup ?? null;
   timeoutProbeWorkerIdentity = error.workerIdentity ?? null;
-  timeoutProbeRejected = /exceeded 5000 ms/u.test(timeoutProbeError);
+  timeoutProbeRejected = /exceeded 5000 ms during execution/u.test(timeoutProbeError);
 }
 const timeoutProbeIntent = await validateWorkerIntent(timeoutProbeIntentPath, "timeout-cleanup-negative-control", timeoutProbeRecordPath, timeoutProbeWorkerIdentity);
 workerIntents.push({ stage: "timeout-probe", ...timeoutProbeIntent });
 const timeoutProbePostCleanup = cleanupOwnedPowerPoint(timeoutProbeRecordPath, { root });
 let timeoutProbeOwnershipHash = null;
 try { timeoutProbeOwnershipHash = await sha256(timeoutProbeRecordPath); } catch { /* reported as invalid below */ }
+let timeoutProbeReadyHash = null;
+try { timeoutProbeReadyHash = await sha256(timeoutProbeReadyPath); } catch { /* reported as invalid below */ }
 const timeoutCleanupControl = {
   valid: timeoutProbeRejected
+    && /^[a-f0-9]{64}$/u.test(timeoutProbeReadyHash ?? "")
     && timeoutProbeFirstCleanup?.valid === true
     && timeoutProbeFirstCleanup?.cleaned === true
-    && ["owned-process-already-exited", "owned-process-exited-after-com-release"].includes(timeoutProbeFirstCleanup?.reason)
+    && ["owned-process-already-exited", "owned-process-exited-after-com-release", "owned-headless-automation-process-exited-after-quit", "owned-headless-automation-process-exited-after-wm-quit"].includes(timeoutProbeFirstCleanup?.reason)
     && timeoutProbePostCleanup.valid
     && timeoutProbePostCleanup.reason === "owned-process-already-exited",
   workerTimedOut: timeoutProbeRejected,
@@ -316,6 +355,7 @@ const timeoutCleanupControl = {
   ownedProcessAbsentAfterFirstCleanup: timeoutProbeFirstCleanup?.valid === true && timeoutProbeFirstCleanup?.cleaned === true,
   ownedProcessAbsentAfterCleanup: timeoutProbePostCleanup.valid && timeoutProbePostCleanup.reason === "owned-process-already-exited",
   ownershipRecordSha256: timeoutProbeOwnershipHash,
+  readyMarkerSha256: timeoutProbeReadyHash,
   postCleanup: timeoutProbePostCleanup,
   errorSha256: crypto.createHash("sha256").update(timeoutProbeError).digest("hex"),
 };
@@ -359,6 +399,11 @@ workerIntents.push({ stage: "roundtrip-render", ...await validateWorkerIntent(ro
 const afterRenderQuiescence = await waitForPowerPointQuiescence();
 interStagePowerPointQuiescence.push({ stage: "after-roundtrip-render", ...afterRenderQuiescence });
 if (!afterRenderQuiescence.valid) throw new Error("PowerPoint did not exit cleanly after round-trip rendering.");
+await writeJson(path.join(output, "powerpoint-interstage-quiescence.json"), {
+  schemaVersion: "slidewright-powerpoint-quiescence-checkpoints/v1",
+  valid: interStagePowerPointQuiescence.length === 3 && interStagePowerPointQuiescence.every((item) => item.valid),
+  checkpoints: interStagePowerPointQuiescence,
+});
 
 const slidesTest = await findPresentationTool("slides_test.py");
 const overflowChecks = [];
@@ -384,6 +429,71 @@ for (const [label, pptx] of [["source", sourcePptx], ["roundtrip", roundtripPptx
   });
 }
 
+const finalPowerPointQuiescence = await waitForPowerPointQuiescence();
+if (!finalPowerPointQuiescence.valid || activeWorkers.size !== 0) throw new Error("C08 final process quiescence failed before watchdog completion.");
+const finalWatchdogIdentity = captureWorkerIdentity(runnerWatchdog.processId);
+const exactWatchdogIdentityPreserved = Boolean(finalWatchdogIdentity
+  && finalWatchdogIdentity.processId === runnerWatchdog.processId
+  && finalWatchdogIdentity.processName === runnerWatchdog.processName
+  && finalWatchdogIdentity.processStartTime === runnerWatchdog.processStartTime);
+let normalRecoveryReportAbsent = false;
+try { await fs.access(watchdogRecoveryReport); } catch (error) { if (error?.code === "ENOENT") normalRecoveryReportAbsent = true; else throw error; }
+if (!exactWatchdogIdentityPreserved || !normalRecoveryReportAbsent) throw new Error("C08 normal watchdog identity or recovery state drifted before completion.");
+await fs.writeFile(watchdogCompletionMarker, "complete\n", "utf8");
+await fs.copyFile(watchdogCompletionMarker, path.join(normalWatchdogDir, "completion.marker"));
+try { await fs.copyFile(watchdogDiagnosticLog, path.join(normalWatchdogDir, "diagnostic.log")); }
+catch (error) { if (error?.code === "ENOENT") await fs.writeFile(path.join(normalWatchdogDir, "diagnostic.log"), "", "utf8"); else throw error; }
+const normalIdentityReceipt = await readJson(path.join(normalWatchdogDir, "identity-receipt.json"));
+const normalIdentityReceiptSha256 = await sha256File(path.join(normalWatchdogDir, "identity-receipt.json"));
+const normalReadyMarkerSha256 = await sha256File(path.join(normalWatchdogDir, "ready.marker"));
+const normalCompletionMarkerSha256 = await sha256File(path.join(normalWatchdogDir, "completion.marker"));
+const normalReadyMarkerExact = (await fs.readFile(path.join(normalWatchdogDir, "ready.marker"), "utf8")).replace(/^\uFEFF/u, "").trim() === "ready";
+const normalCompletionMarkerExact = await fs.readFile(path.join(normalWatchdogDir, "completion.marker"), "utf8") === "complete\n";
+const normalIdentityReceiptExact = normalIdentityReceipt.schemaVersion === "slidewright-runner-watchdog-identity/v1"
+  && normalIdentityReceipt.processId === runnerWatchdog.processId
+  && normalIdentityReceipt.processName === runnerWatchdog.processName
+  && normalIdentityReceipt.processStartTime === runnerWatchdog.processStartTime;
+const normalWatchdog = {
+  schemaVersion: "slidewright-watchdog-normal-run/v1",
+  valid: runnerWatchdog.enabled === true
+    && exactWatchdogIdentityPreserved
+    && normalRecoveryReportAbsent
+    && finalPowerPointQuiescence.valid
+    && activeWorkers.size === 0
+    && normalIdentityReceiptExact
+    && normalIdentityReceiptSha256 === runnerWatchdog.identityReceiptSha256
+    && normalReadyMarkerSha256 === runnerWatchdog.readyMarkerSha256
+    && normalReadyMarkerExact
+    && normalCompletionMarkerExact,
+  startup: runnerWatchdog,
+  finalIdentity: finalWatchdogIdentity,
+  exactIdentityPreservedAtFinalization: exactWatchdogIdentityPreserved,
+  finalPowerPointQuiescence,
+  activeWorkerCount: activeWorkers.size,
+  recoveryReportAbsent: normalRecoveryReportAbsent,
+  identityReceiptExact: normalIdentityReceiptExact,
+  readyMarkerExact: normalReadyMarkerExact,
+  completionMarkerExact: normalCompletionMarkerExact,
+  identityReceiptSha256: normalIdentityReceiptSha256,
+  readyMarkerSha256: normalReadyMarkerSha256,
+  completionMarkerSha256: normalCompletionMarkerSha256,
+  diagnosticLogSha256: await sha256File(path.join(normalWatchdogDir, "diagnostic.log")),
+};
+await writeJson(path.join(normalWatchdogDir, "summary.json"), normalWatchdog);
+if (!normalWatchdog.valid) throw new Error("C08 normal watchdog completion proof is invalid.");
+await writeJson(path.join(output, "command-log.json"), {
+  schemaVersion: "slidewright-command-receipts/v1",
+  logicalCommand: "npm run semantic-surface",
+  commands: commandReceipts,
+});
+
+const gitAfter = captureCleanGit(root);
+const implementationAfter = await captureSemanticImplementation(root);
+if (gitAfter.commit !== gitBefore.commit || canonicalHash(implementationAfter) !== canonicalHash(implementationBefore)) {
+  throw new Error("C08 Git commit or implementation closure changed during the run.");
+}
+const runtimeBindings = await captureSemanticRuntime({ root, python, slidesTest });
+
 const freeze = await readJson(path.join(output, "freeze-report.json"));
 const negatives = await readJson(negativeReportPath);
 const powerPoint = await readJson(powerPointReportPath);
@@ -395,9 +505,17 @@ const exactRenderParity = sourceRender.valid && roundtripRender.valid
   && roundtripRender.renders.length === 4
   && sourceRender.renders.every((item, index) => item.sha256 === roundtripRender.renders[index]?.sha256
     && item.reviewSha256 === roundtripRender.renders[index]?.reviewSha256);
+const receipts = await collectReceiptTree(output);
 const scorecard = {
-  schemaVersion: "slidewright-semantic-surface-scorecard/v1",
+  schemaVersion: "slidewright-semantic-surface-scorecard/v2",
   valid: false,
+  provenance: {
+    git: { commit: gitBefore.commit, cleanBefore: gitBefore.clean, cleanAfter: gitAfter.clean, sameCommit: gitBefore.commit === gitAfter.commit },
+    logicalCommand: "npm run semantic-surface",
+    implementation: implementationBefore,
+    runtime: runtimeBindings,
+  },
+  receipts,
   contractSha256: await sha256(contractPath),
   sourceAssetSha256: await sha256(assetPath),
   deterministicExports: exportHashes.map((hash, index) => ({ export: index + 1, sha256: hash })),
@@ -406,13 +524,19 @@ const scorecard = {
   frozenContractValid: freeze.valid && freeze.contractValid && freeze.manifestWritten,
   exportAuditsValid: audits.every((report) => report.valid && report.checks.authoredContract),
   semanticSummary: freeze.summary,
-  negativeControls: negatives.controls.map((item) => ({ id: item.id, rejected: item.rejected, failureCodes: item.failureCodes })),
+  negativeControls: negatives.controls.map((item) => ({
+    id: item.id,
+    rejected: item.rejected,
+    failureCodes: item.failureCodes,
+    outputSha256: item.outputSha256,
+    auditSha256: item.auditSha256,
+  })),
   powerPointQuiescence,
   interStagePowerPointQuiescence,
   timeoutCleanupControl,
   workerIntents,
   workerIntentsValid: workerIntents.length === 4 && workerIntents.every((item) => /^[a-f0-9]{64}$/u.test(item.sha256)),
-  runnerWatchdog,
+  watchdog: { normal: normalWatchdog, forcedParent: forcedParentWatchdog },
   powerpoint: {
     valid: powerPoint.valid,
     serializedBySaveAs: powerPoint.serializedBySaveAs,
@@ -440,6 +564,12 @@ const scorecard = {
   overflowChecksValid: overflowChecks.length === 2 && overflowChecks.every((item) => item.valid),
 };
 scorecard.valid = scorecard.exactByteDeterminism
+  && scorecard.provenance.git.cleanBefore
+  && scorecard.provenance.git.cleanAfter
+  && scorecard.provenance.git.sameCommit
+  && scorecard.provenance.implementation.sha256 === implementationAfter.sha256
+  && scorecard.receipts.files.length > 0
+  && /^[a-f0-9]{64}$/u.test(scorecard.receipts.treeSha256)
   && scorecard.frozenContractValid
   && scorecard.exportAuditsValid
   && scorecard.semanticSummary.slides === 4
@@ -447,8 +577,11 @@ scorecard.valid = scorecard.exactByteDeterminism
   && scorecard.semanticSummary.meaningfulNotesSlides === 4
   && scorecard.semanticSummary.nestedObjects === 6
   && scorecard.negativeControls.length === 9
-  && scorecard.negativeControls.every((item) => item.rejected)
-  && (process.platform !== "win32" || scorecard.runnerWatchdog.enabled)
+  && scorecard.negativeControls.every((item) => item.rejected
+    && /^[a-f0-9]{64}$/u.test(item.outputSha256)
+    && /^[a-f0-9]{64}$/u.test(item.auditSha256))
+  && scorecard.watchdog.normal.valid
+  && scorecard.watchdog.forcedParent.valid
   && scorecard.powerPointQuiescence.valid
   && scorecard.interStagePowerPointQuiescence.length === 3
   && scorecard.interStagePowerPointQuiescence.every((item) => item.valid)
@@ -464,6 +597,12 @@ scorecard.valid = scorecard.exactByteDeterminism
 scorecard.scorecardHash = canonicalHash(scorecard);
 await writeJson(path.join(output, "scorecard.json"), scorecard);
 if (!scorecard.valid) throw new Error("C08 semantic-surface scorecard is incomplete.");
-await publishVersionedEvidence(output, publishedOutput, scorecard.scorecardHash);
-await fs.writeFile(watchdogCompletionMarker, "complete\n", "utf8");
+await verifySemanticSurfaceEvidence({ root, runDirectory: output, python, slidesTest });
+const finalRun = await publishVerifiedSemanticEvidence({
+  staging: output,
+  published: publishedOutput,
+  scorecardHash: scorecard.scorecardHash,
+  verify: (candidate) => verifySemanticSurfaceEvidence({ root, runDirectory: candidate, python, slidesTest }),
+});
+await verifySemanticSurfaceEvidence({ root, runDirectory: finalRun, python, slidesTest });
 process.stdout.write(`C08 semantic-surface benchmark passed with scorecard ${scorecard.scorecardHash}\n`);

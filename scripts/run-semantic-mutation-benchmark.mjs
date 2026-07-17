@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import crypto from "node:crypto";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { cleanupOwnedPowerPoint } from "./lib/owned-process-cleanup.mjs";
 import { publishVersionedEvidence } from "./lib/versioned-evidence-publish.mjs";
 import { captureWorkerIdentity, terminateExactWorker } from "./lib/exact-worker-process.mjs";
+import { startRunnerWatchdog } from "./lib/runner-watchdog.mjs";
+import { verifySemanticSurfaceEvidence } from "./lib/semantic-surface-evidence.mjs";
 
 const root = process.cwd();
 const publishedOutput = path.join(root, "outputs", "semantic-mutation");
@@ -24,6 +27,7 @@ const watchdogScript = path.join(semantic, "powerpoint_runner_watchdog.ps1");
 const watchdogCompletionMarker = path.join(root, "outputs", `.semantic-mutation-watchdog-${process.pid}.complete`);
 const watchdogReadyMarker = path.join(root, "outputs", `.semantic-mutation-watchdog-${process.pid}.ready`);
 const watchdogRecoveryReport = path.join(root, "outputs", `.semantic-mutation-watchdog-${process.pid}.json`);
+const watchdogDiagnosticLog = path.join(root, "outputs", `.semantic-mutation-watchdog-${process.pid}.log`);
 const baselinePptx = path.join(output, "powerpoint-normalized-baseline.pptx");
 const mutationOutputDir = path.join(output, "mutations");
 const mutationReportPath = path.join(output, "powerpoint-mutation.json");
@@ -52,7 +56,13 @@ function cleanupForSignal(signal) {
 process.once("SIGINT", () => cleanupForSignal("SIGINT"));
 process.once("SIGTERM", () => cleanupForSignal("SIGTERM"));
 
-function run(command, args, { capture = false, timeoutMs = 120_000, ownershipRecordPath = null } = {}) {
+function run(command, args, {
+  capture = false,
+  timeoutMs = 120_000,
+  ownershipRecordPath = null,
+  timeoutStartMarkerPath = null,
+  timeoutStartDeadlineMs = 120_000,
+} = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
@@ -67,32 +77,58 @@ function run(command, args, { capture = false, timeoutMs = 120_000, ownershipRec
     let timeoutCleanup = null;
     let workerTermination = null;
     let settled = false;
+    let timeoutPhase = null;
+    let timeoutLimitMs = timeoutMs;
     if (capture) {
       child.stdout.setEncoding("utf8");
       child.stderr.setEncoding("utf8");
       child.stdout.on("data", (chunk) => { stdout += chunk; });
       child.stderr.on("data", (chunk) => { stderr += chunk; });
     }
-    const timer = setTimeout(() => {
+    const timeoutWorker = (phase, limitMs) => {
+      if (settled || timedOut) return;
       timedOut = true;
+      timeoutPhase = phase;
+      timeoutLimitMs = limitMs;
       const terminationIdentity = identity ?? captureWorkerIdentity(child.pid);
       workerTermination = terminateWorkerOnly(child.pid, terminationIdentity);
       if (ownershipRecordPath) timeoutCleanup = cleanupOwnedPowerPoint(ownershipRecordPath, { root });
-    }, timeoutMs);
+    };
+    let timer = null;
+    let readinessTimer = null;
+    let readinessPoll = null;
+    if (timeoutStartMarkerPath) {
+      readinessTimer = setTimeout(() => timeoutWorker("readiness", timeoutStartDeadlineMs), timeoutStartDeadlineMs);
+      readinessPoll = setInterval(() => {
+        if (!fsSync.existsSync(timeoutStartMarkerPath)) return;
+        clearInterval(readinessPoll);
+        readinessPoll = null;
+        clearTimeout(readinessTimer);
+        readinessTimer = null;
+        timer = setTimeout(() => timeoutWorker("execution", timeoutMs), timeoutMs);
+      }, 100);
+    } else {
+      timer = setTimeout(() => timeoutWorker("execution", timeoutMs), timeoutMs);
+    }
+    const clearRunTimers = () => {
+      if (timer) clearTimeout(timer);
+      if (readinessTimer) clearTimeout(readinessTimer);
+      if (readinessPoll) clearInterval(readinessPoll);
+    };
     child.once("error", (error) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
       reject(error);
     });
     child.once("close", (status, signal) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
       if (timedOut) {
-        const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutMs} ms; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
+        const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutLimitMs} ms during ${timeoutPhase}; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
         error.timeoutCleanup = timeoutCleanup;
         error.workerTermination = workerTermination;
         error.workerIdentity = identity;
@@ -167,36 +203,6 @@ async function waitForPowerPointQuiescence(timeoutMs = 120_000) {
   return { valid: false, waitedMs: Date.now() - started, polls, reason: "powerpoint-remained-active", lastPids };
 }
 
-async function startRunnerWatchdog() {
-  if (process.platform !== "win32") return { enabled: false, reason: "non-windows" };
-  await Promise.all([
-    fs.rm(watchdogCompletionMarker, { force: true }),
-    fs.rm(watchdogReadyMarker, { force: true }),
-    fs.rm(watchdogRecoveryReport, { force: true }),
-  ]);
-  const startResult = spawnSync("powershell", [
-    "-NoProfile", "-Command",
-    `(Get-Process -Id ${process.pid} -ErrorAction Stop).StartTime.ToUniversalTime().ToString('o')`,
-  ], { cwd: root, encoding: "utf8", windowsHide: true });
-  if (startResult.status !== 0) throw new Error(`Could not resolve runner process start time: ${startResult.stderr}`);
-  const watchdog = spawn("powershell", [
-    "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", watchdogScript,
-    "-ParentProcessId", String(process.pid),
-    "-ParentProcessStartTime", startResult.stdout.trim(),
-    "-StagingDir", output,
-    "-CompletionMarker", watchdogCompletionMarker,
-    "-ReadyMarker", watchdogReadyMarker,
-    "-RecoveryReportJson", watchdogRecoveryReport,
-    "-CleanupScript", path.join(semantic, "cleanup_owned_powerpoint.ps1"),
-  ], { cwd: root, detached: true, windowsHide: true, stdio: "ignore" });
-  watchdog.unref();
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    try { await fs.access(watchdogReadyMarker); return { enabled: true, processId: watchdog.pid }; } catch { await delay(100); }
-  }
-  throw new Error("PowerPoint runner watchdog did not become ready within ten seconds.");
-}
-
 async function findPresentationTool(name) {
   const cacheRoot = path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "plugins", "cache", "openai-primary-runtime", "presentations");
   const versions = (await fs.readdir(cacheRoot, { withFileTypes: true }))
@@ -251,7 +257,7 @@ async function validateWorkerIntent(intentPath, expectedPurpose, ownershipRecord
   };
 }
 
-async function resolvePublishedBaseline(mutationContract) {
+async function resolvePublishedBaseline(mutationContract, slidesTest) {
   const currentPath = path.join(semanticSurfaceOutput, "current.json");
   let current;
   try {
@@ -278,13 +284,14 @@ async function resolvePublishedBaseline(mutationContract) {
   const scorecardForHash = { ...sourceScorecard };
   delete scorecardForHash.scorecardHash;
   const computedScorecardHash = canonicalHash(scorecardForHash);
-  if (sourceScorecard.schemaVersion !== "slidewright-semantic-surface-scorecard/v1"
+  if (sourceScorecard.schemaVersion !== "slidewright-semantic-surface-scorecard/v2"
     || sourceScorecard.contractSha256 !== baselineContractSha256
     || !sourceScorecard.valid
     || sourceScorecard.scorecardHash !== current.scorecardHash
     || computedScorecardHash !== current.scorecardHash) {
     throw new Error("C08 current pointer does not resolve to a valid, hash-authenticated scorecard.");
   }
+  await verifySemanticSurfaceEvidence({ root, runDirectory, python, slidesTest });
   const sourceBaseline = path.join(runDirectory, "powerpoint-roundtrip.pptx");
   const sourceBaselineSha256 = await sha256(sourceBaseline);
   if (sourceScorecard.powerpoint?.roundtripPptxSha256 !== sourceBaselineSha256) {
@@ -315,7 +322,8 @@ if (!Array.isArray(mutationContract.negativeControls) || mutationContract.negati
   throw new Error("C18 contract must declare exactly nine destructive controls.");
 }
 
-const sourceBinding = await resolvePublishedBaseline(mutationContract);
+const slidesTest = await findPresentationTool("slides_test.py");
+const sourceBinding = await resolvePublishedBaseline(mutationContract, slidesTest);
 await fs.mkdir(publishedRuns, { recursive: true });
 await fs.mkdir(output, { recursive: true });
 await fs.copyFile(sourceBinding.sourceBaseline, baselinePptx, fs.constants.COPYFILE_EXCL);
@@ -328,12 +336,21 @@ await writeJson(path.join(output, "source-binding.json"), {
   semanticSurfaceScorecardSha256: await sha256(sourceBinding.sourceScorecardPath),
   baselineSourceRun: sourceBinding.current.run,
   baselineSourcePptxSha256: sourceBinding.sourceBaselineSha256,
-  copiedBaselinePptxSha256,
+  copiedBaselinePptxSha256: copiedBaselineSha256,
   mutationContractSha256: await sha256(mutationContractPath),
   baselineContractSha256: sourceBinding.baselineContractSha256,
 });
 
-const runnerWatchdog = await startRunnerWatchdog();
+const runnerWatchdog = await startRunnerWatchdog({
+  root,
+  stagingDir: output,
+  watchdogScript,
+  cleanupScript: path.join(semantic, "cleanup_owned_powerpoint.ps1"),
+  completionMarker: watchdogCompletionMarker,
+  readyMarker: watchdogReadyMarker,
+  recoveryReport: watchdogRecoveryReport,
+  diagnosticLog: watchdogDiagnosticLog,
+});
 const initialQuiescence = await waitForPowerPointQuiescence();
 await writeJson(path.join(output, "powerpoint-quiescence.json"), initialQuiescence);
 if (!initialQuiescence.valid) {
@@ -344,6 +361,7 @@ const workerIntents = [];
 // Prove that worker timeout cleanup is presentation-aware and never force-kills PowerPoint.
 const timeoutProbeRecordPath = path.join(output, "powerpoint-timeout-probe-ownership.json");
 const timeoutProbeIntentPath = workerIntentPath("powerpoint-timeout-probe");
+const timeoutProbeReadyPath = path.join(output, "powerpoint-timeout-probe.ready");
 let timeoutProbeRejected = false;
 let timeoutProbeError = "";
 let timeoutProbeFirstCleanup = null;
@@ -353,23 +371,32 @@ try {
     "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(semantic, "powerpoint_timeout_probe.ps1"),
     "-OwnershipRecordJson", timeoutProbeRecordPath,
     "-WorkerIntentJson", timeoutProbeIntentPath,
+    "-ReadyMarker", timeoutProbeReadyPath,
     "-HoldSeconds", "120",
-  ], { timeoutMs: 5_000, ownershipRecordPath: timeoutProbeRecordPath });
+  ], {
+    timeoutMs: 5_000,
+    timeoutStartMarkerPath: timeoutProbeReadyPath,
+    timeoutStartDeadlineMs: 120_000,
+    ownershipRecordPath: timeoutProbeRecordPath,
+  });
 } catch (error) {
   timeoutProbeError = error.message;
   timeoutProbeFirstCleanup = error.timeoutCleanup ?? null;
   timeoutProbeWorkerIdentity = error.workerIdentity ?? null;
-  timeoutProbeRejected = /exceeded 5000 ms/u.test(timeoutProbeError);
+  timeoutProbeRejected = /exceeded 5000 ms during execution/u.test(timeoutProbeError);
 }
 workerIntents.push({ stage: "timeout-probe", ...await validateWorkerIntent(timeoutProbeIntentPath, "timeout-cleanup-negative-control", timeoutProbeRecordPath, timeoutProbeWorkerIdentity) });
 const timeoutProbePostCleanup = cleanupOwnedPowerPoint(timeoutProbeRecordPath, { root });
 let timeoutProbeOwnershipHash = null;
 try { timeoutProbeOwnershipHash = await sha256(timeoutProbeRecordPath); } catch { /* invalid below */ }
+let timeoutProbeReadyHash = null;
+try { timeoutProbeReadyHash = await sha256(timeoutProbeReadyPath); } catch { /* invalid below */ }
 const timeoutCleanupControl = {
   valid: timeoutProbeRejected
+    && /^[a-f0-9]{64}$/u.test(timeoutProbeReadyHash ?? "")
     && timeoutProbeFirstCleanup?.valid === true
     && timeoutProbeFirstCleanup?.cleaned === true
-    && ["owned-process-already-exited", "owned-process-exited-after-com-release"].includes(timeoutProbeFirstCleanup?.reason)
+    && ["owned-process-already-exited", "owned-process-exited-after-com-release", "owned-headless-automation-process-exited-after-quit", "owned-headless-automation-process-exited-after-wm-quit"].includes(timeoutProbeFirstCleanup?.reason)
     && timeoutProbePostCleanup.valid
     && timeoutProbePostCleanup.reason === "owned-process-already-exited",
   workerTimedOut: timeoutProbeRejected,
@@ -377,6 +404,7 @@ const timeoutCleanupControl = {
   ownedProcessAbsentAfterFirstCleanup: timeoutProbeFirstCleanup?.valid === true && timeoutProbeFirstCleanup?.cleaned === true,
   ownedProcessAbsentAfterCleanup: timeoutProbePostCleanup.valid && timeoutProbePostCleanup.reason === "owned-process-already-exited",
   ownershipRecordSha256: timeoutProbeOwnershipHash,
+  readyMarkerSha256: timeoutProbeReadyHash,
   postCleanup: timeoutProbePostCleanup,
   errorSha256: crypto.createHash("sha256").update(timeoutProbeError).digest("hex"),
 };
@@ -578,7 +606,6 @@ for (const control of negativeControls.controls) {
   control.auditReportSha256 = await sha256(controlAuditPath);
 }
 
-const slidesTest = await findPresentationTool("slides_test.py");
 const overflowChecks = [];
 for (const deck of decks) {
   const result = await runChecked(python, [slidesTest, deck.pptx], { timeoutMs: 120_000 });

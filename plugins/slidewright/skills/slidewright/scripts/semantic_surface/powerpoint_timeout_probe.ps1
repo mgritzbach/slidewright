@@ -1,7 +1,8 @@
 param(
   [Parameter(Mandatory = $true)][string]$OwnershipRecordJson,
   [int]$HoldSeconds = 120,
-  [string]$WorkerIntentJson = ''
+  [string]$WorkerIntentJson = '',
+  [string]$ReadyMarker = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,8 +24,13 @@ if ($workerIntentPath) {
   Move-Item -Force -LiteralPath $intentTemporary -Destination $workerIntentPath
 }
 $ownershipPath = [IO.Path]::GetFullPath($OwnershipRecordJson)
+$readyPath = if ($ReadyMarker) { [IO.Path]::GetFullPath($ReadyMarker) } else { '' }
 New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($ownershipPath)) | Out-Null
 if (Test-Path -LiteralPath $ownershipPath) { Remove-Item -Force -LiteralPath $ownershipPath }
+if ($readyPath) {
+  New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($readyPath)) | Out-Null
+  if (Test-Path -LiteralPath $readyPath) { Remove-Item -Force -LiteralPath $readyPath }
+}
 
 Add-Type -TypeDefinition @"
 using System;
@@ -35,7 +41,7 @@ public static class SlidewrightTimeoutProbeNativeMethods {
 }
 "@
 
-$existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue).Id)
+$existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue) | ForEach-Object { [int]$_.Id })
 if ($existingIds.Count -gt 0) {
   throw 'Timeout probe requires PowerPoint to be fully closed before COM creation; refusing to attach to an existing user session.'
 }
@@ -96,6 +102,11 @@ try {
   $temporary = "$ownershipPath.tmp"
   $record | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 -LiteralPath $temporary
   Move-Item -Force -LiteralPath $temporary -Destination $ownershipPath
+  if ($readyPath) {
+    $readyTemporary = "$readyPath.tmp-$PID"
+    Set-Content -Encoding UTF8 -LiteralPath $readyTemporary -Value 'ready'
+    Move-Item -Force -LiteralPath $readyTemporary -Destination $readyPath
+  }
   Start-Sleep -Seconds $HoldSeconds
   throw 'Timeout probe was not terminated by the runner.'
 } finally {

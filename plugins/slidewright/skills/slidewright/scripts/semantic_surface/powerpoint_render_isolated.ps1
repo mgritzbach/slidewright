@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'presentation_path_identity.ps1')
 $workerIntentPath = if ($WorkerIntentJson) { [IO.Path]::GetFullPath($WorkerIntentJson) } else { '' }
 if ($workerIntentPath) {
   New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($workerIntentPath)) | Out-Null
@@ -87,24 +88,19 @@ function Test-EmptyPresentationInventory($Application) {
   return $firstCount -eq 0 -and $secondCount -eq 0 -and -not $firstVisible -and -not $secondVisible
 }
 
-function Get-NormalizedPresentationPath([string]$Value) {
-  if (-not $Value) { return $null }
-  try { return [IO.Path]::GetFullPath($Value) } catch { return $null }
-}
-
 function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [string[]]$OwnedPresentationPaths, [string]$Context) {
   if (-not $CapturedPresentation) { return }
   if (-not $Application) { throw "$Context close refused because the PowerPoint application reference is unavailable." }
   $allowedPaths = @($OwnedPresentationPaths | ForEach-Object { Get-NormalizedPresentationPath ([string]$_) } | Where-Object { $_ })
-  $capturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+  $capturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
   if (-not $capturedPath -or -not ($allowedPaths -contains $capturedPath)) {
     throw "$Context close refused because the captured presentation path is not allowlisted."
   }
   for ($sample = 1; $sample -le 2; $sample++) {
     if ([int]$Application.Visible -ne 0) { throw "$Context close refused because the PowerPoint application became visible." }
     if ([int]$Application.Presentations.Count -ne 1) { throw "$Context close refused because the presentation inventory changed." }
-    $inventoryPath = Get-NormalizedPresentationPath ([string]$Application.Presentations.Item(1).FullName)
-    $currentCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+    $inventoryPath = Get-NormalizedPresentationPath ([string]$Application.Presentations.Item(1).FullName) $allowedPaths
+    $currentCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
     if ($inventoryPath -ne $capturedPath -or $currentCapturedPath -ne $capturedPath -or -not ($allowedPaths -contains $inventoryPath)) {
       throw "$Context close refused because the captured presentation identity changed."
     }
@@ -113,8 +109,8 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
   if ([int]$Application.Visible -ne 0 -or [int]$Application.Presentations.Count -ne 1) {
     throw "$Context close refused because PowerPoint state changed immediately before close."
   }
-  $finalInventoryPath = Get-NormalizedPresentationPath ([string]$Application.Presentations.Item(1).FullName)
-  $finalCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+  $finalInventoryPath = Get-NormalizedPresentationPath ([string]$Application.Presentations.Item(1).FullName) $allowedPaths
+  $finalCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
   if ($finalInventoryPath -ne $capturedPath -or $finalCapturedPath -ne $capturedPath -or -not ($allowedPaths -contains $finalInventoryPath)) {
     throw "$Context close refused because presentation identity changed immediately before close."
   }
@@ -124,7 +120,7 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
 $ownedPaths = @($inputPath)
 
 function Invoke-IsolatedPowerPoint([string]$Purpose, [scriptblock]$Action) {
-  $existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue).Id)
+  $existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue) | ForEach-Object { [int]$_.Id })
   if ($existingIds.Count -gt 0) {
     throw "Isolated render '$Purpose' requires PowerPoint to be fully closed before COM creation; refusing to attach to an existing user session."
   }

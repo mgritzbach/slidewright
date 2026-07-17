@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'presentation_path_identity.ps1')
 $workerIntentPath = if ($WorkerIntentJson) { [IO.Path]::GetFullPath($WorkerIntentJson) } else { '' }
 if ($workerIntentPath) {
   New-Item -ItemType Directory -Force -Path ([IO.Path]::GetDirectoryName($workerIntentPath)) | Out-Null
@@ -388,11 +389,6 @@ function Test-EmptyHiddenApplication($Application) {
   }
 }
 
-function Get-NormalizedPresentationPath([string]$Value) {
-  if (-not $Value) { return $null }
-  try { return [IO.Path]::GetFullPath($Value) } catch { return $null }
-}
-
 function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [string[]]$OwnedPresentationPaths, [string]$Context) {
   if (-not $CapturedPresentation) { return }
   if (-not $Application) { throw "$Context close refused because the PowerPoint application reference is unavailable." }
@@ -401,7 +397,7 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
   try {
     $presentations = $Application.Presentations
     $allowedPaths = @($OwnedPresentationPaths | ForEach-Object { Get-NormalizedPresentationPath ([string]$_) } | Where-Object { $_ })
-    $capturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+    $capturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
     if (-not $capturedPath -or -not ($allowedPaths -contains $capturedPath)) {
       throw "$Context close refused because the captured presentation path is not allowlisted."
     }
@@ -409,8 +405,8 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
       if ([int]$Application.Visible -ne 0) { throw "$Context close refused because the PowerPoint application became visible." }
       if ([int]$presentations.Count -ne 1) { throw "$Context close refused because the presentation inventory changed." }
       $inventoryPresentation = $presentations.Item(1)
-      $inventoryPath = Get-NormalizedPresentationPath ([string]$inventoryPresentation.FullName)
-      $currentCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+      $inventoryPath = Get-NormalizedPresentationPath ([string]$inventoryPresentation.FullName) $allowedPaths
+      $currentCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
       Release-ComReference ([ref]$inventoryPresentation)
       if ($inventoryPath -ne $capturedPath -or $currentCapturedPath -ne $capturedPath -or -not ($allowedPaths -contains $inventoryPath)) {
         throw "$Context close refused because the captured presentation identity changed."
@@ -421,8 +417,8 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
       throw "$Context close refused because PowerPoint state changed immediately before close."
     }
     $inventoryPresentation = $presentations.Item(1)
-    $finalInventoryPath = Get-NormalizedPresentationPath ([string]$inventoryPresentation.FullName)
-    $finalCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName)
+    $finalInventoryPath = Get-NormalizedPresentationPath ([string]$inventoryPresentation.FullName) $allowedPaths
+    $finalCapturedPath = Get-NormalizedPresentationPath ([string]$CapturedPresentation.FullName) $allowedPaths
     Release-ComReference ([ref]$inventoryPresentation)
     if ($finalInventoryPath -ne $capturedPath -or $finalCapturedPath -ne $capturedPath -or -not ($allowedPaths -contains $finalInventoryPath)) {
       throw "$Context close refused because presentation identity changed immediately before close."
@@ -436,7 +432,7 @@ function Close-CapturedOwnedPresentation($Application, $CapturedPresentation, [s
 
 $caseOutputs = @($contract.cases | ForEach-Object { Join-Path $outputPath ("{0}.pptx" -f $_.id) })
 $ownedPaths = @($inputPath) + @($caseOutputs)
-$existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue).Id)
+$existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue) | ForEach-Object { [int]$_.Id })
 if ($existingIds.Count -gt 0) { throw 'Semantic mutation requires PowerPoint to be fully closed before COM creation.' }
 
 $powerPoint = $null
