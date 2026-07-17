@@ -114,7 +114,15 @@ function planQuality(plan) {
   });
   const immutableLayoutPolicy = plan.layout?.geometryTolerance === REQUEST_QUALITY_CONTRACT.geometryTolerancePx
     && stableJson(plan.layout?.approvedFontSizesPt) === stableJson(REQUEST_QUALITY_CONTRACT.approvedFontSizesPt)
-    && plan.slides.every((slide) => slide.quality == null);
+    && stableJson(plan.designSystem?.insetTokensPx) === stableJson(REQUEST_QUALITY_CONTRACT.insetTokensPx)
+    && plan.designSystem?.maximumInsetPx === REQUEST_QUALITY_CONTRACT.maximumInsetPx
+    && stableJson(plan.designSystem?.paragraphSpacingPt) === stableJson(REQUEST_QUALITY_CONTRACT.paragraphSpacingPt)
+    && plan.designSystem?.logicalMaster?.nativePowerPointMasterClaimed === false
+    && plan.slides.every((slide) => slide.quality == null
+      && typeof slide.archetypeId === "string"
+      && slide.designMasterId === plan.designSystem?.logicalMaster?.id
+      && Array.isArray(slide.typedExceptions)
+      && slide.typedExceptions.length === 0);
   return {
     slideCount: plan.slides.length,
     textShapeCount: text.length,

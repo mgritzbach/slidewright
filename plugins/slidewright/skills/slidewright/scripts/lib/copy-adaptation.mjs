@@ -180,6 +180,16 @@ function descriptorsFor(slide) {
   if (slide.layout === "section") return [
     { key: "subtitle", label: "DETAIL", path: ["subtitle"], shapeId: "s1-subtitle", defaultBold: false },
   ];
+  if (slide.layout === "icon-list") return (slide.items ?? []).map((item, index) => ({
+    key: `item-${item.id ?? index + 1}`,
+    label: `${item.label ?? "ITEM"}`.toUpperCase(),
+    path: ["items", index, "body"],
+    shapeId: `s1-${item.id ?? `item-${index + 1}`}-body`,
+    defaultBold: false,
+  }));
+  // Table cells are validated cell-by-cell by the compiler and linter. They
+  // cannot be moved into prose continuation slides without changing semantics.
+  if (slide.layout === "table") return [];
   return [{ key: "body", label: "BODY", path: ["body"], shapeId: "s1-body", defaultBold: false }];
 }
 
@@ -218,7 +228,7 @@ export function adaptDeckCopyToFit(input, { maxSlides = 200 } = {}) {
     const flexibleShapeIds = new Set(descriptors.map((descriptor) => descriptor.shapeId));
     const blocked = originalPlan.shapes.filter((shape) => shape.type === "text" && shape.fit?.fits === false && !flexibleShapeIds.has(shape.id));
     if (blocked.length) throw new Error(`Slide '${sourceId}' has non-splittable text below the quality floor: ${blocked.map((shape) => shape.id).join(", ")}.`);
-    const continuationShape = continuationPrototype(source, sourceSlide);
+    const continuationShape = descriptors.length ? continuationPrototype(source, sourceSlide) : null;
     const original = structuredClone(sourceSlide);
     const continuations = [];
 

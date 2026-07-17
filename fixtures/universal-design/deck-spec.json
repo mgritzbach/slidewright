@@ -1,0 +1,93 @@
+{
+  "version": "0.2",
+  "title": "Universal design contract fixture",
+  "slides": [
+    {
+      "id": "universal-hero",
+      "layout": "hero",
+      "eyebrow": "Universal contract",
+      "title": {
+        "runs": [
+          { "text": "Every deck follows one ", "bold": false },
+          { "text": "auditable design system", "bold": true }
+        ]
+      },
+      "body": {
+        "paragraphs": [
+          { "runs": [{ "text": "Native objects remain editable after delivery.", "bold": false }] },
+          { "runs": [{ "text": "Spacing, roles, and containment remain deterministic.", "bold": false }] }
+        ]
+      },
+      "callout": "Formatting integrity is a release gate, not a one-deck preference."
+    },
+    {
+      "id": "universal-section",
+      "layout": "section",
+      "title": "One logical master, declared page archetypes",
+      "subtitle": "Page roles may differ without introducing accidental typography or spacing drift."
+    },
+    {
+      "id": "universal-comparison",
+      "layout": "two-column",
+      "title": "Repeated components keep the same hierarchy",
+      "left": {
+        "heading": "HEADLINE",
+        "body": "A stable component role controls type, emphasis, color, insets, and paragraph rhythm."
+      },
+      "right": {
+        "heading": "BODY",
+        "body": "Declared variants may change color while preserving the underlying hierarchy and spacing contract."
+      }
+    },
+    {
+      "id": "universal-table",
+      "layout": "table",
+      "title": "Native tables keep symmetric cell margins",
+      "table": {
+        "columns": ["Rule", "Owner", "Evidence", "Status"],
+        "rows": [
+          ["Insets", "Compiler", "OOXML cell margins", "Pass"],
+          ["Typography", "Design system", "Integer point sizes", "Pass"],
+          ["Editability", "Renderer", "Native table cells", "Pass"],
+          ["Containment", "Linter", "No visible overflow", "Pass"]
+        ]
+      }
+    },
+    {
+      "id": "universal-icons",
+      "layout": "icon-list",
+      "title": "Icons explain the concepts they accompany",
+      "items": [
+        { "id": "goal", "label": "Goal", "body": "The outcome and why it matters.", "conceptId": "goal", "icon": "target" },
+        { "id": "context", "label": "Context", "body": "Files, examples, and current state.", "conceptId": "context", "icon": "globe" },
+        { "id": "constraints", "label": "Constraints", "body": "Scope and explicit boundaries.", "conceptId": "constraints", "icon": "guardrail" },
+        { "id": "done", "label": "Done when", "body": "Checks, output, and review evidence.", "conceptId": "completion", "icon": "check" }
+      ]
+    },
+    {
+      "id": "universal-continuation",
+      "layout": "continuation",
+      "eyebrow": "Continuation",
+      "title": "Dense copy moves to a roomier page",
+      "body": {
+        "paragraphs": [
+          { "runs": [{ "text": "Slidewright preserves the declared body role instead of shrinking below the minimum.", "bold": false }] },
+          { "runs": [{ "text": "The continuation archetype keeps the same master, type system, and spacing scale.", "bold": false }] }
+        ]
+      }
+    },
+    {
+      "id": "universal-comparison-repeat",
+      "layout": "two-column",
+      "title": "Repeated components remain identical across slides",
+      "left": {
+        "heading": "HEADLINE",
+        "body": "A second page uses the same family, slot, variant, type, emphasis, insets, and paragraph rhythm."
+      },
+      "right": {
+        "heading": "BODY",
+        "body": "The exported deck now contains a genuine same-family and same-variant repetition for audit and visual review."
+      }
+    }
+  ]
+}

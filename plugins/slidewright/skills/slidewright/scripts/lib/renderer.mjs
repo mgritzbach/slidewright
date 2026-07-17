@@ -13,8 +13,8 @@ async function writeBlob(filePath, blob) {
   await fs.writeFile(filePath, new Uint8Array(await blob.arrayBuffer()));
 }
 
-function toArtifactTextRuns(shape) {
-  return shape.text.runs.map((run) => ({
+function toArtifactRun(shape, run) {
+  return {
     run: run.text,
     textStyle: {
       bold: Boolean(run.bold),
@@ -23,7 +23,19 @@ function toArtifactTextRuns(shape) {
       typeface: shape.style.typeface,
       color: run.color ?? shape.style.color,
     },
-  }));
+  };
+}
+
+function toArtifactParagraphs(shape) {
+  const paragraphs = shape.text?.paragraphs?.length
+    ? shape.text.paragraphs
+    : [{ runs: shape.text?.runs ?? [], bullet: false, level: 0, spaceBeforePt: 0, spaceAfterPt: 0 }];
+  return paragraphs.map((paragraph) => {
+    const prefix = paragraph.bullet
+      ? [{ text: `${"  ".repeat(paragraph.level ?? 0)}\u2022 `, bold: false, italic: false }]
+      : [];
+    return [...prefix, ...(paragraph.runs ?? [])].map((run) => toArtifactRun(shape, run));
+  });
 }
 const normalizerPath = fileURLToPath(new URL("./normalize_pptx.py", import.meta.url));
 
@@ -33,6 +45,20 @@ function semanticMetadata(plan) {
     slides: plan.slides.map((slide, slideIndex) => ({
       slideIndex: slideIndex + 1,
       shapes: slide.shapes.flatMap((shape) => {
+        if (shape.semanticType === "icon") {
+          return [{
+            id: shape.id,
+            title: "Slidewright native semantic icon",
+            payload: {
+              kind: "semantic-icon",
+              representation: shape.icon?.representation,
+              icon: shape.icon?.name,
+              conceptId: shape.semanticBinding?.conceptId,
+              labelId: shape.semanticBinding?.labelId,
+              decorative: shape.semanticBinding?.decorative,
+            },
+          }];
+        }
         if (shape.semanticType === "chart-component") {
           return [{
             id: shape.id,
@@ -123,6 +149,45 @@ export async function renderPlan(plan, { out, previewDir }) {
     const slide = presentation.slides.add();
     slide.background.fill = slidePlan.background;
     for (const shape of slidePlan.shapes) {
+      if (shape.type === "table") {
+        const values = shape.table.values;
+        const table = slide.tables.add({
+          rows: values.length,
+          columns: values[0].length,
+          left: shape.position.left,
+          top: shape.position.top,
+          width: shape.position.width,
+          height: shape.position.height,
+          columnWidths: shape.table.columnWidths,
+          values,
+        });
+        table.data.name = shape.id;
+        table.styleOptions = { headerRow: true, bandedRows: false, firstColumn: false };
+        table.borders.assign({ style: "solid", fill: plan.theme.colors.border, width: 1 });
+        const applyTableStyle = (row, rowCount, style) => {
+          table.cells.block({ row, column: 0, rowCount, columnCount: values[0].length }).assign({
+            fill: style.fill,
+            // artifact-tool currently serializes native table text at 75% of
+            // the requested value. Compensate internally so OOXML retains the
+            // exact conventional integer point size declared in the plan.
+            textStyle: {
+              color: style.color,
+              fontSize: style.fontSizePt * (4 / 3),
+              bold: style.bold,
+              typeface: style.typeface,
+            },
+            margins: {
+              left: style.insets.left,
+              right: style.insets.right,
+              top: style.insets.top,
+              bottom: style.insets.bottom,
+            },
+          });
+        };
+        applyTableStyle(0, shape.table.headerRows, shape.table.styles.header);
+        applyTableStyle(shape.table.headerRows, values.length - shape.table.headerRows, shape.table.styles.body);
+        continue;
+      }
       if (shape.type === "shape") {
         slide.shapes.add({
           geometry: shape.geometry,
@@ -141,7 +206,13 @@ export async function renderPlan(plan, { out, previewDir }) {
         fill: "none",
         line: { style: "solid", fill: "none", width: 0 },
       });
-      textbox.text.set([[...toArtifactTextRuns(shape)]]);
+      textbox.text.set(toArtifactParagraphs(shape));
+      for (const [paragraphIndex, paragraph] of (shape.text?.paragraphs ?? []).entries()) {
+        const renderedParagraph = textbox.text.paragraphs.getItem(paragraphIndex);
+        // artifact-tool exposes DrawingML's spcPts integer directly (hundredths of a point).
+        renderedParagraph.spaceBefore = Math.round(Number(paragraph.spaceBeforePt ?? 0) * 100);
+        renderedParagraph.spaceAfter = Math.round(Number(paragraph.spaceAfterPt ?? 0) * 100);
+      }
       textbox.text.style = {
         color: shape.style.color,
         alignment: shape.style.alignment,

@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -27,6 +29,28 @@ def shape_name(shape: ET.Element) -> str | None:
     return prop.get("name") if prop is not None else None
 
 
+def graphic_name(frame: ET.Element) -> str | None:
+    prop = frame.find("p:nvGraphicFramePr/p:cNvPr", NS)
+    return prop.get("name") if prop is not None else None
+
+
+def semantic_payload(shape: ET.Element) -> dict | None:
+    prop = shape.find("p:nvSpPr/p:cNvPr", NS)
+    description = prop.get("descr", "") if prop is not None else ""
+    prefix = "slidewright-chart:v1:"
+    if not description.startswith(prefix):
+        return None
+    try:
+        encoded, digest = description[len(prefix):].rsplit(":", 1)
+        raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+        if hashlib.sha256(raw).hexdigest() != digest:
+            return None
+        payload = json.loads(raw)
+        return payload if isinstance(payload, dict) else None
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return None
+
+
 def color(node: ET.Element | None) -> str | None:
     if node is None:
         return None
@@ -45,13 +69,19 @@ def slide_names(archive: zipfile.ZipFile) -> list[str]:
 
 def audit(pptx: Path, plan: dict) -> dict:
     report = {
-        "schemaVersion": "slidewright-request-plan-audit/v1",
+        "schemaVersion": "slidewright-request-plan-audit/v3",
         "valid": False,
         "slides": 0,
         "expectedObjects": 0,
         "actualObjects": 0,
         "expectedTextObjects": 0,
         "matchedTextObjects": 0,
+        "expectedParagraphs": 0,
+        "matchedParagraphs": 0,
+        "expectedTables": 0,
+        "matchedTables": 0,
+        "expectedSemanticIcons": 0,
+        "matchedSemanticIcons": 0,
         "pictures": 0,
         "graphicFrames": 0,
         "failures": [],
@@ -79,22 +109,28 @@ def audit(pptx: Path, plan: dict) -> dict:
             report["graphicFrames"] += len(graphic_frames)
             if pictures:
                 fail(report, index, "slide", "pictures", 0, len(pictures))
-            if graphic_frames:
-                fail(report, index, "slide", "graphic-frames", 0, len(graphic_frames))
             shapes = root.findall("p:cSld/p:spTree/p:sp", NS)
-            actual_order = [shape_name(shape) for shape in shapes]
+            shape_tree = root.find("p:cSld/p:spTree", NS)
+            object_nodes = list(shape_tree) if shape_tree is not None else []
+            actual_order = []
+            for node in object_nodes:
+                if node.tag == f"{{{P}}}sp":
+                    actual_order.append(shape_name(node))
+                elif node.tag == f"{{{P}}}graphicFrame":
+                    actual_order.append(graphic_name(node))
             expected_order = [shape["id"] for shape in expected_slide["shapes"]]
             report["expectedObjects"] += len(expected_order)
             report["actualObjects"] += len(actual_order)
             if actual_order != expected_order:
                 fail(report, index, "slide", "object-names-and-order", expected_order, actual_order)
             actual_by_name = {shape_name(shape): shape for shape in shapes if shape_name(shape)}
+            actual_tables_by_name = {graphic_name(frame): frame for frame in graphic_frames if graphic_name(frame)}
             for expected in expected_slide["shapes"]:
-                shape = actual_by_name.get(expected["id"])
+                shape = actual_tables_by_name.get(expected["id"]) if expected["type"] == "table" else actual_by_name.get(expected["id"])
                 if shape is None:
                     fail(report, index, expected["id"], "exists", True, False)
                     continue
-                xfrm = shape.find("p:spPr/a:xfrm", NS)
+                xfrm = shape.find("p:xfrm", NS) if expected["type"] == "table" else shape.find("p:spPr/a:xfrm", NS)
                 off = xfrm.find("a:off", NS) if xfrm is not None else None
                 ext = xfrm.find("a:ext", NS) if xfrm is not None else None
                 actual_position = None if off is None or ext is None else {
@@ -109,22 +145,110 @@ def audit(pptx: Path, plan: dict) -> dict:
                     for field in ("left", "top", "width", "height"):
                         if not approx(actual_position[field], expected["position"][field]):
                             fail(report, index, expected["id"], field, expected["position"][field], round(actual_position[field], 3))
+                if expected["type"] == "table":
+                    report["expectedTables"] += 1
+                    before_failures = len(report["failures"])
+                    expected_values = expected["table"]["values"]
+                    row_nodes = shape.findall(".//a:tbl/a:tr", NS)
+                    actual_values = [["".join(text.text or "" for text in cell.findall(".//a:t", NS)) for cell in row.findall("a:tc", NS)] for row in row_nodes]
+                    if actual_values != expected_values:
+                        fail(report, index, expected["id"], "table-values", expected_values, actual_values)
+                    for row_index, row in enumerate(row_nodes):
+                        style_name = "header" if row_index < int(expected["table"].get("headerRows", 1)) else "body"
+                        style = expected["table"]["styles"][style_name]
+                        for column_index, cell in enumerate(row.findall("a:tc", NS)):
+                            cell_id = f"r{row_index + 1}c{column_index + 1}"
+                            props = cell.find("a:tcPr", NS)
+                            for side, attribute in {"left": "marL", "right": "marR", "top": "marT", "bottom": "marB"}.items():
+                                actual_margin = int(props.get(attribute, "0")) / EMU_PER_PX if props is not None else None
+                                if actual_margin is None or not approx(actual_margin, style["insets"][side], 0.01):
+                                    fail(report, index, expected["id"], f"{cell_id}-inset-{side}", style["insets"][side], actual_margin)
+                            run_props = cell.find("a:txBody/a:p/a:r/a:rPr", NS)
+                            raw_size = run_props.get("sz") if run_props is not None else None
+                            actual_size = int(raw_size) / 100 if raw_size and raw_size.isdigit() else None
+                            if actual_size != style["fontSizePt"]:
+                                fail(report, index, expected["id"], f"{cell_id}-size", style["fontSizePt"], actual_size)
+                            actual_bold = run_props is not None and run_props.get("b", "0") in {"1", "true"}
+                            if actual_bold != bool(style["bold"]):
+                                fail(report, index, expected["id"], f"{cell_id}-bold", bool(style["bold"]), actual_bold)
+                            latin = run_props.find("a:latin", NS) if run_props is not None else None
+                            actual_face = latin.get("typeface") if latin is not None else None
+                            if actual_face != style["typeface"]:
+                                fail(report, index, expected["id"], f"{cell_id}-typeface", style["typeface"], actual_face)
+                            actual_color = color(run_props)
+                            if actual_color != style["color"].upper():
+                                fail(report, index, expected["id"], f"{cell_id}-color", style["color"].upper(), actual_color)
+                    if len(report["failures"]) == before_failures:
+                        report["matchedTables"] += 1
+                    continue
                 if expected["type"] != "text":
                     if shape.findall(".//a:t", NS):
                         fail(report, index, expected["id"], "unexpected-text", 0, len(shape.findall(".//a:t", NS)))
                     continue
                 report["expectedTextObjects"] += 1
-                actual_text = "".join(node.text or "" for node in shape.findall(".//a:t", NS))
-                expected_text = "".join(run["text"] for run in expected["text"]["runs"])
+                if expected.get("semanticType") == "icon":
+                    report["expectedSemanticIcons"] += 1
+                    payload = semantic_payload(shape)
+                    binding = expected.get("semanticBinding", {})
+                    expected_payload = {
+                        "kind": "semantic-icon",
+                        "representation": expected.get("icon", {}).get("representation"),
+                        "icon": expected.get("icon", {}).get("name"),
+                        "conceptId": binding.get("conceptId"),
+                        "labelId": binding.get("labelId"),
+                        "decorative": binding.get("decorative"),
+                    }
+                    if payload != expected_payload:
+                        fail(report, index, expected["id"], "semantic-icon-metadata", expected_payload, payload)
+                    else:
+                        report["matchedSemanticIcons"] += 1
+                expected_paragraphs = expected["text"].get("paragraphs") or [{"runs": expected["text"]["runs"], "bullet": False, "level": 0, "spaceBeforePt": 0, "spaceAfterPt": 0}]
+                paragraph_nodes = shape.findall("p:txBody/a:p", NS)
+                actual_text = ["".join(node.text or "" for node in paragraph.findall(".//a:t", NS)) for paragraph in paragraph_nodes]
+                expected_text = [
+                    ("  " * int(paragraph.get("level", 0)) + "\u2022 " if paragraph.get("bullet") else "")
+                    + "".join(run["text"] for run in paragraph.get("runs", []))
+                    for paragraph in expected_paragraphs
+                ]
                 if actual_text != expected_text:
-                    fail(report, index, expected["id"], "text", expected_text, actual_text)
+                    fail(report, index, expected["id"], "paragraph-text", expected_text, actual_text)
                 else:
                     report["matchedTextObjects"] += 1
                 body = shape.find("p:txBody/a:bodyPr", NS)
                 if body is None or body.get("wrap") != "square" or body.find("a:noAutofit", NS) is None:
                     fail(report, index, expected["id"], "fit-mode", "wrap=square,noAutofit", ET.tostring(body, encoding="unicode") if body is not None else None)
+                expected_insets = expected["style"].get("insets", {"left": 0, "top": 0, "right": 0, "bottom": 0})
+                inset_attributes = {"left": "lIns", "top": "tIns", "right": "rIns", "bottom": "bIns"}
+                for side, attribute in inset_attributes.items():
+                    actual_inset = int(body.get(attribute, "0")) / EMU_PER_PX if body is not None else None
+                    if actual_inset is None or not approx(actual_inset, expected_insets.get(side, 0), 0.01):
+                        fail(report, index, expected["id"], f"inset-{side}", expected_insets.get(side, 0), actual_inset)
+                report["expectedParagraphs"] += len(expected_paragraphs)
+                if len(paragraph_nodes) != len(expected_paragraphs):
+                    fail(report, index, expected["id"], "paragraph-count", len(expected_paragraphs), len(paragraph_nodes))
+                expected_runs = []
+                for paragraph_index, expected_paragraph in enumerate(expected_paragraphs):
+                    prefix = []
+                    if expected_paragraph.get("bullet"):
+                        prefix = [{"text": "  " * int(expected_paragraph.get("level", 0)) + "\u2022 ", "bold": False, "italic": False}]
+                    expected_runs.extend(prefix + expected_paragraph.get("runs", []))
+                    if paragraph_index >= len(paragraph_nodes):
+                        continue
+                    paragraph_node = paragraph_nodes[paragraph_index]
+                    props = paragraph_node.find("a:pPr", NS)
+                    before = props.find("a:spcBef/a:spcPts", NS) if props is not None else None
+                    after = props.find("a:spcAft/a:spcPts", NS) if props is not None else None
+                    actual_before = int(before.get("val", "0")) / 100 if before is not None else 0
+                    actual_after = int(after.get("val", "0")) / 100 if after is not None else 0
+                    expected_before = expected_paragraph.get("spaceBeforePt", 0)
+                    expected_after = expected_paragraph.get("spaceAfterPt", 0)
+                    if actual_before != expected_before:
+                        fail(report, index, expected["id"], f"paragraph-{paragraph_index}-space-before", expected_before, actual_before)
+                    if actual_after != expected_after:
+                        fail(report, index, expected["id"], f"paragraph-{paragraph_index}-space-after", expected_after, actual_after)
+                    if actual_before == expected_before and actual_after == expected_after:
+                        report["matchedParagraphs"] += 1
                 run_nodes = shape.findall("p:txBody/a:p/a:r", NS)
-                expected_runs = expected["text"]["runs"]
                 if len(run_nodes) != len(expected_runs):
                     fail(report, index, expected["id"], "run-count", len(expected_runs), len(run_nodes))
                 for run_index, expected_run in enumerate(expected_runs):
@@ -157,8 +281,10 @@ def audit(pptx: Path, plan: dict) -> dict:
         and report["slides"] == len(plan["slides"])
         and report["expectedObjects"] == report["actualObjects"]
         and report["expectedTextObjects"] == report["matchedTextObjects"]
+        and report["expectedParagraphs"] == report["matchedParagraphs"]
         and report["pictures"] == 0
-        and report["graphicFrames"] == 0
+        and report["graphicFrames"] == report["expectedTables"] == report["matchedTables"]
+        and report["expectedSemanticIcons"] == report["matchedSemanticIcons"]
     )
     return report
 

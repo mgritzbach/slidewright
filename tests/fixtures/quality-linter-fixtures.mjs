@@ -12,6 +12,7 @@ function chartText(id, parentId, position, value) {
     id,
     type: "text",
     role: "chart-label",
+    typographyRole: "chart-label",
     parentId,
     position,
     text: { runs: [{ text: value, bold: false }] },
@@ -44,7 +45,7 @@ function chartMark(id, parentId, position) {
   };
 }
 
-function readableChartSlide(orientation) {
+function readableChartSlide(orientation, template) {
   const chartId = `${orientation}-chart-component`;
   const root = {
     id: chartId,
@@ -52,7 +53,7 @@ function readableChartSlide(orientation) {
     semanticType: "chart-component",
     role: "chart",
     geometry: "roundRect",
-    position: { left: 96, top: 96, width: 640, height: 360 },
+    position: { left: 600, top: 330, width: 560, height: 190 },
     fill: "#FFFFFF",
     line: { color: "#CBD5E1", width: 1 },
     padding: { top: 24, right: 24, bottom: 24, left: 24 },
@@ -60,34 +61,42 @@ function readableChartSlide(orientation) {
     editable: true,
   };
   const labels = ["North", "South", "East", "West"];
+  const slide = structuredClone(template);
+  slide.id = `readable-${orientation}-chart`;
+  slide.shapes.find((shape) => shape.role === "body").position.width = 480;
   const shapes = [root];
   if (orientation === "horizontal") {
-    const widths = [140, 210, 260, 320];
+    const widths = [90, 150, 220, 300];
     labels.forEach((label, index) => {
-      const top = 136 + index * 68;
-      shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: 120, top, width: 100, height: 24 }, label));
-      shapes.push(chartMark(`${chartId}-mark-${index + 1}`, chartId, { left: 244, top: top + 2, width: widths[index], height: 20 }));
+      const top = 354 + index * 36;
+      shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: 624, top, width: 88, height: 20 }, label));
+      shapes.push(chartMark(`${chartId}-mark-${index + 1}`, chartId, { left: 730, top: top + 2, width: widths[index], height: 16 }));
     });
   } else {
-    const heights = [100, 150, 200, 240];
+    const heights = [40, 70, 90, 110];
     labels.forEach((label, index) => {
-      const left = 160 + index * 120;
-      shapes.push(chartMark(`${chartId}-mark-${index + 1}`, chartId, { left, top: 392 - heights[index], width: 32, height: heights[index] }));
-      shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: left - 30, top: 404, width: 92, height: 24 }, label));
+      const left = 680 + index * 110;
+      shapes.push(chartMark(`${chartId}-mark-${index + 1}`, chartId, { left, top: 470 - heights[index], width: 28, height: heights[index] }));
+      shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: left - 26, top: 474, width: 80, height: 20 }, label));
     });
   }
-  return {
-    id: `readable-${orientation}-chart`,
-    layout: "quality-fixture",
-    background: "#F8FAFC",
-    frame: { left: 64, top: 64, width: 1152, height: 592 },
-    shapes,
-  };
+  slide.shapes.push(...shapes);
+  return slide;
 }
 
 export function readableChartPlan() {
-  const plan = validDemoPlan();
-  plan.slides = [readableChartSlide("horizontal"), readableChartSlide("vertical")];
+  const spec = structuredClone(demoSpec);
+  spec.slides = [{
+    id: "chart-template",
+    layout: "hero",
+    eyebrow: "DATA",
+    title: "Readable native chart",
+    body: "Labels and marks remain editable.",
+    callout: "Both horizontal and vertical directions are tested.",
+  }];
+  const plan = compileDeck(spec);
+  const template = plan.slides[0];
+  plan.slides = [readableChartSlide("horizontal", template), readableChartSlide("vertical", template)];
   return plan;
 }
 
@@ -114,6 +123,10 @@ export const negativeQualityFixtures = [
     id: "parent-inner-clipping",
     ruleId: "SW016",
     expectedDiagnostic: { ruleId: "SW016", severity: "error", slideId: "promise", objectId: "s1-callout", message: "Child object is clipped by or escapes parent 's1-callout-surface'.", suggestion: "Keep the child inside the parent's padded inner bounds or correct the parent relationship." },
+    expectedDiagnostics: [
+      { ruleId: "SW024", severity: "error", slideId: "promise", objectId: "s1-callout", message: "Text content 's1-callout' is not fully contained by backing 's1-callout-surface' and its padding.", suggestion: "Grow the backing, shorten the text, or select another archetype; visible text may never spill beyond its covering block." },
+      { ruleId: "SW016", severity: "error", slideId: "promise", objectId: "s1-callout", message: "Child object is clipped by or escapes parent 's1-callout-surface'.", suggestion: "Keep the child inside the parent's padded inner bounds or correct the parent relationship." },
+    ],
     build() {
       const plan = validDemoPlan();
       plan.slides[0].shapes.find((shape) => shape.role === "callout").position.width += 16;
@@ -196,18 +209,19 @@ export const negativeQualityFixtures = [
   {
     id: "crowding",
     ruleId: "SW014",
-    expectedDiagnostic: { ruleId: "SW014", severity: "error", slideId: "promise", objectId: null, message: "Crowded layout: 96.0% occupancy exceeds 94.0%.", suggestion: "Remove, split, or relayout content to restore the declared whitespace, object-count, and peer-gap budgets." },
+    expectedDiagnostic: { ruleId: "SW014", severity: "error", slideId: "promise", objectId: null, message: "Crowded layout: 100.0% occupancy exceeds 94.0%.", suggestion: "Remove, split, or relayout content to restore the declared whitespace, object-count, and peer-gap budgets." },
     build() {
       const plan = validDemoPlan();
       const slide = plan.slides[0];
-      slide.shapes = [{
+      slide.shapes.unshift({
         id: "crowded-surface",
         type: "shape",
         position: { left: slide.frame.left, top: slide.frame.top, width: slide.frame.width, height: slide.frame.height * 0.96 },
-        fill: "#FFFFFF",
+        fill: slide.background,
+        line: { color: slide.background, width: 0 },
+        constraints: { allowOverlapWith: slide.shapes.map((shape) => shape.id) },
         editable: true,
-      }];
-      delete slide.layoutContract.headline;
+      });
       return plan;
     },
   },
@@ -215,13 +229,15 @@ export const negativeQualityFixtures = [
     id: "chart-small-label",
     ruleId: "SW015",
     expectedDiagnostic: { ruleId: "SW015", severity: "error", slideId: "readable-horizontal-chart", objectId: "horizontal-chart-component", message: "Chart readability failed: labels must use an integer size of at least 12pt.", suggestion: "Increase plot/label size, reduce series or categories, thicken marks, and restore label contrast." },
+    expectedDiagnostics: [
+      { ruleId: "SW015", severity: "error", slideId: "readable-horizontal-chart", objectId: "horizontal-chart-component", message: "Chart readability failed: labels must use an integer size of at least 12pt.", suggestion: "Increase plot/label size, reduce series or categories, thicken marks, and restore label contrast." },
+      { ruleId: "SW009", severity: "error", slideId: "readable-horizontal-chart", objectId: "horizontal-chart-component-label-1", message: "Font size 10pt is below the configured 12pt minimum.", suggestion: "Shorten the copy or choose a less dense layout; never bypass the minimum type size." },
+    ],
     build() {
       const plan = readableChartPlan();
       plan.layout.approvedFontSizesPt.push(10);
       const label = plan.slides[0].shapes.find((shape) => shape.role === "chart-label");
       label.style.fontSizePt = 10;
-      label.fit.minSizePt = 10;
-      label.fit.preferredSizePt = 10;
       return plan;
     },
   },

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "slidewright-universal-visual-baseline/v1",
+  "fixture": "fixtures/universal-design/deck-spec.json",
+  "renderer": "@oai/artifact-tool",
+  "inspectionMethod": "Each rendered PNG was inspected individually at original 1280x720 size; a montage was not used as slide-level evidence.",
+  "reviewedAt": "2026-07-17",
+  "decision": "pass",
+  "slides": [
+    { "slide": 1, "file": "slide-01.png", "width": 1280, "height": 720, "sha256": "25a2b3ab530a9521586c2215ddca145177015301b7f05663d8b08200f26923a7", "decision": "pass" },
+    { "slide": 2, "file": "slide-02.png", "width": 1280, "height": 720, "sha256": "250e27acf2bf91695386cde4936bd82db0477f615cc0339ccb0c8ddbd927e88c", "decision": "pass" },
+    { "slide": 3, "file": "slide-03.png", "width": 1280, "height": 720, "sha256": "40f17fddb5658fe66d936b4847b248dbf7cb17044d37ccb04fb65b720a775f5a", "decision": "pass" },
+    { "slide": 4, "file": "slide-04.png", "width": 1280, "height": 720, "sha256": "a886908288900fa2cf2dd93cd30bc4bf658fa29dd15fcc69055bcc1e958099f2", "decision": "pass" },
+    { "slide": 5, "file": "slide-05.png", "width": 1280, "height": 720, "sha256": "16299d1784cb809c732c4fe73f378b11b91d3d2a5f3d5d88690710152da51977", "decision": "pass" },
+    { "slide": 6, "file": "slide-06.png", "width": 1280, "height": 720, "sha256": "08402958d9be88c07a68462431a2744bbd0a60d6f87d44eac9abaadb244a7c5a", "decision": "pass" },
+    { "slide": 7, "file": "slide-07.png", "width": 1280, "height": 720, "sha256": "6e4b20954c98837d747a907895601ba857bdf8a3f6ed79797e0236e54ed8c6a8", "decision": "pass" }
+  ],
+  "reviewFindings": {
+    "clipping": 0,
+    "textOverlap": 0,
+    "backingEscape": 0,
+    "headlineOverflow": 0,
+    "inconsistentRepeatedPatterns": 0,
+    "randomMargins": 0,
+    "semanticIconMismatch": 0,
+    "unintendedParagraphSpacing": 0
+  }
+}

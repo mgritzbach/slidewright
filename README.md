@@ -17,6 +17,8 @@ The Build Week entry targets **Work & Productivity**. The initial vertical slice
 - overflow, clipping, and formatting lint rules;
 - machine-readable QA evidence for every build.
 
+These are deck-wide contracts, not demo-specific styling. Schema `0.2` resolves a logical design master, page archetypes, typography roles, compact inset tokens, native paragraph spacing, repeated-component families, semantic icon bindings, headline budgets, and strict text/backing containment before any slide is exported. Built-in archetypes now include hero, section, comparison, continuation, native table, and semantic icon-list pages.
+
 ## Quick start
 
 ### Install in Codex
@@ -51,6 +53,14 @@ npm run demo
 ```
 
 `npm run setup:runtime` discovers a supported local Codex presentation runtime rather than relying on a version-specific path or public download. Resolution is deterministic: an explicit local override, an already valid workspace package, then Codex's bundled dependency runtime. Explicit overrides fail closed when invalid instead of silently selecting something else. Every successful bootstrap smoke-imports `Presentation` and `PresentationFile` and reports the exact source, host profile, artifact-tool version, download state, and renderer-switch state.
+
+To verify the universal design contract across unrelated slide types, real native tables, semantic icons, paragraph spacing, and screenshot-independent negative mutants, run:
+
+```powershell
+npm run universal-design
+```
+
+The command rebuilds seven slides across six archetypes, checks 21 isolated plan mutants (including table-cell overflow, contract mutation, custom-contract injection, and 6+6pt stacked spacing) and seven exported-OOXML mutants (including visible backing spill, repeated-component style, and headline-size drift), binds the native PPTX to 45 named objects, 35 native paragraphs, one native table, four semantic icons, zero pictures, and seven individually reviewed full-size visual baselines. A 45x single-card copy stress must split into continuation slides while every peer card keeps one common body style. Any rendered drift requires a new full-size review before the baseline can be updated.
 
 Supported local overrides are `SLIDEWRIGHT_CODEX_RUNTIME_ROOT` and `SLIDEWRIGHT_ARTIFACT_TOOL_PATH`. They must point to existing local resources; Slidewright never interprets them as URLs or executes an external bootstrap helper. A clean host with no supported runtime exits once with `SW_RUNTIME_UNAVAILABLE` and one recovery instruction. Test the current native-host checkpoint with:
 

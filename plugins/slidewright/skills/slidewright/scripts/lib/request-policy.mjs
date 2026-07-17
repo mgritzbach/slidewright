@@ -4,12 +4,20 @@ export const REQUEST_SCHEMA_VERSION = "slidewright-request/v1";
 export const REQUEST_POLICY_VERSION = "slidewright-request-policy/v1";
 export const IMMUTABLE_REQUEST_STAGES = Object.freeze(["policy", "compile", "fonts", "lint", "render", "audit", "delivery"]);
 export const REQUEST_QUALITY_CONTRACT = Object.freeze({
-  schemaVersion: "slidewright-request-quality/v1",
+  schemaVersion: "slidewright-request-quality/v2",
   geometryTolerancePx: 1,
   approvedFontSizesPt: Object.freeze([54, 48, 44, 40, 36, 32, 28, 24, 20, 18, 16, 14, 12]),
   minimumFontSizeByRolePt: Object.freeze({ eyebrow: 12, title: 28, body: 16, callout: 16, subheading: 16, subtitle: 16 }),
   minimumMarginPx: 64,
   minimumColumnGapPx: 24,
+  insetTokensPx: Object.freeze([0, 8, 12, 16, 24, 32]),
+  maximumInsetPx: 32,
+  paragraphSpacingPt: Object.freeze([0, 6, 12]),
+  logicalMasterAndArchetypesRequired: true,
+  repeatedComponentTokensRequired: true,
+  semanticIconBindingsRequired: true,
+  textBackingContainmentRequired: true,
+  constrainedHeadlinePolicyRequired: true,
   maximumOccupancyRatio: 0.94,
   maximumTopLevelObjects: 12,
   minimumPeerGapPx: 12,
@@ -178,7 +186,13 @@ function inspectTextStructure(value, objectPath, diagnostics) {
   } else if (Array.isArray(value.paragraphs)) {
     unknownKeys(value, ["paragraphs"], objectPath, diagnostics);
     value.paragraphs.forEach((paragraph, paragraphIndex) => {
-      unknownKeys(paragraph, ["runs", "bullet", "level"], `${objectPath}.paragraphs[${paragraphIndex}]`, diagnostics);
+      unknownKeys(paragraph, ["runs", "bullet", "level", "spaceBeforePt", "spaceAfterPt"], `${objectPath}.paragraphs[${paragraphIndex}]`, diagnostics);
+      for (const field of ["spaceBeforePt", "spaceAfterPt"]) if (paragraph?.[field] != null && !REQUEST_QUALITY_CONTRACT.paragraphSpacingPt.includes(paragraph[field])) diagnostics.push({
+        ruleId: "SWP009",
+        severity: "error",
+        message: `${objectPath}.paragraphs[${paragraphIndex}].${field} must use 0pt, 6pt, or 12pt.`,
+        remediation: "Use the immutable paragraph-spacing scale; relayout content rather than introducing arbitrary spacing.",
+      });
       if (Array.isArray(paragraph?.runs)) paragraph.runs.forEach((run, runIndex) => unknownKeys(run, ["text", "bold", "italic", "color"], `${objectPath}.paragraphs[${paragraphIndex}].runs[${runIndex}]`, diagnostics));
     });
   } else {
@@ -240,6 +254,21 @@ function specStructureDiagnostics(spec) {
       unknownKeys(slide, [...shared, "title", "subtitle"], objectPath, diagnostics);
       inspectText(slide.title, `${objectPath}.title`, diagnostics);
       inspectText(slide.subtitle, `${objectPath}.subtitle`, diagnostics);
+    } else if (slide.layout === "continuation") {
+      unknownKeys(slide, [...shared, "eyebrow", "title", "body"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectText(slide.body, `${objectPath}.body`, diagnostics);
+    } else if (slide.layout === "table") {
+      unknownKeys(slide, [...shared, "title", "table"], objectPath, diagnostics);
+      unknownKeys(slide.table, ["columns", "rows"], `${objectPath}.table`, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+    } else if (slide.layout === "icon-list") {
+      unknownKeys(slide, [...shared, "title", "items"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      if (Array.isArray(slide.items)) slide.items.forEach((item, itemIndex) => {
+        unknownKeys(item, ["id", "label", "body", "conceptId", "icon"], `${objectPath}.items[${itemIndex}]`, diagnostics);
+        inspectText(item?.body, `${objectPath}.items[${itemIndex}].body`, diagnostics);
+      });
     }
     unknownKeys(slide.headlineSplit, ["ratio", "side"], `${objectPath}.headlineSplit`, diagnostics);
   });

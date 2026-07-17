@@ -17,5 +17,12 @@ Public complaints about Codex presentation work establish these mandatory behavi
 12. Grow title and callout backing surfaces with realized text height plus symmetric padding.
 13. Require one unique divider and substantive slide for every topic declared in a coverage manifest.
 14. Remove empty paragraphs before fitting, including bullets inherited from source masters, while preserving non-empty native paragraph formatting.
+15. Reject unexplained asymmetric text-box or table-cell insets. Use one compact deck token on all four sides unless a source-template role explicitly proves otherwise.
+16. Keep every text box strictly inside its declared backing block; visible copy may never extend beyond the covering region.
+17. Preserve equivalent headline/body patterns across repeated cards, bullets, and table roles. Compare declared variants, not unrelated page types.
+18. Bind non-decorative icons to their exact label and semantic concept; a visually unrelated icon is a build failure.
+19. Shorten constrained headlines before allowing excessive lines or repeated auto-size reductions.
+20. Preserve native paragraph boundaries and use the deck spacing scale, normally `0`, `6`, or `12 pt`, without accidental stacked spacing.
+21. Resolve the logical master, page archetypes, typography roles, spacing tokens, and allowed variants before compiling individual slides so the rules apply to every deck rather than one example.
 
 Until a contract item is implemented, surface it as a limitation rather than improvising a weaker substitute.

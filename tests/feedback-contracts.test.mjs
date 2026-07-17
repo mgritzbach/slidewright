@@ -70,7 +70,11 @@ function syntheticLayouts(plan) {
       ...(shape.type === "text" ? {
         textLayout: { lineCount: shape.fit.lines },
         resolvedTextStyle: { insets: shape.style.insets },
-        paragraphs: [{ runs: [{ fontSize: shape.style.fontSizePt * 4 / 3, lineSpacing: shape.style.lineHeight }] }],
+        paragraphs: shape.text.paragraphs.map((paragraph) => ({
+          spaceBefore: Math.round((paragraph.spaceBeforePt ?? 0) * 100),
+          spaceAfter: Math.round((paragraph.spaceAfterPt ?? 0) * 100),
+          runs: [{ fontSize: shape.style.fontSizePt * 4 / 3, lineSpacing: shape.style.lineHeight }],
+        })),
       } : {}),
     })),
   }));

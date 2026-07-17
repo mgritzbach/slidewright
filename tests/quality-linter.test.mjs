@@ -15,7 +15,7 @@ for (const fixture of negativeQualityFixtures) {
   test(`quality linter rejects ${fixture.id}`, () => {
     const report = lintPlan(fixture.build());
     assert.equal(report.valid, false);
-    assert.deepEqual(report.diagnostics, [fixture.expectedDiagnostic]);
+    assert.deepEqual(report.diagnostics, fixture.expectedDiagnostics ?? [fixture.expectedDiagnostic]);
   });
 }
 
