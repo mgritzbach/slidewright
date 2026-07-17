@@ -15,12 +15,15 @@ import { bootstrapArtifactWorkspace } from "./lib/artifact-runtime.mjs";
 import { applyNamedEditManifest } from "./lib/named-edits.mjs";
 import { adaptExtractedProfile } from "./lib/design-profile.mjs";
 import { compileProfileContentSpec } from "./lib/compile_profile_derivation.mjs";
+import { runRequestBuild, verifyRequestRun } from "./lib/request-build.mjs";
 
 function usage() {
   return `Slidewright
 
 Usage:
   slidewright bootstrap
+  slidewright request <request.json> --out <run-directory>
+  slidewright request-verify <run-directory> --out <report.json>
   slidewright compile <spec.json> --out <plan.json>
   slidewright iterate <plan.json> --manifest <edit.json> --out <updated-plan.json>
   slidewright profile <source.pptx> --out <profile.json> [--asymmetry-manifest <manifest.json>]
@@ -69,6 +72,17 @@ export async function main(args = process.argv.slice(2)) {
     return report.valid ? 0 : 2;
   }
   if (!input) throw new Error(`An input file is required for '${command}'.`);
+  if (command === "request") {
+    const result = await runRequestBuild({ requestPath: input, outputDir: out });
+    process.stdout.write(`Request ${result.run.outcome}: ${result.run.requestId ?? "<invalid>"} -> ${result.outputDir}\n`);
+    return result.run.valid ? 0 : 2;
+  }
+  if (command === "request-verify") {
+    const report = await verifyRequestRun(input);
+    await writeJson(out, report);
+    process.stdout.write(`Request-run verification ${report.valid ? "passed" : "failed"}: ${report.outcome ?? "unknown"}\n`);
+    return report.valid ? 0 : 2;
+  }
   if (command === "verify") {
     const manifest = await verifyDelivery(input, {
       previewDir: option(args, "--preview-dir"),

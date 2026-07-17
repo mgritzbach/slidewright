@@ -1,0 +1,50 @@
+{
+  "version": "0.1",
+  "title": "Decision-ready launch brief",
+  "theme": {
+    "fontFamily": "Arial",
+    "colors": {
+      "accent": "#047857",
+      "accentSoft": "#D1FAE5"
+    }
+  },
+  "slides": [
+    {
+      "id": "decision",
+      "layout": "hero",
+      "eyebrow": "Launch decision",
+      "title": {
+        "runs": [
+          { "text": "Approve the pilot. ", "bold": true },
+          { "text": "Keep the rollout measurable.", "bold": false }
+        ]
+      },
+      "body": "A bounded launch gives the team real usage evidence while preserving a clear stop condition.",
+      "callout": "Decision requested: authorize a six-week pilot with weekly quality reviews."
+    },
+    {
+      "id": "tradeoffs",
+      "layout": "two-column",
+      "title": "The pilot captures learning without committing the full organization",
+      "left": {
+        "heading": "What we gain",
+        "body": "Observed adoption, real workflow friction, measurable time savings, and a prioritized repair backlog."
+      },
+      "right": {
+        "heading": "What we contain",
+        "body": "Scope, access, support load, data exposure, and the cost of reversing course if quality misses the bar."
+      }
+    },
+    {
+      "id": "conditions",
+      "layout": "section",
+      "title": {
+        "runs": [
+          { "text": "Proceed when evidence is visible, ", "bold": true },
+          { "text": "and stop when it is not.", "bold": false }
+        ]
+      },
+      "subtitle": "Publish weekly adoption, formatting-quality, and cleanup-time measures; pause expansion after any unresolved critical defect."
+    }
+  ]
+}

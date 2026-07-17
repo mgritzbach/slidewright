@@ -1,5 +1,15 @@
 # Slidewright visual fidelity benchmark
 
+## Prompt-robust workflow (C12)
+
+`npm run prompt-robustness` runs the committed `c12-prompt-robust-v1` matrix through the sealed request boundary. The suite contains 12 exact prompts—two minimal, two verbose, four conflicting, and four adversarial—and repeats every case three times. Accepted cases execute policy, compile, font audit, plan lint, render, realized-layout lint, generic and plan-bound OOXML audits, and delivery verification. Rejected cases publish no plan or PPTX.
+
+The scorecard requires byte-identical plans and normalized PPTX outputs for repeated and semantically paired cases, independently recomputed verification, zero-warning native text closure, 14 destructive receipt/artifact controls, eight stage fault injections, and absence of the command-injection sentinel. Three unique positive decks produce nine per-slide PNGs for individual original-resolution review. The machine scorecard and review record are content-addressed separately; a montage never qualifies as review evidence.
+
+After recording one original-resolution decision for each of the nine PNGs, bind the review to the current machine scorecard with `npm run prompt-robustness:review -- --decisions outputs/prompt-robustness/review-decisions.json`.
+
+This is a bounded prompt/build-boundary benchmark. It proves that the supported strict request schema cannot weaken or skip the pipeline; it does not claim universal prompt interpretation.
+
 Slidewright's controlled exporter-conformance benchmark uses owned, deterministic browser ground truth rather than subjective screenshots. Six references cover an invitation, an information brochure, and a website in horizontal and vertical/mobile compositions. The browser and PowerPoint paths share a machine-readable design manifest; this isolates export fidelity but does not prove independent image understanding or ingestion.
 
 ## Feedback-contract benchmark

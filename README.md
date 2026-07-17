@@ -6,6 +6,8 @@
 
 Slidewright is a Codex plugin and deterministic layout compiler that turns ideas and structured content into native, editable PowerPoint decks without the usual formatting damage. It treats slide generation like a build pipeline: compile constraints, render native objects, lint the result, inspect the exported OOXML, and retain evidence.
 
+Prompt-originated release builds use a sealed request runner that treats the prompt as inert data and unconditionally executes compile, font audit, plan lint, native render, realized-layout lint, plan-bound OOXML audit, and delivery verification before atomic publication. Run `npm run prompt-robustness` for the bounded 36-run adversarial proof.
+
 The Build Week entry targets **Work & Productivity**. The initial vertical slice proves the hardest, most reusable behaviors:
 
 - equal outer margins and symmetric internal padding;

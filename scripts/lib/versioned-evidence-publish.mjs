@@ -44,7 +44,7 @@ async function replaceFileAtomically(target, contents) {
   }
 }
 
-export async function publishVersionedEvidence(staging, published, scorecardHash) {
+export async function publishVersionedEvidence(staging, published, scorecardHash, { currentSchemaVersion = "slidewright-semantic-current/v1" } = {}) {
   const runs = path.join(published, "runs");
   const finalRun = path.join(runs, scorecardHash);
   await fs.mkdir(runs, { recursive: true });
@@ -59,7 +59,7 @@ export async function publishVersionedEvidence(staging, published, scorecardHash
     await fs.rm(staging, { recursive: true, force: true });
   }
   const current = {
-    schemaVersion: "slidewright-semantic-current/v1",
+    schemaVersion: currentSchemaVersion,
     scorecardHash,
     run: `runs/${scorecardHash}`,
   };
