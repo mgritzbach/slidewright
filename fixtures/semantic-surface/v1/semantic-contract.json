@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "slidewright-semantic-surface/v1",
+  "canvas": { "width": 1280, "height": 720 },
+  "deterministicExports": 3,
+  "slides": [
+    {
+      "index": 1,
+      "readingOrder": [
+        "surface-01-kicker",
+        "surface-01-title",
+        "surface-01-body",
+        "surface-01-card-group"
+      ],
+      "groups": [
+        {
+          "name": "surface-01-card-group",
+          "children": [
+            "surface-01-card-bg",
+            "surface-01-metric-group",
+            "surface-01-status-pill",
+            "surface-01-status-text"
+          ]
+        },
+        {
+          "name": "surface-01-metric-group",
+          "parent": "surface-01-card-group",
+          "children": ["surface-01-metric-value", "surface-01-metric-label"]
+        }
+      ],
+      "speakerNotes": "Explain that the card is a real nested PowerPoint group. The value and label can be ungrouped, edited independently, and regrouped without flattening any text."
+    },
+    {
+      "index": 2,
+      "readingOrder": [
+        "surface-02-kicker",
+        "surface-02-title",
+        "surface-02-body",
+        "surface-02-bar-label",
+        "surface-02-column-label",
+        "surface-02-bar-chart",
+        "surface-02-column-chart"
+      ],
+      "charts": [
+        {
+          "name": "surface-02-bar-chart",
+          "type": "bar",
+          "direction": "bar",
+          "categories": ["Plan", "Draft", "Review", "Ship"],
+          "series": [{ "name": "Minutes", "values": [42, 31, 19, 8] }]
+        },
+        {
+          "name": "surface-02-column-chart",
+          "type": "bar",
+          "direction": "column",
+          "categories": ["Mon", "Tue", "Wed", "Thu"],
+          "series": [{ "name": "Approved", "values": [12, 18, 24, 33] }]
+        }
+      ],
+      "speakerNotes": "Use the horizontal chart to compare stages and the vertical chart to show change over time. Both remain native Office chart parts with exact cached categories and values; data editing is outside this bounded proof."
+    },
+    {
+      "index": 3,
+      "readingOrder": [
+        "surface-03-kicker",
+        "surface-03-title",
+        "surface-03-body",
+        "surface-03-table",
+        "surface-03-insight-bg",
+        "surface-03-insight-label",
+        "surface-03-insight-value",
+        "surface-03-insight-body"
+      ],
+      "table": {
+        "name": "surface-03-table",
+        "rows": 5,
+        "columns": 4,
+        "values": [
+          ["Object", "Native", "Round-trip", "Owner"],
+          ["Text", "Yes", "Exact", "Writer"],
+          ["Chart", "Yes", "Exact", "Analyst"],
+          ["Table", "Yes", "Exact", "Operator"],
+          ["Diagram", "Yes", "Exact", "Designer"]
+        ]
+      },
+      "speakerNotes": "Call out that each value is stored in a native table cell. The right-hand evidence card is separate native text, so the table can be resized without affecting the conclusion."
+    },
+    {
+      "index": 4,
+      "readingOrder": [
+        "surface-04-kicker",
+        "surface-04-title",
+        "surface-04-body",
+        "surface-04-source",
+        "surface-04-source-text",
+        "surface-04-structure",
+        "surface-04-structure-text",
+        "surface-04-delivery",
+        "surface-04-delivery-text",
+        "surface-04-connector-a",
+        "surface-04-connector-b",
+        "surface-04-image-frame",
+        "surface-04-reference-image",
+        "surface-04-image-caption",
+        "surface-04-footer"
+      ],
+      "connectors": [
+        {
+          "name": "surface-04-connector-a",
+          "from": "surface-04-source",
+          "to": "surface-04-structure"
+        },
+        {
+          "name": "surface-04-connector-b",
+          "from": "surface-04-structure",
+          "to": "surface-04-delivery"
+        }
+      ],
+      "image": {
+        "name": "surface-04-reference-image",
+        "source": "fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png",
+        "alt": "Declared design-reference thumbnail used as a legitimate raster visual asset"
+      },
+      "speakerNotes": "Trace the attached connectors from source to structure to delivery. The thumbnail is an explicitly declared visual reference asset; all explanatory copy and diagram labels remain editable native text."
+    }
+  ],
+  "negativeControls": [
+    "chart-relation-break",
+    "chart-flatten",
+    "table-flatten",
+    "connector-detach",
+    "notes-strip",
+    "nested-group-flatten",
+    "hierarchy-drift",
+    "image-relation-drift",
+    "undeclared-object"
+  ]
+}

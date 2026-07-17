@@ -20,6 +20,20 @@ The structural gate covers slide dimensions, theme and visible fonts, integer ty
 
 This benchmark proves bounded reuse inside a clone of the source deck. It does not prove arbitrary structural import, chart/table/diagram reconstruction, or synthesis of unrelated layouts.
 
+## Native semantic-surface benchmark
+
+Run `npm run semantic-surface` for the controlled `slidewright-semantic-surface-scorecard/v1` suite. It creates three byte-identical exports of a four-slide native-object deck and freezes a recursive contract for 40 objects: 32 shapes, two nested groups, two native Office chart parts, one native table, two attached connectors, and one declared image. The contract also binds top-level order, six nested objects, exact cached chart direction/categories/series data, the 20-cell table matrix, connector endpoints, image relationship/media hash/alt text, and meaningful notes on all four slides.
+
+Nine isolated controls must reject a broken chart relationship, chart flattening, table flattening, connector detachment, notes removal, nested-group flattening, hierarchy drift, image-relationship drift, and one undeclared object. Newly owned, time-bounded Microsoft PowerPoint workers must SaveAs and reopen the positive deck and render each slide without attaching to an existing user process. A separate timeout control deliberately hangs an owned PowerPoint worker, requires exact PID/name/start-time cleanup of the non-child COM process, and verifies that no owned process remains. A narrowly bounded relationship-rebase mode permits PowerPoint to move chart or media package part paths only when all frozen semantic fields, cached chart content, and relationships remain valid. Lossless PNG and review-JPEG renders must match exactly before and after the round trip, and two persisted `slides_test.py` reports must show no overflow.
+
+The historical scorecard hash `c37f1786955eb2454bd430df72563c042f559a417f6897b2a2987db8637081ac` is retired after process-safety hardening. A fresh full scorecard from the hardened runner is required before C08 is credited again. The bounded suite does not prove chart-data editing, table-cell editing, arbitrary existing-deck ingestion, or general mutation/readability support for native charts, tables, and diagrams.
+
+## Native semantic-mutation benchmark
+
+After `npm run semantic-surface` publishes a current hash-authenticated baseline, run `npm run semantic-mutation`. The runner refuses stale or missing C08 evidence and executes five isolated native PowerPoint mutations: horizontal-chart data, vertical-chart data, one table cell, one diagram node and companion label, and one connector style. Every case must survive SaveAs/reopen with its exact contracted state while canonical raw-object signatures and protected package parts remain unchanged outside operation-specific OOXML masks. Chart labels use PowerPoint-reported text and bounds; render analysis corroborates mark visibility. Table text must pass both static OOXML fit and PowerPoint bound measurements.
+
+Nine controls separately attack collateral chart style, package data, connector attachment/site geometry, table fit, diagram-label placement, and render evidence. The machine scorecard requires six complete four-slide render sets but calls them review-ready, not reviewed. Inspect all 24 review images individually at full size, author exactly one pass/fail decision per deck and slide against the scorecard hash, then run `npm run semantic-mutation:review -- --input <review-decisions.json>`. The finalizer re-hashes every PNG and review image and publishes a separate content-addressed review record; a montage never satisfies this gate.
+
 Run the complete evidence pipeline:
 
 ```powershell

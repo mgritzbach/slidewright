@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "slidewright-semantic-mutation/v1",
+  "scope": "Controlled native-object mutation and readability proof for the semantic-surface-v1 fixture; not arbitrary existing-deck ingestion.",
+  "baselineContract": {
+    "path": "fixtures/semantic-surface/v1/semantic-contract.json",
+    "sha256": "f5d56e1bf0fdc9dfcda810d96a7fbae3de3105824d5a8d5dba5c30c8cfee2f9a",
+    "powerPointNormalizedBaselineRequired": true
+  },
+  "realPowerPointRequired": true,
+  "saveReopenRequired": true,
+  "cases": [
+    {
+      "id": "horizontal-chart-data",
+      "slide": 2,
+      "target": "surface-02-bar-chart",
+      "operation": "replace-chart-data",
+      "expected": {
+        "direction": "bar",
+        "categories": ["Plan", "Draft", "Review", "Ship"],
+        "series": [{ "name": "Minutes", "values": [36, 28, 22, 14] }]
+      },
+      "allowedChangedObjects": ["surface-02-bar-chart"]
+    },
+    {
+      "id": "vertical-chart-data",
+      "slide": 2,
+      "target": "surface-02-column-chart",
+      "operation": "replace-chart-data",
+      "expected": {
+        "direction": "column",
+        "categories": ["Mon", "Tue", "Wed", "Thu"],
+        "series": [{ "name": "Approved", "values": [14, 20, 27, 35] }]
+      },
+      "allowedChangedObjects": ["surface-02-column-chart"]
+    },
+    {
+      "id": "table-cell-edit",
+      "slide": 3,
+      "target": "surface-03-table",
+      "operation": "replace-table-cell",
+      "cell": { "row": 4, "column": 3, "before": "Exact", "after": "Verified" },
+      "allowedChangedObjects": ["surface-03-table"]
+    },
+    {
+      "id": "diagram-node-move",
+      "slide": 4,
+      "target": "surface-04-structure",
+      "operation": "move-diagram-node",
+      "deltaPoints": { "x": 0, "y": 24 },
+      "moveWithTarget": ["surface-04-structure-text"],
+      "attachedConnectors": ["surface-04-connector-a", "surface-04-connector-b"],
+      "allowedChangedObjects": [
+        "surface-04-structure",
+        "surface-04-structure-text",
+        "surface-04-connector-a",
+        "surface-04-connector-b"
+      ]
+    },
+    {
+      "id": "connector-style-geometry",
+      "slide": 4,
+      "target": "surface-04-connector-b",
+      "operation": "edit-connector-style",
+      "expected": { "weightPoints": 3, "dashStyle": 4 },
+      "attachedEndpoints": { "from": "surface-04-structure", "to": "surface-04-delivery" },
+      "allowedChangedObjects": ["surface-04-connector-b"]
+    }
+  ],
+  "readability": {
+    "charts": {
+      "minimumFramePoints": { "width": 240, "height": 160 },
+      "minimumLabelFontPoints": 12,
+      "maximumCategories": 12,
+      "maximumSeries": 6,
+      "minimumMarkThicknessPixels": 8,
+      "minimumTextContrast": 4.5,
+      "minimumMarkContrast": 3.0,
+      "labelsMustRemainInBounds": true,
+      "labelsMustNotOverlap": true
+    },
+    "tables": {
+      "minimumCellFontPoints": 14,
+      "symmetricCellMarginsRequired": true,
+      "minimumTextContrast": 4.5,
+      "cellTextMustFitTextFrame2Bounds": true
+    },
+    "diagrams": {
+      "labelsMustRemainInsideNodes": true,
+      "textOverlapForbidden": true,
+      "connectorsMustRemainAttached": true,
+      "connectorsMustNotCrossNonEndpointLabelsOrNodes": true,
+      "minimumLineContrast": 3.0,
+      "minimumLineWeightPoints": 1
+    }
+  },
+  "negativeControls": [
+    "stale-baseline-hash",
+    "unauthorized-object-mutation",
+    "chart-flatten",
+    "chart-label-unreadable",
+    "table-flatten",
+    "table-cell-overflow",
+    "connector-detach",
+    "connector-crosses-label",
+    "diagram-label-outside-node"
+  ],
+  "visualReview": {
+    "inspectEverySlideAtFullSize": true,
+    "requiredDecks": [
+      "powerpoint-normalized-baseline",
+      "horizontal-chart-data",
+      "vertical-chart-data",
+      "table-cell-edit",
+      "diagram-node-move",
+      "connector-style-geometry"
+    ]
+  }
+}

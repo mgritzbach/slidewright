@@ -105,6 +105,16 @@ The editor derives its own exact change closure; a caller-provided allowlist can
 
 Run the complete evidence bundle with `npm run iteration`.
 
+## Native semantic-surface benchmark
+
+Run `npm run semantic-surface` to build and audit a controlled four-slide deck containing nested real PowerPoint groups, horizontal and vertical native Office charts, a native table, attached connectors, a declared raster visual asset with alt text, and meaningful speaker notes.
+
+The suite freezes the exact object inventory, text-bearing shape hashes, recursive group paths, z-order, cached chart data and orientation, table-cell matrix, connector endpoints, media relationship/hash/alt text, reading order, and notes. Three exports must be byte-identical. Nine destructive controls must reject flattening, relationship drift, detached connectors, stripped notes, hierarchy drift, and undeclared objects. On Windows, newly owned, time-bounded Microsoft PowerPoint workers must SaveAs/reopen the deck with the same frozen semantic fields and exact source/round-trip slide renders. The historical scorecard `c37f1786955eb2454bd430df72563c042f559a417f6897b2a2987db8637081ac` was retired after process-safety hardening; C08 remains uncredited until the hardened runner emits and publishes a fresh full scorecard.
+
+This is the bounded C08 proof of complete semantic representation and preservation. It does not claim chart-data editing, table-cell editing, general third-party PPTX ingestion, or arbitrary mutation/readability guarantees for every Office chart, table, or diagram; those remain separate C17 and C18 goals.
+
+For the bounded C18 mutation suite, first publish a fresh hardened C08 baseline, then run `npm run semantic-mutation`. Five isolated real-PowerPoint cases edit horizontal and vertical chart data, one table cell, one diagram node with its label, and one connector style. The runner requires exact before/mutated/reopened state, full collateral-package preservation outside operation-specific masks, exact connector sites, chart-label and table-fit readability, six four-slide render sets, and nine destructive controls. It publishes machine evidence only; C18 remains incomplete until every one of the 24 full-size review images is inspected and a scorecard-bound decision file is finalized with `npm run semantic-mutation:review -- --input <review-decisions.json>`.
+
 ## Existing-deck design profiles
 
 Slidewright can extract a deterministic, source-bound design profile from a native PowerPoint deck and derive a safe copy-only edit plan that reuses its slide size, fonts, palette, guides, master/layout binding, logos, recurring chrome, placeholders, and exact rim/limiter contracts:
