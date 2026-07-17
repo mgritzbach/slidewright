@@ -205,6 +205,12 @@ export function expectedSemanticReceiptPaths(contract) {
   return paths.sort();
 }
 
+export function exactPathInventoryMatches(actual, expected) {
+  if (!Array.isArray(actual) || !Array.isArray(expected)) return false;
+  const normalize = (items) => [...items].sort();
+  return canonicalHash(normalize(actual)) === canonicalHash(normalize(expected));
+}
+
 async function listRegularFiles(root, directory = root) {
   const files = [];
   for (const entry of (await fs.readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -717,7 +723,7 @@ export async function verifySemanticSurfaceEvidence({ root, runDirectory, python
   });
 
   const contract = JSON.parse(await fs.readFile(path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json"), "utf8"));
-  requireEvidence(canonicalHash(receipts.files.map((item) => item.path)) === canonicalHash(expectedSemanticReceiptPaths(contract)), "C08 receipt inventory has a missing or unexpected file.");
+  requireEvidence(exactPathInventoryMatches(receipts.files.map((item) => item.path), expectedSemanticReceiptPaths(contract)), "C08 receipt inventory has a missing or unexpected file.");
   requireEvidence(scorecard.contractSha256 === await sha256File(path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json")), "C08 contract hash drifted.");
   const imageSource = contract.slides.find((slide) => slide.image)?.image?.source;
   requireEvidence(typeof imageSource === "string", "C08 contract has no declared source image.");

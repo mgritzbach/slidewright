@@ -14,6 +14,7 @@ import {
   canonicalHash,
   captureCleanGit,
   collectReceiptTree,
+  exactPathInventoryMatches,
   expectedSemanticReceiptPaths,
   normalizeCommandArgument,
   publishVerifiedSemanticEvidence,
@@ -252,6 +253,9 @@ test("C08 receipt inventory is exact and contract-derived", async () => {
   assert.ok(paths.includes("watchdog/forced-parent/forced-parent-identity.json"));
   assert.ok(paths.includes("watchdog/normal/completion.marker"));
   assert.ok(paths.includes("powerpoint-interstage-quiescence.json"));
+  assert.equal(exactPathInventoryMatches([...paths].reverse(), paths), true);
+  assert.equal(exactPathInventoryMatches(paths.slice(1), paths), false);
+  assert.equal(exactPathInventoryMatches([...paths, "forged-extra.json"], paths), false);
 });
 
 test("C08 command receipts preserve flags and scalars while normalizing only paths", () => {
