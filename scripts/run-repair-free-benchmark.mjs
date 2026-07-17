@@ -33,6 +33,10 @@ const bundledPython = path.join(os.homedir(), ".cache", "codex-runtimes", "codex
 let python = process.env.SLIDEWRIGHT_PYTHON || "python";
 try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
 const npmCli = process.env.npm_execpath ? path.resolve(process.env.npm_execpath) : null;
+const DEFAULT_COMMAND_TIMEOUT_MS = 600_000;
+const PRODUCER_TIMEOUT_MS = Object.freeze({
+  "semantic-mutation": 1_800_000,
+});
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function logical(file) { return path.relative(root, file).split(path.sep).join("/"); }
@@ -97,11 +101,11 @@ function cleanupForSignal(signal) {
 process.once("SIGINT", () => cleanupForSignal("SIGINT"));
 process.once("SIGTERM", () => cleanupForSignal("SIGTERM"));
 
-function run(command, args, { expected = 0, id = null } = {}) {
+function run(command, args, { expected = 0, id = null, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS } = {}) {
   const startedAt = new Date().toISOString();
-  const result = spawnSync(command, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
+  const result = spawnSync(command, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 });
   const streams = writeCommandStreams(id, [["stdout", result.stdout], ["stderr", result.stderr]]);
-  const receipt = { id, command, args, startedAt, finishedAt: new Date().toISOString(), exitCode: result.status, signal: result.signal, timedOut: result.error?.code === "ETIMEDOUT", streams };
+  const receipt = { id, command, args, timeoutMs, startedAt, finishedAt: new Date().toISOString(), exitCode: result.status, signal: result.signal, timedOut: result.error?.code === "ETIMEDOUT", streams };
   receipts.push(receipt);
   if (result.error) throw result.error;
   if (result.status !== expected) throw new Error(`${command} ${args.join(" ")} returned ${result.status}; expected ${expected}.\n${result.stderr || result.stdout}`);
@@ -112,7 +116,10 @@ function runNpmScript(name) {
   if (!npmCli || path.basename(npmCli).toLowerCase() !== "npm-cli.js" || !fsSync.statSync(npmCli, { throwIfNoEntry: false })?.isFile()) {
     throw new Error("C04 must be launched through npm so the exact npm CLI entrypoint can be proven.");
   }
-  const result = run(process.execPath, [npmCli, "run", name], { id: `producer-${name}` });
+  const result = run(process.execPath, [npmCli, "run", name], {
+    id: `producer-${name}`,
+    timeoutMs: PRODUCER_TIMEOUT_MS[name] ?? DEFAULT_COMMAND_TIMEOUT_MS,
+  });
   const receipt = receipts.at(-1);
   receipt.normalizedCommand = "node";
   receipt.normalizedArgs = ["$NPM_CLI/npm-cli.js", "run", name];

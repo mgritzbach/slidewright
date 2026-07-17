@@ -91,6 +91,10 @@ test("C04 release mode regenerates producers and cannot reuse development output
   assert.match(orchestrator, /const publicationRoot = releaseValid \? outputRoot : path\.join\(outputRoot, "development"\)/u);
   assert.match(orchestrator, /process\.env\.npm_execpath/u);
   assert.match(orchestrator, /run\(process\.execPath, \[npmCli, "run", name\]/u);
+  assert.match(orchestrator, /const DEFAULT_COMMAND_TIMEOUT_MS = 600_000/u);
+  assert.match(orchestrator, /"semantic-mutation": 1_800_000/u);
+  assert.match(orchestrator, /timeoutMs: PRODUCER_TIMEOUT_MS\[name\] \?\? DEFAULT_COMMAND_TIMEOUT_MS/u);
+  assert.match(orchestrator, /const receipt = \{ id, command, args, timeoutMs,/u);
 });
 
 test("C04 semantic inventory ignores serialization-only normalization but binds user content", () => {
