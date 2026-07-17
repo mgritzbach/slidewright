@@ -32,7 +32,7 @@ const scripts = path.join(root, "plugins", "slidewright", "skills", "slidewright
 const bundledPython = path.join(os.homedir(), ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", process.platform === "win32" ? "python.exe" : "bin/python");
 let python = process.env.SLIDEWRIGHT_PYTHON || "python";
 try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCli = process.env.npm_execpath ? path.resolve(process.env.npm_execpath) : null;
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function logical(file) { return path.relative(root, file).split(path.sep).join("/"); }
@@ -108,6 +108,17 @@ function run(command, args, { expected = 0, id = null } = {}) {
   return result;
 }
 
+function runNpmScript(name) {
+  if (!npmCli || path.basename(npmCli).toLowerCase() !== "npm-cli.js" || !fsSync.statSync(npmCli, { throwIfNoEntry: false })?.isFile()) {
+    throw new Error("C04 must be launched through npm so the exact npm CLI entrypoint can be proven.");
+  }
+  const result = run(process.execPath, [npmCli, "run", name], { id: `producer-${name}` });
+  const receipt = receipts.at(-1);
+  receipt.normalizedCommand = "node";
+  receipt.normalizedArgs = ["$NPM_CLI/npm-cli.js", "run", name];
+  return result;
+}
+
 function observePowerPointProcesses(id) {
   const command = [
     "$ErrorActionPreference='Stop'",
@@ -167,7 +178,7 @@ async function ensureReleaseOutputs() {
   ];
   for (const name of commands) {
     process.stdout.write(`C04 producer: npm run ${name}\n`);
-    run(npmCommand, ["run", name], { id: `producer-${name}` });
+    runNpmScript(name);
   }
 }
 

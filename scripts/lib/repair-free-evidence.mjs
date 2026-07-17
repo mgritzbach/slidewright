@@ -379,7 +379,7 @@ function verifyCommandReceipts(receipts, contract, { reusedProducerOutputs = fal
     }
     const intendedNonzero = item.id?.startsWith("negative-opc-") ? 1 : item.id === "negative-schema-sdk" ? 2 : 0;
     if (item.exitCode !== intendedNonzero || item.signal !== null || item.timedOut !== false || !Number.isFinite(Date.parse(item.startedAt)) || !Number.isFinite(Date.parse(item.finishedAt)) || Date.parse(item.finishedAt) < Date.parse(item.startedAt)) fail(`command receipt '${item.id}' has invalid execution state`);
-    if (item.id?.startsWith("producer-") && item.id !== "producer-in-run-design" && (item.command !== "npm.cmd" || canonicalHash(item.args) !== canonicalHash(["run", item.id.slice("producer-".length)]))) fail(`producer receipt '${item.id}' argv drifted`);
+    if (item.id?.startsWith("producer-") && item.id !== "producer-in-run-design" && (item.normalizedCommand !== "node" || canonicalHash(item.normalizedArgs) !== canonicalHash(["$NPM_CLI/npm-cli.js", "run", item.id.slice("producer-".length)]))) fail(`producer receipt '${item.id}' argv drifted`);
     if (item.id === "producer-in-run-design" && (item.command !== "internal" || item.args?.[0] !== "generateFidelityFixtures")) fail("in-run design producer receipt drifted");
     if (item.id?.startsWith("powerpoint-quiescence-") && (item.command !== "powershell" || canonicalHash(item.args?.slice(0, 2)) !== canonicalHash(["-NoProfile", "-Command"]) || item.streams?.length !== 2)) fail(`PowerPoint quiescence receipt '${item.id}' is incomplete`);
     if (item.id?.startsWith("powerpoint-") && !item.id.startsWith("powerpoint-quiescence-")) {
