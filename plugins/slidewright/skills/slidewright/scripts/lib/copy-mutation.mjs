@@ -34,3 +34,22 @@ export function mutateDeckCopy(input, factor) {
   spec.title = `${spec.title} copy-${Math.round(factor * 100)}`;
   return spec;
 }
+
+export function mutateFlexibleDeckCopy(input, factor) {
+  const spec = structuredClone(input);
+  for (const slide of spec.slides) {
+    if (slide.layout === "hero") {
+      slide.body = mutateText(slide.body, factor);
+      slide.callout = mutateText(slide.callout, factor);
+    } else if (slide.layout === "two-column") {
+      slide.left.body = mutateText(slide.left.body, factor);
+      slide.right.body = mutateText(slide.right.body, factor);
+    } else if (slide.layout === "section") {
+      slide.subtitle = mutateText(slide.subtitle, factor);
+    } else if (slide.layout === "continuation") {
+      slide.body = mutateText(slide.body, factor);
+    }
+  }
+  spec.title = `${spec.title} flexible-copy-${Math.round(factor * 100)}`;
+  return spec;
+}

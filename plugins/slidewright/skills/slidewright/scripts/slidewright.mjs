@@ -16,6 +16,7 @@ import { applyNamedEditManifest } from "./lib/named-edits.mjs";
 import { adaptExtractedProfile } from "./lib/design-profile.mjs";
 import { compileProfileContentSpec } from "./lib/compile_profile_derivation.mjs";
 import { runRequestBuild, verifyRequestRun } from "./lib/request-build.mjs";
+import { adaptDeckCopyToFit } from "./lib/copy-adaptation.mjs";
 
 function usage() {
   return `Slidewright
@@ -24,6 +25,7 @@ Usage:
   slidewright bootstrap
   slidewright request <request.json> --out <run-directory>
   slidewright request-verify <run-directory> --out <report.json>
+  slidewright adapt <spec.json> --out <adapted-spec.json> --manifest <adaptation.json>
   slidewright compile <spec.json> --out <plan.json>
   slidewright iterate <plan.json> --manifest <edit.json> --out <updated-plan.json>
   slidewright profile <source.pptx> --out <profile.json> [--asymmetry-manifest <manifest.json>]
@@ -106,6 +108,15 @@ export async function main(args = process.argv.slice(2)) {
     const plan = compileDeck(await readJson(input));
     await writeJson(out, plan);
     process.stdout.write(`Compiled ${plan.slides.length} slides to ${out}\n`);
+    return 0;
+  }
+  if (command === "adapt") {
+    const manifestPath = option(args, "--manifest");
+    if (!manifestPath) throw new Error("--manifest is required for copy adaptation.");
+    const result = adaptDeckCopyToFit(await readJson(input));
+    await writeJson(out, result.spec);
+    await writeJson(manifestPath, result.manifest);
+    process.stdout.write(`Adapted ${result.manifest.sourceSlideCount} source slides to ${result.manifest.adaptedSlideCount} slides with ${result.manifest.continuationSlideCount} continuation(s).\n`);
     return 0;
   }
   if (command === "profile") {

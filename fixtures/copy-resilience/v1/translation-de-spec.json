@@ -1,0 +1,55 @@
+{
+  "version": "0.1",
+  "title": "Slidewright Übersetzungs- und Layoutprüfung",
+  "theme": {
+    "fontFamily": "Arial",
+    "colors": {
+      "accent": "#4F46E5",
+      "accentSoft": "#E0E7FF"
+    }
+  },
+  "slides": [
+    {
+      "id": "promise-de",
+      "layout": "hero",
+      "eyebrow": "OpenAI Build Week 2026",
+      "title": {
+        "runs": [
+          { "text": "Ideen rein. ", "bold": false },
+          { "text": "PowerPoint raus.", "bold": true },
+          { "text": " Formatierung intakt.", "bold": false }
+        ]
+      },
+      "body": "Slidewright überführt ausführliche Inhalte in native, vollständig bearbeitbare Folien und überprüft vor der Übergabe automatisch den gesamten Formatierungsvertrag.",
+      "callout": "Das bearbeitbare Ergebnis – nicht nur ein hübscher Screenshot – bleibt das eigentliche Produkt."
+    },
+    {
+      "id": "difference-de",
+      "layout": "two-column",
+      "title": "KI-gestützte Folienerstellung sollte Nacharbeit beseitigen, nicht an eine andere Stelle verschieben",
+      "left": {
+        "heading": "Typische Ausgabe",
+        "body": "Uneinheitliche Ränder, willkürliche Schriftgrößen, abgeschnittener Text, gerasterte Elemente und Formatierungen, die bereits nach der ersten Bearbeitung auseinanderfallen."
+      },
+      "right": {
+        "heading": "Slidewright-Ausgabe",
+        "body": "Symmetrische Geometrie, ganzzahlige Schriftgrößen, deterministische Textanpassung, nativer Rich Text und ein überprüfbares Evidenzpaket für jeden einzelnen Build."
+      }
+    },
+    {
+      "id": "proof-de",
+      "layout": "hero",
+      "eyebrow": "Ein überprüfbarer Formatierungsvertrag",
+      "title": {
+        "runs": [
+          { "text": "Kompilieren. ", "bold": true },
+          { "text": "Prüfen. ", "bold": false },
+          { "text": "Rendern. ", "bold": true },
+          { "text": "Belegen.", "bold": false }
+        ]
+      },
+      "body": "Jeder Build dokumentiert exakte Geometrie, Entscheidungen zur Textanpassung, gerenderte Vorschauen und eine OOXML-Prüfung von Bearbeitbarkeit und Typografie.",
+      "callout": "Wenn Inhalte oberhalb der Qualitätsgrenze nicht passen, strukturiert Slidewright sie neu, statt die Schrift unbemerkt zu verkleinern."
+    }
+  ]
+}

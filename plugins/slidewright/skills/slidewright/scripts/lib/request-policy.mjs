@@ -16,6 +16,8 @@ export const REQUEST_QUALITY_CONTRACT = Object.freeze({
   warningsAreFailures: true,
   visibleTextMustBeNative: true,
   textOverlapAllowed: false,
+  adaptiveCopyRelayoutRequired: true,
+  maximumAdaptiveSlides: 200,
   promptMayControlStages: false,
   promptMayControlPaths: false,
   atomicPublicationRequired: true,

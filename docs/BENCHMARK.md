@@ -10,6 +10,14 @@ After recording one original-resolution decision for each of the nine PNGs, bind
 
 This is a bounded prompt/build-boundary benchmark. It proves that the supported strict request schema cannot weaken or skip the pipeline; it does not claim universal prompt interpretation.
 
+## Dense-copy and translation resilience (C15)
+
+`npm run copy-resilience` runs five pinned cases: -25%, +25%, a human-authored expanded German translation, 2x flexible copy, and 4x flexible copy. The dense inputs must fail the fixed three-slide topology and then succeed through structural continuation slides; font shrinking alone cannot satisfy the gate. Every flexible field is source-hashed, and every normalized word token must appear exactly once and in order with its bold, italic, color, bullet, and level state retained. Whitespace and source run boundaries may normalize at continuation breaks.
+
+Each positive deck passes deterministic adaptation, installed-font audit, zero-warning plan and realized-layout lint, native rendering, generic and plan-bound OOXML audits, `slides_test.py`, and verified bundle delivery. Ten diagnostic-bound destructive controls reject dropped, duplicated, reordered, or misowned chunks; source-hash tampering; forged fit; sub-minimum or fractional type; text overlap; and an actual exported all-raster PPTX. A production guarded request must exceed the 200-slide ceiling at compile and publish no plan, deck, previews, audit, or delivery. Every case publishes its source and adapted specifications, fixed and adapted plans, lint/audit reports, PPTX, and stable delivery evidence. Run `npm run copy-resilience:verify` to rehash the implementation and all artifacts and independently recompute the planning/content gates. The machine scorecard publishes every slide PNG for individual original-resolution review; a montage is not evidence. Finalize the review with `npm run copy-resilience:review -- --decisions outputs/copy-resilience/review-decisions.json`.
+
+The suite proves the committed hero and two-column strategy with Arial and the pinned German fixture through 4x flexible copy. It does not translate languages, claim arbitrary scripts/layouts, or promise unlimited slide growth.
+
 Slidewright's controlled exporter-conformance benchmark uses owned, deterministic browser ground truth rather than subjective screenshots. Six references cover an invitation, an information brochure, and a website in horizontal and vertical/mobile compositions. The browser and PowerPoint paths share a machine-readable design manifest; this isolates export fidelity but does not prove independent image understanding or ingestion.
 
 ## Feedback-contract benchmark

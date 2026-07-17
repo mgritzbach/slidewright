@@ -63,13 +63,23 @@ npm run mutation
 
 It rebuilds -25% and +25% copy variants, then lints, renders, audits, overflow-tests, bundles, and verifies both decks.
 
+For translated or dense copy, use the structural adapter before compilation:
+
+```powershell
+node packages/cli/src/cli.mjs adapt input-spec.json --out adapted-spec.json --manifest adaptation.json
+npm run copy-resilience
+npm run copy-resilience:verify
+```
+
+The adapter keeps titles and visual hierarchy intact, moves overflow copy into native editable continuation slides, and preserves every normalized word token exactly once and in order with its bold, italic, color, bullet, and level state. It balances chunks across the minimum slide count and refuses output above the configured slide ceiling. Whitespace and source run boundaries may normalize at continuation breaks; visible text remains native and editable. Prompt-originated guarded builds run the same adapter automatically. The standalone verifier rehashes the implementation and every published artifact, then independently recomputes fixed and adapted plans, lint, and content conservation.
+
 Missing-font and extreme-density negative controls are reproducible with:
 
 ```powershell
 npm run repair
 ```
 
-The command proves that missing fonts and copy that cannot fit above the configured type floor block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
+The command proves that missing fonts and content outside the bounded adaptive layouts or configured slide ceiling block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
 
 To run the two-phase geometric and readability defect matrix, including a real Microsoft PowerPoint text-bound check on Windows, run:
 

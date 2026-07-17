@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileDeck } from "./compiler.mjs";
+import { adaptDeckCopyToFit } from "./copy-adaptation.mjs";
 import { inspectPlanFonts } from "./font-audit.mjs";
 import { lintPlan } from "./linter.mjs";
 import { renderPlan } from "./renderer.mjs";
@@ -20,6 +20,7 @@ const IMPLEMENTATION_PATHS = Object.freeze([
   fileURLToPath(new URL("./request-policy.mjs", import.meta.url)),
   fileURLToPath(new URL("./strict-json.mjs", import.meta.url)),
   fileURLToPath(new URL("./compiler.mjs", import.meta.url)),
+  fileURLToPath(new URL("./copy-adaptation.mjs", import.meta.url)),
   fileURLToPath(new URL("./linter.mjs", import.meta.url)),
   fileURLToPath(new URL("./rendered-linter.mjs", import.meta.url)),
   fileURLToPath(new URL("./renderer.mjs", import.meta.url)),
@@ -201,10 +202,15 @@ export async function runRequestBuild({ requestPath, outputDir }) {
 
   try {
     faultAfter("policy");
-    const plan = compileDeck(request.spec);
+    const adaptation = adaptDeckCopyToFit(request.spec);
+    const plan = adaptation.plan;
+    await writeJson(path.join(staging, "adapted-spec.json"), adaptation.spec);
+    await writeJson(path.join(staging, "adaptation.json"), adaptation.manifest);
     await writeJson(path.join(staging, "plan.json"), plan);
+    const adaptedSpecSha256 = await sha256File(path.join(staging, "adapted-spec.json"));
+    const adaptationSha256 = await sha256File(path.join(staging, "adaptation.json"));
     const planSha256 = await sha256File(path.join(staging, "plan.json"));
-    run.stages.push({ name: "compile", status: "passed", inputSha256: specSha256, outputSha256: planSha256 });
+    run.stages.push({ name: "compile", status: "passed", inputSha256: specSha256, adaptedSpecSha256, adaptationSha256, outputSha256: planSha256 });
     faultAfter("compile");
 
     const fonts = inspectPlanFonts(plan);
@@ -380,7 +386,7 @@ export async function verifyRequestRun(runDir) {
   if (run.outcome === "rejected") {
     if (policy?.valid !== false || !policy?.diagnostics?.length) diagnostics.push("Rejected run lacks policy diagnostics.");
     if (!sameJson(run.stages.map((stage) => stage.name), ["policy"]) || run.stages[0]?.status !== "rejected") diagnostics.push("Rejected run executed or claimed extra stages.");
-    const forbidden = ["plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews"];
+    const forbidden = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews"];
     for (const item of forbidden) if (files.some((file) => file === item || file.startsWith(`${item}/`))) diagnostics.push(`Rejected run published forbidden artifact '${item}'.`);
     if (run.valid !== false) diagnostics.push("Rejected run cannot be marked valid.");
     return { valid: diagnostics.length === 0, outcome: run.outcome, diagnostics };
@@ -389,10 +395,12 @@ export async function verifyRequestRun(runDir) {
   if (run.outcome !== "built" || run.valid !== true || policy?.valid !== true) diagnostics.push("Accepted run is not a valid built run.");
   if (!sameJson(run.stages.map((stage) => stage.name), IMMUTABLE_REQUEST_STAGES)) diagnostics.push("Accepted run did not execute the exact immutable stage sequence.");
   if (!run.stages?.every((stage) => stage.status === "passed")) diagnostics.push("One or more mandatory stages did not pass.");
-  const required = ["plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews/rendered-lint-report.json"];
+  const required = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews/rendered-lint-report.json"];
   for (const item of required) if (!files.includes(item)) diagnostics.push(`Accepted run is missing '${item}'.`);
   if (!diagnostics.length) {
-    const [plan, fonts, lint, audit, planAudit, delivery, renderedLint] = await Promise.all([
+    const [adaptedSpec, adaptationManifest, plan, fonts, lint, audit, planAudit, delivery, renderedLint] = await Promise.all([
+      readJson(path.join(runDir, "adapted-spec.json")),
+      readJson(path.join(runDir, "adaptation.json")),
       readJson(path.join(runDir, "plan.json")),
       readJson(path.join(runDir, "font-report.json")),
       readJson(path.join(runDir, "lint-report.json")),
@@ -401,7 +409,10 @@ export async function verifyRequestRun(runDir) {
       readJson(path.join(runDir, "delivery.json")),
       readJson(path.join(runDir, "previews", "rendered-lint-report.json")),
     ]);
-    const recomputedPlan = compileDeck(request.spec);
+    const recomputedAdaptation = adaptDeckCopyToFit(request.spec);
+    const recomputedPlan = recomputedAdaptation.plan;
+    if (!sameJson(adaptedSpec, recomputedAdaptation.spec)) diagnostics.push("Adapted specification does not match the bound request specification.");
+    if (!sameJson(adaptationManifest, recomputedAdaptation.manifest)) diagnostics.push("Copy-adaptation evidence does not match the bound request specification.");
     if (!sameJson(plan, recomputedPlan)) diagnostics.push("Compiled plan does not match the bound request specification.");
     const recomputedLint = lintPlan(plan);
     if (!sameJson(lint, recomputedLint)) diagnostics.push("Plan lint report does not match an independent recomputation.");
@@ -459,7 +470,7 @@ export async function verifyRequestRun(runDir) {
     const stage = Object.fromEntries(run.stages.map((item) => [item.name, item]));
     const hashes = Object.fromEntries(run.artifacts.map((item) => [item.path, item.sha256]));
     if (stage.policy.inputSha256 !== run.requestSha256 || stage.policy.outputSha256 !== hashes["policy.json"]) diagnostics.push("Policy stage binding mismatch.");
-    if (stage.compile.inputSha256 !== run.specSha256 || stage.compile.outputSha256 !== hashes["plan.json"]) diagnostics.push("Compile stage binding mismatch.");
+    if (stage.compile.inputSha256 !== run.specSha256 || stage.compile.adaptedSpecSha256 !== hashes["adapted-spec.json"] || stage.compile.adaptationSha256 !== hashes["adaptation.json"] || stage.compile.outputSha256 !== hashes["plan.json"]) diagnostics.push("Compile stage binding mismatch.");
     if (stage.fonts.inputSha256 !== hashes["plan.json"] || stage.fonts.outputSha256 !== hashes["font-report.json"]) diagnostics.push("Font stage binding mismatch.");
     if (stage.lint.inputSha256 !== hashes["plan.json"] || stage.lint.outputSha256 !== hashes["lint-report.json"]) diagnostics.push("Lint stage binding mismatch.");
     if (stage.render.inputSha256 !== hashes["plan.json"] || stage.render.outputSha256 !== hashes["deck.pptx"] || stage.render.renderedLintSha256 !== hashes["previews/rendered-lint-report.json"]) diagnostics.push("Render stage binding mismatch.");

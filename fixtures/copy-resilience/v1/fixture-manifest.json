@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "slidewright-copy-resilience-fixtures/v1",
+  "suiteId": "c15-copy-resilience-v1",
+  "source": "examples/demo/deck-spec.json",
+  "cases": [
+    {
+      "id": "minus-25",
+      "kind": "factor",
+      "factor": 0.75,
+      "mutationScope": "all-copy",
+      "expectAdaptation": false
+    },
+    {
+      "id": "plus-25",
+      "kind": "factor",
+      "factor": 1.25,
+      "mutationScope": "all-copy",
+      "expectAdaptation": false
+    },
+    {
+      "id": "translation-de",
+      "kind": "human-authored-translation",
+      "language": "de",
+      "fontFamily": "Arial",
+      "spec": "fixtures/copy-resilience/v1/translation-de-spec.json",
+      "expectAdaptation": false
+    },
+    {
+      "id": "dense-200",
+      "kind": "factor",
+      "factor": 2,
+      "mutationScope": "flexible-copy",
+      "expectFixedLayoutFailure": true,
+      "expectAdaptation": true
+    },
+    {
+      "id": "dense-400",
+      "kind": "factor",
+      "factor": 4,
+      "mutationScope": "flexible-copy",
+      "expectFixedLayoutFailure": true,
+      "expectAdaptation": true
+    }
+  ],
+  "destructiveControls": [
+    "drop-continuation",
+    "duplicate-continuation",
+    "reorder-continuations",
+    "tamper-source-hash",
+    "tamper-chunk-ownership",
+    "forged-fit",
+    "subminimum-type",
+    "fractional-type",
+    "text-overlap",
+    "rasterized-text"
+  ],
+  "limitations": [
+    "The translation fixture proves layout of pinned German copy; Slidewright does not translate the language.",
+    "The dense cases prove the committed hero and two-column continuation strategy through four-times flexible copy, not unlimited density or arbitrary layouts.",
+    "Whitespace and source run boundaries may normalize at continuation breaks; normalized word order and per-word formatting state are conserved.",
+    "A configured slide ceiling still fails visibly instead of emitting tiny or clipped text."
+  ]
+}

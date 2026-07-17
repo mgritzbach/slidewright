@@ -45,7 +45,7 @@ export function validateDeckSpec(spec) {
 
   spec.slides.forEach((slide, index) => {
     if (!slide || typeof slide !== "object") throw new Error(`slides[${index}] must be an object.`);
-    if (!["hero", "two-column", "section"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', or 'section'.`);
+    if (!["hero", "two-column", "section", "continuation"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', or 'continuation'.`);
     if (slide.columnGap != null && (!Number.isFinite(slide.columnGap) || slide.columnGap < 16 || slide.columnGap > 96)) throw new Error(`slides[${index}].columnGap must be between 16 and 96.`);
     if (slide.headlineSplit != null && (!slide.headlineSplit || !["center", "two-thirds"].includes(slide.headlineSplit.ratio) || !["left", "right"].includes(slide.headlineSplit.side))) throw new Error(`slides[${index}].headlineSplit must declare ratio center|two-thirds and side left|right.`);
     if (declaredTopics) {
@@ -66,9 +66,13 @@ export function validateDeckSpec(spec) {
         assertString(slide[side]?.heading, `slides[${index}].${side}.heading`);
         assertText(slide[side]?.body, `slides[${index}].${side}.body`);
       }
-    } else {
+    } else if (slide.layout === "section") {
       assertText(slide.title, `slides[${index}].title`, true);
       assertText(slide.subtitle, `slides[${index}].subtitle`);
+    } else {
+      assertString(slide.eyebrow, `slides[${index}].eyebrow`);
+      assertText(slide.title, `slides[${index}].title`, true);
+      assertText(slide.body, `slides[${index}].body`);
     }
   });
   return spec;
@@ -220,6 +224,42 @@ function compileSection(slide, index, frame, theme) {
   return [surface, draft, subtitle];
 }
 
+function compileContinuation(slide, index, frame, theme) {
+  const padding = { top: 32, right: 32, bottom: 32, left: 32 };
+  const surfacePosition = { left: frame.left, top: frame.top + 176, width: frame.width, height: frame.height - 176 };
+  return [
+    textShape({
+      id: `s${index + 1}-eyebrow`, role: "eyebrow",
+      position: { left: frame.left, top: frame.top, width: frame.width, height: 28 },
+      value: slide.eyebrow.toUpperCase(), style: { color: theme.colors.accent }, theme, defaultBold: true,
+      fit: { preferredSizePt: 14, minSizePt: 12, maxLines: 1, lineHeight: 1 },
+    }),
+    textShape({
+      id: `s${index + 1}-title`, role: "title",
+      constraints: { alignTo: { targetId: `s${index + 1}-eyebrow`, edge: "left" } },
+      position: { left: frame.left, top: frame.top + 48, width: frame.width, height: 104 },
+      value: slide.title, style: { color: theme.colors.text }, theme, defaultBold: true,
+      fit: { preferredSizePt: 36, minSizePt: 28, maxLines: 2, lineHeight: 1.02, glyphFactor: 0.5 },
+    }),
+    surfaceShape({
+      id: `s${index + 1}-body-surface`, role: "text-backing", position: surfacePosition,
+      fill: theme.colors.surface, line: { color: theme.colors.border, width: 1 }, padding,
+    }),
+    textShape({
+      id: `s${index + 1}-body`, role: "body", parentId: `s${index + 1}-body-surface`,
+      constraints: { alignTo: { targetId: `s${index + 1}-body-surface`, edge: "left", offset: padding.left } },
+      position: {
+        left: surfacePosition.left + padding.left,
+        top: surfacePosition.top + padding.top,
+        width: surfacePosition.width - padding.left - padding.right,
+        height: surfacePosition.height - padding.top - padding.bottom,
+      },
+      value: slide.body, style: { color: theme.colors.text, verticalAlignment: "middle" }, theme,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 14, lineHeight: 1.2 },
+    }),
+  ];
+}
+
 export function compileDeck(input) {
   const spec = validateDeckSpec(structuredClone(input));
   const canvas = { ...DEFAULT_CANVAS, ...(spec.canvas ?? {}) };
@@ -227,7 +267,13 @@ export function compileDeck(input) {
   const frame = { left: margin, top: margin, width: canvas.width - 2 * margin, height: canvas.height - 2 * margin };
   const theme = mergeTheme(spec.theme);
   const slides = spec.slides.map((slide, index) => {
-    const shapes = slide.layout === "hero" ? compileHero(slide, index, frame, theme) : slide.layout === "two-column" ? compileTwoColumn(slide, index, frame, theme) : compileSection(slide, index, frame, theme);
+    const shapes = slide.layout === "hero"
+      ? compileHero(slide, index, frame, theme)
+      : slide.layout === "two-column"
+        ? compileTwoColumn(slide, index, frame, theme)
+        : slide.layout === "section"
+          ? compileSection(slide, index, frame, theme)
+          : compileContinuation(slide, index, frame, theme);
     const headlineId = `s${index + 1}-title`;
     const titleSurfaceId = slide.layout === "section" ? `s${index + 1}-title-surface` : null;
     const structuralSplits = [];
