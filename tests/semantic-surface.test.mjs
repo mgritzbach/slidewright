@@ -155,6 +155,7 @@ test("semantic timeout path kills only its worker and never force-kills PowerPoi
   assert.match(runner, /slidewright-semantic-surface-scorecard\/v2/);
   assert.match(runner, /captureCleanGit\(root\)/);
   assert.match(runner, /captureSemanticImplementation\(root\)/);
+  assert.match(runner, /implementation-snapshot/);
   assert.match(runner, /runForcedParentWatchdogControl/);
   assert.match(runner, /collectReceiptTree\(output\)/);
   assert.equal((runner.match(/verifySemanticSurfaceEvidence\(/gu) ?? []).length, 3);
@@ -183,6 +184,7 @@ test("semantic timeout path kills only its worker and never force-kills PowerPoi
 
 test("C08 implementation closure is explicit, sorted, and includes every safety surface", () => {
   const expected = [
+    "fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png",
     "fixtures/semantic-surface/v1/semantic-contract.json",
     "package-lock.json",
     "package.json",
@@ -253,6 +255,11 @@ test("C08 receipt inventory is exact and contract-derived", async () => {
   assert.ok(paths.includes("watchdog/forced-parent/forced-parent-identity.json"));
   assert.ok(paths.includes("watchdog/normal/completion.marker"));
   assert.ok(paths.includes("powerpoint-interstage-quiescence.json"));
+  assert.ok(paths.includes("implementation-snapshot/scripts/lib/semantic-surface-evidence.mjs"));
+  assert.ok(paths.includes("implementation-snapshot/fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png"));
+  const historicalPaths = expectedSemanticReceiptPaths(contract, ["fixtures/semantic-surface/v1/semantic-contract.json"]);
+  assert.ok(historicalPaths.includes("implementation-snapshot/fixtures/semantic-surface/v1/semantic-contract.json"));
+  assert.equal(historicalPaths.some((item) => item === "implementation-snapshot/scripts/lib/semantic-surface-evidence.mjs"), false);
   assert.equal(exactPathInventoryMatches([...paths].reverse(), paths), true);
   assert.equal(exactPathInventoryMatches(paths.slice(1), paths), false);
   assert.equal(exactPathInventoryMatches([...paths, "forged-extra.json"], paths), false);

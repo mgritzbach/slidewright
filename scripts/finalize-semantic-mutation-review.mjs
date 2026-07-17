@@ -137,7 +137,7 @@ const review = {
   scorecardSha256: await sha256(scorecardPath),
   machineVerification,
   reviewer: input.reviewer,
-  inspectionMethod: "Every persisted 1600x900 review image inspected individually at full size; montage review does not qualify.",
+  inspectionMethod: "Every persisted 1600x900 review image inspected individually at full size using exactly one image per visual-tool call; montage and batched-image review do not qualify.",
   slides,
 };
 review.reviewHash = canonicalHash(review);

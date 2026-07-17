@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { exactPathInventoryMatches } from "../scripts/lib/semantic-surface-evidence.mjs";
 import {
+  RENDERED_HEADER_NEGATIVE_EXPECTATIONS,
   SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS,
   allTrue,
   allTrueExact,
@@ -20,6 +21,7 @@ import {
   readRasterDimensions,
   validateNegativeSummaryHeader,
   validateOwnedPowerPointRuntimeReceipt,
+  validateRenderedHeaderNegativeControls,
   validateSemanticMutationCommandReceipts,
   validateSemanticMutationQuiescenceEvidence,
 } from "../scripts/lib/semantic-mutation-evidence.mjs";
@@ -27,6 +29,7 @@ import {
 const contractPath = new URL("../fixtures/semantic-surface/v1/mutation-contract.json", import.meta.url);
 const mutationWorkerPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_semantic_mutation.ps1", import.meta.url);
 const mutationAuditPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_semantic_mutation.py", import.meta.url);
+const renderedHeaderAuditPath = path.resolve("plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_rendered_headers.py");
 const negativeControlsPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/semantic_mutation_negative_controls.py", import.meta.url);
 const runnerPath = new URL("../scripts/run-semantic-mutation-benchmark.mjs", import.meta.url);
 const reviewFinalizerPath = new URL("../scripts/finalize-semantic-mutation-review.mjs", import.meta.url);
@@ -269,7 +272,13 @@ test("C18 receipt inventory is exact and rejects additions or removals", async (
     "mutations/horizontal-chart-data.pptx",
     "renders/connector-style-geometry/slide-04.png",
     "negative-controls/table-cell-overflow/audit.json",
+    "rendered-header-contract.json",
+    "rendered-header-evidence.json",
+    "implementation-snapshot/scripts/lib/semantic-mutation-evidence.mjs",
   ]) assert.ok(paths.includes(required), required);
+  const historicalPaths = expectedSemanticMutationReceiptPaths(contract, 0, ["fixtures/semantic-surface/v1/mutation-contract.json"]);
+  assert.ok(historicalPaths.includes("implementation-snapshot/fixtures/semantic-surface/v1/mutation-contract.json"));
+  assert.equal(historicalPaths.some((item) => item === "implementation-snapshot/scripts/lib/semantic-mutation-evidence.mjs"), false);
   assert.equal(exactPathInventoryMatches(paths, paths), true);
   assert.equal(exactPathInventoryMatches(paths.slice(1), paths), false);
   assert.equal(exactPathInventoryMatches([...paths, "undeclared.txt"], paths), false);
@@ -290,6 +299,68 @@ test("C18 independently derives PNG and JPEG pixel dimensions", async () => {
     assert.deepEqual(await readRasterDimensions(jpegPath), { format: "jpeg", width: 1600, height: 900 });
     png.writeUInt32BE(899, 20); await fs.writeFile(pngPath, png);
     assert.deepEqual(await readRasterDimensions(pngPath), { format: "png", width: 1600, height: 899 });
+  } finally {
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test("C18 rendered-header audit proves all 48 prefixes and rejects erased pixels", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c18-headers-"));
+  try {
+    const decks = ["powerpoint-normalized-baseline", "horizontal-chart-data", "vertical-chart-data", "table-cell-edit", "diagram-node-move", "connector-style-geometry"];
+    const generator = String.raw`
+from PIL import Image, ImageDraw
+from pathlib import Path
+import hashlib, json, sys
+root=Path(sys.argv[1]); decks=json.loads(sys.argv[2]); contract={"schemaVersion":"slidewright-rendered-header-contract/v1","decks":[]}
+for deck in decks:
+  folder=root/deck; folder.mkdir(parents=True,exist_ok=True); renders=[]
+  for slide in range(1,5):
+    image=Image.new("RGB",(1600,900),"white"); draw=ImageDraw.Draw(image)
+    for glyph in range(16):
+      left=81+glyph*17; draw.rectangle((left,61,left+6,77),fill=(47,107,255))
+    png=folder/f"slide-{slide:02}.png"; jpg=folder/f"slide-{slide:02}.jpg"; image.save(png); image.save(jpg,quality=92)
+    sha=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+    renders.append({"slide":slide,"file":png.name,"sha256":sha(png),"reviewFile":jpg.name,"reviewSha256":sha(jpg)})
+  contract["decks"].append({"id":deck,"renders":renders})
+reference=root.parent/"reference"; reference.mkdir(); first=contract["decks"][0]["renders"][0]
+for key in ("file","reviewFile"):
+  source=root/decks[0]/first[key]; target=reference/source.name; target.write_bytes(source.read_bytes())
+contract["reference"]={"semanticSurfaceScorecardHash":"a"*64,"file":first["file"],"sha256":first["sha256"],"reviewFile":first["reviewFile"],"reviewSha256":first["reviewSha256"]}
+(root.parent/"contract.json").write_text(json.dumps(contract),encoding="utf-8")
+`;
+    const generated = spawnSync("python", ["-c", generator, path.join(temporary, "renders"), JSON.stringify(decks)], { encoding: "utf8" });
+    assert.equal(generated.status, 0, generated.stderr);
+    const reportPath = path.join(temporary, "report.json");
+    const runAudit = () => spawnSync("python", [renderedHeaderAuditPath, "--contract", path.join(temporary, "contract.json"), "--renders-root", path.join(temporary, "renders"), "--reference-renders-root", path.join(temporary, "reference"), "--json", reportPath], { encoding: "utf8" });
+    let result = runAudit();
+    assert.equal(result.status, 0, result.stderr);
+    let report = JSON.parse(await fs.readFile(reportPath, "utf8"));
+    assert.equal(report.valid, true);
+    assert.equal(report.imageCount, 48);
+    assert.equal(report.records.length, 48);
+    assert.equal(report.negativeControls.length, 4);
+    assert.equal(validateRenderedHeaderNegativeControls(report.negativeControls), true);
+    assert.deepEqual(report.negativeControls.map((item) => item.id), Object.keys(RENDERED_HEADER_NEGATIVE_EXPECTATIONS));
+    assert.throws(() => validateRenderedHeaderNegativeControls([...report.negativeControls].reverse()), /identity drifted/);
+    const missingIntendedFailure = structuredClone(report.negativeControls);
+    missingIntendedFailure[0].failureChecks = missingIntendedFailure[0].failureChecks.filter((item) => item !== "pixelCount");
+    assert.throws(() => validateRenderedHeaderNegativeControls(missingIntendedFailure), /did not reject the intended pixelCount defect/);
+
+    const tamper = String.raw`
+from PIL import Image,ImageDraw
+from pathlib import Path
+import hashlib,json,sys
+p=Path(sys.argv[1]); image=Image.open(p).convert("RGB"); ImageDraw.Draw(image).rectangle((70,50,170,85),fill="white"); image.save(p)
+c=Path(sys.argv[2]); data=json.loads(c.read_text()); data["decks"][0]["renders"][0]["sha256"]=hashlib.sha256(p.read_bytes()).hexdigest(); c.write_text(json.dumps(data))
+`;
+    const tampered = spawnSync("python", ["-c", tamper, path.join(temporary, "renders", decks[0], "slide-01.png"), path.join(temporary, "contract.json")], { encoding: "utf8" });
+    assert.equal(tampered.status, 0, tampered.stderr);
+    result = runAudit();
+    assert.equal(result.status, 2);
+    report = JSON.parse(await fs.readFile(reportPath, "utf8"));
+    assert.equal(report.valid, false);
+    assert.ok(report.failures.some((item) => ["RH003", "RH004"].includes(item.code)));
   } finally {
     await fs.rm(temporary, { recursive: true, force: true });
   }
@@ -520,6 +591,8 @@ test("C18 runner verifies immutable evidence before advancing current", async ()
   assert.match(evidence, /validateCommandReceiptBytes/);
   assert.match(evidence, /watchdogProcessAbsentAfterCompletion/);
   assert.match(evidence, /timeout: 120_000/);
+  assert.match(evidence, /historical implementation snapshot drifted/);
+  assert.match(runner, /implementation-snapshot/);
   assert.match(evidence, /slidewright-owned-powerpoint-runtime\/v1/);
   assert.match(verifier, /verifySemanticMutationEvidence/);
   assert.match(verifier, /current\.json/);
@@ -544,4 +617,5 @@ test("C18 review finalizer binds all 24 full-size decisions to immutable render 
   assert.match(source, /priorPointer/);
   assert.match(verifier, /verifySemanticMutationReview/);
   assert.match(source, /Every persisted 1600x900 review image inspected individually at full size/);
+  assert.match(source, /exactly one image per visual-tool call/);
 });

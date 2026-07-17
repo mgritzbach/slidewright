@@ -17,9 +17,11 @@ import {
   verifySemanticSurfaceEvidence,
 } from "./lib/semantic-surface-evidence.mjs";
 import {
+  SEMANTIC_MUTATION_IMPLEMENTATION_PATHS,
   captureSemanticMutationImplementation,
   captureSemanticMutationRuntime,
   publishSemanticMutationEvidence,
+  validateRenderedHeaderNegativeControls,
   verifySemanticMutationEvidence,
 } from "./lib/semantic-mutation-evidence.mjs";
 
@@ -33,6 +35,7 @@ const semantic = path.join(scripts, "semantic_surface");
 const mutationContractPath = path.join(root, "fixtures", "semantic-surface", "v1", "mutation-contract.json");
 const mutationWorkerScript = path.join(semantic, "powerpoint_semantic_mutation.ps1");
 const mutationAuditScript = path.join(semantic, "audit_semantic_mutation.py");
+const renderedHeaderAuditScript = path.join(semantic, "audit_rendered_headers.py");
 const negativeControlsScript = path.join(semantic, "semantic_mutation_negative_controls.py");
 const isolatedRenderScript = path.join(semantic, "powerpoint_render_isolated.ps1");
 const watchdogScript = path.join(semantic, "powerpoint_mutation_runner_watchdog.ps1");
@@ -436,6 +439,11 @@ const slidesTest = await findPresentationTool("slides_test.py");
 const sourceBinding = await resolvePublishedBaseline(mutationContract, slidesTest);
 await fs.mkdir(publishedRuns, { recursive: true });
 await fs.mkdir(output, { recursive: true });
+for (const relative of SEMANTIC_MUTATION_IMPLEMENTATION_PATHS) {
+  const snapshot = path.join(output, "implementation-snapshot", ...relative.split("/"));
+  await fs.mkdir(path.dirname(snapshot), { recursive: true });
+  await fs.copyFile(path.join(root, ...relative.split("/")), snapshot, fs.constants.COPYFILE_EXCL);
+}
 await fs.copyFile(sourceBinding.sourceBaseline, baselinePptx, fs.constants.COPYFILE_EXCL);
 const copiedBaselineSha256 = await sha256(baselinePptx);
 if (copiedBaselineSha256 !== sourceBinding.sourceBaselineSha256) throw new Error("Immutable baseline copy changed bytes.");
@@ -615,6 +623,65 @@ for (const deck of decks) {
     renders: report.renders,
   });
 }
+
+const renderedHeaderContractPath = path.join(output, "rendered-header-contract.json");
+const renderedHeaderReportPath = path.join(output, "rendered-header-evidence.json");
+const renderedHeaderReferenceRoot = path.join(output, "rendered-header-reference");
+const sourceRoundtripRenderReport = await readJson(path.join(sourceBinding.runDirectory, "powerpoint-roundtrip-render.json"));
+const sourceReference = sourceRoundtripRenderReport.renders?.find((item) => item.slide === 1);
+if (sourceRoundtripRenderReport.valid !== true || !sourceReference?.file || !sourceReference?.reviewFile) {
+  throw new Error("C18 could not bind an immutable C08 rendered-header reference.");
+}
+await fs.mkdir(renderedHeaderReferenceRoot, { recursive: true });
+for (const file of [sourceReference.file, sourceReference.reviewFile]) {
+  await fs.copyFile(path.join(sourceBinding.runDirectory, "powerpoint-roundtrip-render", file), path.join(renderedHeaderReferenceRoot, file), fs.constants.COPYFILE_EXCL);
+}
+if (await sha256(path.join(renderedHeaderReferenceRoot, sourceReference.file)) !== sourceReference.sha256
+  || await sha256(path.join(renderedHeaderReferenceRoot, sourceReference.reviewFile)) !== sourceReference.reviewSha256) {
+  throw new Error("C18 rendered-header reference bytes drifted while copying the C08 proof.");
+}
+await writeJson(renderedHeaderContractPath, {
+  schemaVersion: "slidewright-rendered-header-contract/v1",
+  reference: {
+    semanticSurfaceScorecardHash: sourceBinding.current.scorecardHash,
+    file: sourceReference.file,
+    sha256: sourceReference.sha256,
+    reviewFile: sourceReference.reviewFile,
+    reviewSha256: sourceReference.reviewSha256,
+  },
+  decks: renderEvidence.map((deck) => ({
+    id: deck.id,
+    renders: deck.renders.map((render) => ({
+      slide: render.slide,
+      file: render.file,
+      sha256: render.sha256,
+      reviewFile: render.reviewFile,
+      reviewSha256: render.reviewSha256,
+    })),
+  })),
+});
+await runChecked(python, [
+  renderedHeaderAuditScript,
+  "--contract", renderedHeaderContractPath,
+  "--renders-root", path.join(output, "renders"),
+  "--reference-renders-root", renderedHeaderReferenceRoot,
+  "--json", renderedHeaderReportPath,
+]);
+const renderedHeaderEvidence = await readJson(renderedHeaderReportPath);
+requireNoReportWarnings(renderedHeaderEvidence, "C18 rendered-header visibility audit");
+if (renderedHeaderEvidence.schemaVersion !== "slidewright-rendered-header-evidence/v1"
+  || renderedHeaderEvidence.valid !== true
+  || renderedHeaderEvidence.contractSha256 !== await sha256(renderedHeaderContractPath)
+  || renderedHeaderEvidence.imageCount !== 48
+  || renderedHeaderEvidence.records?.length !== 48
+  || renderedHeaderEvidence.reference?.png?.decodedPrefixSha256 !== renderedHeaderEvidence.sharedPrefixHashes?.png?.[0]
+  || renderedHeaderEvidence.reference?.jpeg?.decodedPrefixSha256 !== renderedHeaderEvidence.sharedPrefixHashes?.jpeg?.[0]
+  || renderedHeaderEvidence.negativeControls?.length !== 4
+  || renderedHeaderEvidence.negativeControls.some((item) => item.rejected !== true || item.failureChecks?.length < 1)
+  || renderedHeaderEvidence.failures?.length !== 0) {
+  throw new Error("C18 rendered-header visibility evidence is incomplete.");
+}
+validateRenderedHeaderNegativeControls(renderedHeaderEvidence.negativeControls);
 
 const renderEvidenceDir = path.join(output, "render-evidence");
 const renderMeasurements = [];
@@ -903,6 +970,18 @@ const scorecard = {
   overflowChecks,
   overflowChecksValid: overflowChecks.length === 6 && overflowChecks.every((item) => item.valid),
   renderEvidence,
+  renderedHeaderVisibility: {
+    valid: renderedHeaderEvidence.valid,
+    contractSha256: await sha256(renderedHeaderContractPath),
+    reportSha256: await sha256(renderedHeaderReportPath),
+    imageCount: renderedHeaderEvidence.imageCount,
+    sharedPrefixHashes: renderedHeaderEvidence.sharedPrefixHashes,
+    negativeControls: renderedHeaderEvidence.negativeControls,
+  },
+  renderedHeaderVisibilityValid: renderedHeaderEvidence.valid === true
+    && renderedHeaderEvidence.imageCount === 48
+    && renderedHeaderEvidence.records.length === 48
+    && validateRenderedHeaderNegativeControls(renderedHeaderEvidence.negativeControls),
   visualReviewRequiredDecks: mutationContract.visualReview.requiredDecks,
   reviewArtifactsReady: mutationContract.visualReview.inspectEverySlideAtFullSize === true
     && renderEvidence.length === 6
@@ -948,6 +1027,7 @@ scorecard.valid = scorecard.sourceBinding.valid
     && /^[a-f0-9]{64}$/u.test(item.renderEvidenceSha256)
     && /^[a-f0-9]{64}$/u.test(item.auditReportSha256))
   && scorecard.overflowChecksValid
+  && scorecard.renderedHeaderVisibilityValid
   && scorecard.reviewArtifactsReady
   && scorecard.warnings.length === 0;
 scorecard.scorecardHash = canonicalHash(scorecard);

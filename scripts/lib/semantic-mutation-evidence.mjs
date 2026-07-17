@@ -31,6 +31,7 @@ export const SEMANTIC_MUTATION_IMPLEMENTATION_PATHS = [
   "scripts/setup-artifact-runtime.mjs",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_semantic_mutation.ps1",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_semantic_mutation.py",
+  "plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_rendered_headers.py",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_semantic_surface.py",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/semantic_mutation_negative_controls.py",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_render_isolated.ps1",
@@ -64,6 +65,27 @@ export const SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS = Object.freeze({
   "diagram-label-outside-node": Object.freeze({ caseId: "diagram-node-move", code: "SM009" }),
 });
 
+export const RENDERED_HEADER_NEGATIVE_EXPECTATIONS = Object.freeze({
+  "erase-prefix": Object.freeze(["pixelCount"]),
+  "clip-leading-prefix": Object.freeze(["startsAtExpectedLeft"]),
+  "remove-middle-prefix": Object.freeze(["horizontalContinuity"]),
+  "flatten-to-blue-bar": Object.freeze(["maximumPixelCount", "textLikeColumnRuns", "textLikeComponents"]),
+});
+
+export function validateRenderedHeaderNegativeControls(controls) {
+  const ids = Object.keys(RENDERED_HEADER_NEGATIVE_EXPECTATIONS);
+  requireEvidence(Array.isArray(controls) && controls.length === ids.length, "C18 rendered-header control inventory drifted.");
+  for (let index = 0; index < ids.length; index += 1) {
+    const control = controls[index];
+    const expectedId = ids[index];
+    requireEvidence(control?.id === expectedId && control.rejected === true && Array.isArray(control.failureChecks), `C18 rendered-header control identity drifted for ${expectedId}.`);
+    for (const check of RENDERED_HEADER_NEGATIVE_EXPECTATIONS[expectedId]) {
+      requireEvidence(control.failureChecks.includes(check), `C18 rendered-header control ${expectedId} did not reject the intended ${check} defect.`);
+    }
+  }
+  return true;
+}
+
 function requireEvidence(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -79,6 +101,24 @@ export async function captureSemanticMutationImplementation(root) {
   const files = [];
   for (const relative of SEMANTIC_MUTATION_IMPLEMENTATION_PATHS) files.push(await fileRecord(root, relative));
   return { files, sha256: canonicalHash(files) };
+}
+
+async function captureSemanticMutationImplementationSnapshot(runDirectory, recorded) {
+  requireEvidence(Array.isArray(recorded?.files) && recorded.files.length > 0, "C18 recorded implementation closure is missing.");
+  const files = [];
+  for (const item of recorded.files) {
+    requireEvidence(typeof item?.path === "string" && !item.path.startsWith("/") && !item.path.includes(".."), "C18 recorded implementation path is unsafe.");
+    const absolute = path.resolve(runDirectory, "implementation-snapshot", ...item.path.split("/"));
+    const snapshotRoot = path.resolve(runDirectory, "implementation-snapshot");
+    const relative = path.relative(snapshotRoot, absolute);
+    requireEvidence(relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative), "C18 implementation snapshot escaped its immutable directory.");
+    const stat = await fs.lstat(absolute);
+    requireEvidence(stat.isFile() && !stat.isSymbolicLink(), `C18 implementation snapshot is not a regular file: ${item.path}`);
+    files.push({ path: item.path, bytes: stat.size, sha256: await sha256File(absolute) });
+  }
+  const result = { files, sha256: canonicalHash(files) };
+  requireEvidence(canonicalHash(result) === canonicalHash(recorded), "C18 historical implementation snapshot drifted.");
+  return result;
 }
 
 function resolveExecutable(command) {
@@ -121,7 +161,7 @@ function decksFor(contract) {
   return ["powerpoint-normalized-baseline", ...contract.cases.map((item) => item.id)];
 }
 
-export function expectedSemanticMutationReceiptPaths(contract, commandCount = 0) {
+export function expectedSemanticMutationReceiptPaths(contract, commandCount = 0, implementationPaths = SEMANTIC_MUTATION_IMPLEMENTATION_PATHS) {
   const paths = [
     "command-log.json",
     "negative-controls.json",
@@ -135,6 +175,10 @@ export function expectedSemanticMutationReceiptPaths(contract, commandCount = 0)
     "powerpoint-timeout-probe.ready",
     "powerpoint-runtime/native-mutation.json",
     "powerpoint-runtime/timeout-probe.json",
+    "rendered-header-contract.json",
+    "rendered-header-evidence.json",
+    "rendered-header-reference/slide-01.jpg",
+    "rendered-header-reference/slide-01.png",
     "source-binding.json",
     "watchdog/normal/completion.marker",
     "watchdog/normal/diagnostic.log",
@@ -144,6 +188,7 @@ export function expectedSemanticMutationReceiptPaths(contract, commandCount = 0)
     "worker-intents/powerpoint-native-mutation-worker-intent.json",
     "worker-intents/powerpoint-timeout-probe-worker-intent.json",
   ];
+  for (const relative of implementationPaths) paths.push(`implementation-snapshot/${relative}`);
   for (const mutationCase of contract.cases) {
     paths.push(
       `audits/${mutationCase.id}.json`,
@@ -187,6 +232,7 @@ export function expectedMutationCommandPlan(output, pythonCommand, contract) {
   const semantic = "<repo>/plugins/slidewright/skills/slidewright/scripts/semantic_surface";
   const mutationScript = `${semantic}/powerpoint_semantic_mutation.ps1`;
   const auditScript = `${semantic}/audit_semantic_mutation.py`;
+  const renderedHeaderScript = `${semantic}/audit_rendered_headers.py`;
   const negativeScript = `${semantic}/semantic_mutation_negative_controls.py`;
   const renderScript = `${semantic}/powerpoint_render_isolated.ps1`;
   const timeoutScript = `${semantic}/powerpoint_timeout_probe.ps1`;
@@ -215,6 +261,11 @@ export function expectedMutationCommandPlan(output, pythonCommand, contract) {
       args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", renderScript, "-InputPptx", input, "-OutputDir", `${output}/renders/${deck}`, "-ReportJson", `${output}/renders/${deck}.json`, "-OwnershipRecordJson", `${output}/renders/${deck}-ownership.json`, "-WorkerIntentJson", `${output}/worker-intents/render-${deck}-worker-intent.json`],
     });
   }
+  records.push({
+    label: "header-visibility",
+    command: pythonCommand,
+    args: [renderedHeaderScript, "--contract", `${output}/rendered-header-contract.json`, "--renders-root", `${output}/renders`, "--reference-renders-root", `${output}/rendered-header-reference`, "--json", `${output}/rendered-header-evidence.json`],
+  });
   for (const mutationCase of contract.cases) {
     records.push({
       label: "measure",
@@ -252,7 +303,7 @@ export function validateSemanticMutationCommandReceipts(log, contract) {
   const expected = expectedMutationCommandPlan(outputMatch[1], pythonCommand, contract);
   const expectedLabels = ["poll", "timeout", "mutation", "poll"];
   for (let index = 0; index < decksFor(contract).length; index += 1) expectedLabels.push("render", "poll");
-  expectedLabels.push(...contract.cases.map(() => "measure"), ...contract.cases.map(() => "audit"), "negative", ...decksFor(contract).map(() => "slides-test"), "poll");
+  expectedLabels.push("header-visibility", ...contract.cases.map(() => "measure"), ...contract.cases.map(() => "audit"), "negative", ...decksFor(contract).map(() => "slides-test"), "poll");
   const labels = [];
   const pollRunLengths = [];
   let nonPollIndex = 0;
@@ -640,13 +691,18 @@ export async function readRasterDimensions(file) {
 export async function verifySemanticMutationEvidence({ root, runDirectory, python, slidesTest, requireCurrentGit = true, requireSourceCurrent = false }) {
   const runFile = (relative) => path.join(runDirectory, ...relative.split("/"));
   const runJson = (relative) => readJson(runFile(relative));
+  const implementationFile = (relative) => requireCurrentGit
+    ? path.join(root, ...relative.split("/"))
+    : runFile(`implementation-snapshot/${relative}`);
   const scorecard = await runJson("scorecard.json");
   const core = structuredClone(scorecard);
   delete core.scorecardHash;
   requireEvidence(scorecard.schemaVersion === "slidewright-semantic-mutation-scorecard/v2"
     && scorecard.scorecardHash === canonicalHash(core), "C18 scorecard hash or schema is invalid.");
 
-  const implementation = await captureSemanticMutationImplementation(root);
+  const implementation = requireCurrentGit
+    ? await captureSemanticMutationImplementation(root)
+    : await captureSemanticMutationImplementationSnapshot(runDirectory, scorecard.provenance?.implementation);
   requireEvidence(canonicalHash(implementation) === canonicalHash(scorecard.provenance?.implementation), "C18 implementation closure drifted.");
   if (requireCurrentGit) {
     const git = captureCleanGit(root);
@@ -660,8 +716,8 @@ export async function verifySemanticMutationEvidence({ root, runDirectory, pytho
   if (process.platform === "win32") requireEvidence(runtime.executables?.powerPoint?.path && /^[a-f0-9]{64}$/u.test(runtime.executables.powerPoint.sha256)
     && runtime.executables.powerPoint.fileVersion && runtime.executables.powerPoint.productVersion, "C18 PowerPoint executable runtime binding is incomplete.");
 
-  const contractPath = path.join(root, "fixtures", "semantic-surface", "v1", "mutation-contract.json");
-  const baselineContractPath = path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json");
+  const contractPath = implementationFile("fixtures/semantic-surface/v1/mutation-contract.json");
+  const baselineContractPath = implementationFile("fixtures/semantic-surface/v1/semantic-contract.json");
   const contract = await readJson(contractPath);
   const baselineContract = await readJson(baselineContractPath);
   requireEvidence(contract.schemaVersion === "slidewright-semantic-mutation/v1"
@@ -671,7 +727,8 @@ export async function verifySemanticMutationEvidence({ root, runDirectory, pytho
   requireEvidence(canonicalHash(receipts) === canonicalHash(scorecard.receipts), "C18 receipt tree drifted.");
   const commandLog = await runJson("command-log.json");
   const actualPaths = receipts.files.map((item) => item.path);
-  const expectedPaths = expectedSemanticMutationReceiptPaths(contract, commandLog.commands?.length ?? 0);
+  const recordedImplementationPaths = implementation.files.map((item) => item.path);
+  const expectedPaths = expectedSemanticMutationReceiptPaths(contract, commandLog.commands?.length ?? 0, recordedImplementationPaths);
   if (!exactPathInventoryMatches(actualPaths, expectedPaths)) {
     const actual = new Set(actualPaths);
     const expected = new Set(expectedPaths);
@@ -898,9 +955,72 @@ export async function verifySemanticMutationEvidence({ root, runDirectory, pytho
   }
   requireEvidence(canonicalHash(renderEvidence) === canonicalHash(scorecard.renderEvidence), "C18 render-evidence scorecard derivation drifted.");
 
+  const renderedHeaderContract = await runJson("rendered-header-contract.json");
+  const sourceRoundtripRenderReport = await readJson(path.join(sourceRun, "powerpoint-roundtrip-render.json"));
+  const sourceReference = sourceRoundtripRenderReport.renders?.find((item) => item.slide === 1);
+  requireEvidence(sourceRoundtripRenderReport.valid === true && sourceReference?.file === "slide-01.png" && sourceReference?.reviewFile === "slide-01.jpg"
+    && sourceReference.sha256 === await sha256File(runFile("rendered-header-reference/slide-01.png"))
+    && sourceReference.reviewSha256 === await sha256File(runFile("rendered-header-reference/slide-01.jpg")), "C18 copied rendered-header reference drifted from C08.");
+  const expectedRenderedHeaderContract = {
+    schemaVersion: "slidewright-rendered-header-contract/v1",
+    reference: {
+      semanticSurfaceScorecardHash: sourceBinding.semanticSurfaceScorecardHash,
+      file: sourceReference.file,
+      sha256: sourceReference.sha256,
+      reviewFile: sourceReference.reviewFile,
+      reviewSha256: sourceReference.reviewSha256,
+    },
+    decks: renderEvidence.map((deck) => ({
+      id: deck.id,
+      renders: deck.renders.map((render) => ({
+        slide: render.slide,
+        file: render.file,
+        sha256: render.sha256,
+        reviewFile: render.reviewFile,
+        reviewSha256: render.reviewSha256,
+      })),
+    })),
+  };
+  requireEvidence(canonicalHash(renderedHeaderContract) === canonicalHash(expectedRenderedHeaderContract), "C18 rendered-header contract drifted from the immutable render inventory.");
+  const renderedHeaderReport = await runJson("rendered-header-evidence.json");
+  const renderedHeaderScript = implementationFile("plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_rendered_headers.py");
+  const renderedHeaderTemporary = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c18-header-"));
+  try {
+    const rederivedPath = path.join(renderedHeaderTemporary, "rendered-header-evidence.json");
+    runReadOnlyAuditor(python, [renderedHeaderScript, "--contract", runFile("rendered-header-contract.json"), "--renders-root", runFile("renders"), "--reference-renders-root", runFile("rendered-header-reference"), "--json", rederivedPath], root, 0, "rendered-header visibility audit");
+    const rederived = await readJson(rederivedPath);
+    requireEvidence(canonicalHash(renderedHeaderReport) === canonicalHash(rederived), "C18 independently rederived rendered-header evidence drifted.");
+  } finally {
+    await fs.rm(renderedHeaderTemporary, { recursive: true, force: true });
+  }
+  requireEvidence(renderedHeaderReport.schemaVersion === "slidewright-rendered-header-evidence/v1"
+    && renderedHeaderReport.valid === true
+    && renderedHeaderReport.contractSha256 === await sha256File(runFile("rendered-header-contract.json"))
+    && renderedHeaderReport.imageCount === 48
+    && renderedHeaderReport.records?.length === 48
+    && renderedHeaderReport.records.every((item) => item.valid === true && Object.values(item.checks ?? {}).every((value) => value === true))
+    && renderedHeaderReport.sharedPrefixHashes?.png?.length === 1
+    && renderedHeaderReport.sharedPrefixHashes?.jpeg?.length === 1
+    && renderedHeaderReport.reference?.png?.decodedPrefixSha256 === renderedHeaderReport.sharedPrefixHashes?.png?.[0]
+    && renderedHeaderReport.reference?.jpeg?.decodedPrefixSha256 === renderedHeaderReport.sharedPrefixHashes?.jpeg?.[0]
+    && renderedHeaderReport.negativeControls?.length === 4
+    && renderedHeaderReport.warnings?.length === 0
+    && renderedHeaderReport.failures?.length === 0, "C18 rendered-header visibility evidence is invalid.");
+  validateRenderedHeaderNegativeControls(renderedHeaderReport.negativeControls);
+  const renderedHeaderSummary = {
+    valid: renderedHeaderReport.valid,
+    contractSha256: await sha256File(runFile("rendered-header-contract.json")),
+    reportSha256: await sha256File(runFile("rendered-header-evidence.json")),
+    imageCount: renderedHeaderReport.imageCount,
+    sharedPrefixHashes: renderedHeaderReport.sharedPrefixHashes,
+    negativeControls: renderedHeaderReport.negativeControls,
+  };
+  requireEvidence(scorecard.renderedHeaderVisibilityValid === true
+    && canonicalHash(scorecard.renderedHeaderVisibility) === canonicalHash(renderedHeaderSummary), "C18 rendered-header scorecard derivation drifted.");
+
   const renderMeasurements = [];
   const mutationAudits = [];
-  const auditScript = path.join(root, "plugins", "slidewright", "skills", "slidewright", "scripts", "semantic_surface", "audit_semantic_mutation.py");
+  const auditScript = implementationFile("plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_semantic_mutation.py");
   for (const mutationCase of contract.cases) {
     const variant = runFile(`mutations/${mutationCase.id}.pptx`);
     const renderPath = `render-evidence/${mutationCase.id}.json`;
@@ -1076,6 +1196,7 @@ export async function verifySemanticMutationEvidence({ root, runDirectory, pytho
     && scorecard.mutationAuditsValid === true
     && scorecard.negativeControlsValid === true
     && scorecard.overflowChecksValid === true
+    && scorecard.renderedHeaderVisibilityValid === true
     && scorecard.reviewArtifactsReady === true
     && scorecard.warnings?.length === 0, "C18 derived scorecard gates are invalid.");
   return { valid: true, scorecardHash: scorecard.scorecardHash, receiptCount: receipts.files.length };
@@ -1113,7 +1234,7 @@ export async function verifySemanticMutationReview({ root, published = path.join
     && canonicalHash(review.machineVerification) === canonicalHash(machineVerification)
     && typeof review.reviewer?.kind === "string" && review.reviewer.kind.length > 0
     && typeof review.reviewer?.id === "string" && review.reviewer.id.length > 0
-    && review.inspectionMethod === "Every persisted 1600x900 review image inspected individually at full size; montage review does not qualify."
+    && review.inspectionMethod === "Every persisted 1600x900 review image inspected individually at full size using exactly one image per visual-tool call; montage and batched-image review do not qualify."
     && Array.isArray(review.slides) && review.slides.length === 24, "C18 review hash, machine binding, or reviewer metadata drifted.");
   const expected = [];
   for (const deck of scorecard.renderEvidence ?? []) {

@@ -32,6 +32,7 @@ export const SEMANTIC_IMPLEMENTATION_PATHS = [
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/start_powerpoint_runner_watchdog.ps1",
   "plugins/slidewright/skills/slidewright/scripts/semantic_surface/start_powerpoint_timeout_probe_control.ps1",
   "fixtures/semantic-surface/v1/semantic-contract.json",
+  "fixtures/independent/7a688db716046c64928d4ee197cd9e211360cd7b62f4c5db5a885fd508a85bb8.png",
   "tests/semantic-surface.test.mjs",
   "tests/runner-watchdog.test.mjs",
   "tests/presentation-path-identity.test.mjs",
@@ -72,6 +73,24 @@ export async function captureSemanticImplementation(root) {
   const files = [];
   for (const relative of SEMANTIC_IMPLEMENTATION_PATHS) files.push(await fileRecord(root, relative));
   return { files, sha256: canonicalHash(files) };
+}
+
+async function captureSemanticImplementationSnapshot(runDirectory, recorded) {
+  requireEvidence(Array.isArray(recorded?.files) && recorded.files.length > 0, "C08 recorded implementation closure is missing.");
+  const files = [];
+  const snapshotRoot = path.resolve(runDirectory, "implementation-snapshot");
+  for (const item of recorded.files) {
+    requireEvidence(typeof item?.path === "string" && !item.path.startsWith("/") && !item.path.split("/").includes(".."), "C08 recorded implementation path is unsafe.");
+    const absolute = path.resolve(snapshotRoot, ...item.path.split("/"));
+    const relative = path.relative(snapshotRoot, absolute);
+    requireEvidence(relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative), "C08 implementation snapshot escaped its immutable directory.");
+    const stat = await fs.lstat(absolute);
+    requireEvidence(stat.isFile() && !stat.isSymbolicLink(), `C08 implementation snapshot is not a regular file: ${item.path}`);
+    files.push({ path: item.path, bytes: stat.size, sha256: await sha256File(absolute) });
+  }
+  const result = { files, sha256: canonicalHash(files) };
+  requireEvidence(canonicalHash(result) === canonicalHash(recorded), "C08 historical implementation snapshot drifted.");
+  return result;
 }
 
 function git(root, args) {
@@ -140,7 +159,7 @@ export async function collectReceiptTree(runDirectory) {
   return { files, treeSha256: canonicalHash(files) };
 }
 
-export function expectedSemanticReceiptPaths(contract) {
+export function expectedSemanticReceiptPaths(contract, implementationPaths = SEMANTIC_IMPLEMENTATION_PATHS) {
   const paths = [
     "artifact-previews/montage.webp",
     "command-log.json",
@@ -202,6 +221,7 @@ export function expectedSemanticReceiptPaths(contract) {
     if (index > 1) paths.push(`export-${index}.pptx`);
   }
   for (const id of contract.negativeControls) paths.push(`negative-controls/${id}.audit.json`, `negative-controls/${id}.pptx`);
+  for (const relative of implementationPaths) paths.push(`implementation-snapshot/${relative}`);
   return paths.sort();
 }
 
@@ -631,7 +651,9 @@ export async function verifySemanticSurfaceEvidence({ root, runDirectory, python
   const scorecard = JSON.parse((await fs.readFile(path.join(runDirectory, "scorecard.json"), "utf8")).replace(/^\uFEFF/u, ""));
   const core = structuredClone(scorecard); delete core.scorecardHash;
   if (scorecard.schemaVersion !== "slidewright-semantic-surface-scorecard/v2" || scorecard.scorecardHash !== canonicalHash(core)) throw new Error("C08 scorecard hash or schema is invalid.");
-  const implementation = await captureSemanticImplementation(root);
+  const implementation = requireCurrentGit
+    ? await captureSemanticImplementation(root)
+    : await captureSemanticImplementationSnapshot(runDirectory, scorecard.provenance.implementation);
   if (canonicalHash(implementation) !== canonicalHash(scorecard.provenance.implementation)) throw new Error("C08 implementation closure drifted.");
   if (requireCurrentGit) {
     const gitState = captureCleanGit(root);
@@ -712,8 +734,10 @@ export async function verifySemanticSurfaceEvidence({ root, runDirectory, python
   for (const identity of [forcedSummary.parentIdentity, forcedArmed.workerIdentity, forcedArmed.watchdog]) {
     requireEvidence(await waitForIdentityExit(identity, 250), "C08 forced-parent exact process identity is still alive.");
   }
-  const currentPowerPoint = powerPointIdentities();
-  requireEvidence(currentPowerPoint.every((candidate) => forcedSummary.initialPowerPoint.some((initial) => sameIdentity(candidate, initial))), "C08 forced-parent control left a new PowerPoint process.");
+  if (requireCurrentGit) {
+    const currentPowerPoint = powerPointIdentities();
+    requireEvidence(currentPowerPoint.every((candidate) => forcedSummary.initialPowerPoint.some((initial) => sameIdentity(candidate, initial))), "C08 forced-parent control left a new PowerPoint process.");
+  }
   validateCommandReceipts(await runJson("command-log.json"));
   validatePowerPointQuiescenceEvidence({
     initial: await runJson("powerpoint-quiescence.json"),
@@ -722,12 +746,17 @@ export async function verifySemanticSurfaceEvidence({ root, runDirectory, python
     scorecardInterStage: scorecard.interStagePowerPointQuiescence,
   });
 
-  const contract = JSON.parse(await fs.readFile(path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json"), "utf8"));
-  requireEvidence(exactPathInventoryMatches(receipts.files.map((item) => item.path), expectedSemanticReceiptPaths(contract)), "C08 receipt inventory has a missing or unexpected file.");
-  requireEvidence(scorecard.contractSha256 === await sha256File(path.join(root, "fixtures", "semantic-surface", "v1", "semantic-contract.json")), "C08 contract hash drifted.");
+  const evidenceRoot = requireCurrentGit ? root : path.join(runDirectory, "implementation-snapshot");
+  const contractPath = path.join(evidenceRoot, "fixtures", "semantic-surface", "v1", "semantic-contract.json");
+  const contract = JSON.parse(await fs.readFile(contractPath, "utf8"));
+  const recordedImplementationPaths = implementation.files.map((item) => item.path);
+  requireEvidence(exactPathInventoryMatches(receipts.files.map((item) => item.path), expectedSemanticReceiptPaths(contract, recordedImplementationPaths)), "C08 receipt inventory has a missing or unexpected file.");
+  requireEvidence(scorecard.contractSha256 === await sha256File(contractPath), "C08 contract hash drifted.");
   const imageSource = contract.slides.find((slide) => slide.image)?.image?.source;
   requireEvidence(typeof imageSource === "string", "C08 contract has no declared source image.");
-  const sourceAsset = path.resolve(root, ...imageSource.split("/"));
+  const sourceAsset = path.resolve(evidenceRoot, ...imageSource.split("/"));
+  const sourceAssetRelative = path.relative(evidenceRoot, sourceAsset);
+  requireEvidence(sourceAssetRelative !== "" && !sourceAssetRelative.startsWith("..") && !path.isAbsolute(sourceAssetRelative), "C08 declared source asset escaped the evidence root.");
   requireEvidence(scorecard.sourceAssetSha256 === await sha256File(sourceAsset), "C08 declared source asset hash drifted.");
   const freeze = await runJson("freeze-report.json");
   requireEvidence(freeze.valid === true && freeze.contractValid === true && freeze.manifestWritten === true

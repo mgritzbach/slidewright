@@ -9,6 +9,7 @@ import { cleanupOwnedPowerPoint } from "./lib/owned-process-cleanup.mjs";
 import { captureWorkerIdentity, terminateExactWorker } from "./lib/exact-worker-process.mjs";
 import { startRunnerWatchdog } from "./lib/runner-watchdog.mjs";
 import {
+  SEMANTIC_IMPLEMENTATION_PATHS,
   canonicalHash,
   captureCleanGit,
   captureSemanticImplementation,
@@ -248,6 +249,11 @@ await fs.rm(output, { recursive: true, force: true });
 await fs.mkdir(output, { recursive: true });
 const gitBefore = captureCleanGit(root);
 const implementationBefore = await captureSemanticImplementation(root);
+for (const relative of SEMANTIC_IMPLEMENTATION_PATHS) {
+  const snapshot = path.join(output, "implementation-snapshot", ...relative.split("/"));
+  await fs.mkdir(path.dirname(snapshot), { recursive: true });
+  await fs.copyFile(path.join(root, ...relative.split("/")), snapshot, fs.constants.COPYFILE_EXCL);
+}
 const runnerWatchdog = await startRunnerWatchdog({
   root,
   stagingDir: output,
