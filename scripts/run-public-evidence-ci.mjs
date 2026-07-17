@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { contentHash, parseNodeTestSummary, sha256 } from "./public-evidence-lib.mjs";
+import { contentHash, nodeTestPassed, parseNodeTestSummary, sha256 } from "./public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const platform = process.env.RUNNER_OS || `${process.platform}-${process.arch}`;
@@ -50,13 +50,11 @@ const verifiedEvidence = JSON.parse(await fs.readFile(path.join(output, "verifie
 const python = spawnSync(process.platform === "win32" ? "python.exe" : "python", ["--version"], { encoding: "utf8" });
 const git = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" });
 const { total, passed, failed, cancelled, skipped } = parseNodeTestSummary(commands[0].log);
-const missingRequiredTests = contract.requiredTestNames.filter((name) => !commands[0].log.includes(name));
+const missingRequiredTests = contract.requiredTestNames.filter((name) => !nodeTestPassed(commands[0].log, name));
 const portableResult = {
   testsTotal: total,
-  testsPassed: passed,
   testsFailed: failed,
   testsCancelled: cancelled,
-  testsSkipped: skipped,
   minimumTests: contract.minimumTestCount,
   requiredTestsVerified: contract.requiredTestNames.length - missingRequiredTests.length,
   requiredTestsExpected: contract.requiredTestNames.length,

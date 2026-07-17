@@ -30,6 +30,15 @@ export function parseNodeTestSummary(log) {
   };
 }
 
+export function nodeTestPassed(log, name) {
+  return String(log).split(/\r?\n/u).some((line) => {
+    const tap = line.match(/^ok \d+ - (.+)$/u);
+    if (tap) return tap[1] === name;
+    const spec = line.match(/^✔ (.+?)(?: \([\d.]+ms\))?$/u);
+    return spec?.[1] === name;
+  });
+}
+
 export const PUBLIC_SUITES = [
   {
     id: "c14-geometric-readability",
