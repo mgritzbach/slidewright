@@ -13,6 +13,27 @@ export async function sha256File(filePath) {
   return sha256Bytes(await fs.readFile(filePath));
 }
 
+export async function buildPathReplacements(groups, realpathImpl = fs.realpath) {
+  const expanded = [];
+  for (const [value, replacement] of groups) {
+    if (!value) continue;
+    expanded.push([String(value), replacement]);
+    const real = await realpathImpl(value).catch(() => null);
+    if (real) expanded.push([String(real), replacement]);
+  }
+  const unique = expanded.filter(([value], index, values) => values.findIndex(([candidate]) => candidate === value) === index);
+  return unique.sort(([left], [right]) => right.length - left.length);
+}
+
+export function normalizeEvidenceText(text, replacements) {
+  let normalized = String(text || "").replaceAll("\r\n", "\n");
+  for (const [value, replacement] of replacements) {
+    normalized = normalized.replaceAll(value, replacement);
+    normalized = normalized.replaceAll(JSON.stringify(value).slice(1, -1), replacement);
+  }
+  return normalized;
+}
+
 const RELEASE_SCORECARD_URL = /^(https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/download\/[^/]+)\/runtime-bootstrap-scorecard\.json$/;
 const RELEASE_COMMAND_LOG_URL = /^(https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/download\/[^/]+)\/runtime-bootstrap-command-log\.json$/;
 

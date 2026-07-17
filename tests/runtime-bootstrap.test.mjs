@@ -16,7 +16,9 @@ import {
   RUNTIME_AGGREGATE_SCHEMA,
   RUNTIME_SCORECARD_SCHEMA,
   assertOwnedOutput,
+  buildPathReplacements,
   fetchAndVerifyRuntimeReleaseAssets,
+  normalizeEvidenceText,
   sha256Bytes,
   stableJson,
   validateRuntimeAggregate,
@@ -169,6 +171,15 @@ test("C03 host detection distinguishes Windows, macOS, Linux, and WSL", () => {
   assert.equal(detectHostProfile({ platform: "linux", release: "6.8.0", env: {} }), "linux");
   assert.equal(detectHostProfile({ platform: "linux", release: "5.15.0-microsoft-standard-WSL2", env: {} }), "wsl");
   assert.equal(detectHostProfile({ platform: "linux", release: "6.8.0", env: { WSL_DISTRO_NAME: "Ubuntu" } }), "wsl");
+});
+
+test("C03 evidence normalization handles macOS lexical and /private realpath aliases longest-first", async () => {
+  const lexical = "/var/folders/example/slidewright-c03";
+  const canonical = `/private${lexical}`;
+  const replacements = await buildPathReplacements([[lexical, "<scratch>"]], async () => canonical);
+  assert.deepEqual(replacements, [[canonical, "<scratch>"], [lexical, "<scratch>"]]);
+  assert.equal(normalizeEvidenceText(`{\"cwd\":\"${canonical}/workspace\"}\n`, replacements), "{\"cwd\":\"<scratch>/workspace\"}\n");
+  assert.doesNotMatch(normalizeEvidenceText(canonical, replacements), /private<scratch>/);
 });
 
 test("C03 validates the package identity, minimum version, and built entrypoint", async (t) => {

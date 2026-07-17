@@ -13,7 +13,9 @@ import {
 import {
   RUNTIME_SCORECARD_SCHEMA,
   assertOwnedOutput,
+  buildPathReplacements,
   hashImplementation,
+  normalizeEvidenceText,
   sha256Bytes,
   sha256File,
   stableJson,
@@ -102,18 +104,9 @@ function count(text, pattern) {
   return [...String(text).matchAll(pattern)].length;
 }
 
-function normalizeText(text, replacements) {
-  let normalized = String(text || "").replaceAll("\r\n", "\n");
-  for (const [value, replacement] of replacements) {
-    normalized = normalized.replaceAll(value, replacement);
-    normalized = normalized.replaceAll(JSON.stringify(value).slice(1, -1), replacement);
-  }
-  return normalized;
-}
-
 function commandReceipt(id, result, replacements) {
-  const stdout = normalizeText(result.stdout, replacements);
-  const stderr = normalizeText(result.stderr, replacements);
+  const stdout = normalizeEvidenceText(result.stdout, replacements);
+  const stderr = normalizeEvidenceText(result.stderr, replacements);
   return {
     id,
     argv: ["node", "<repo>/scripts/setup-artifact-runtime.mjs", "--workspace", "<target-workspace>", "--json"],
@@ -192,13 +185,13 @@ try {
   const cleanHome = path.join(scratch, "clean-home");
   const fixtureRoot = path.join(scratch, "fixture-runtime");
   const fixturePackage = await makeFixtureRuntime(fixtureRoot);
-  const replacements = [
+  const replacements = await buildPathReplacements([
     [scratch, "<scratch>"],
     [root, "<repo>"],
     [os.homedir(), "<home>"],
     [process.env.HOME, "<home>"],
     [process.env.USERPROFILE, "<home>"],
-  ].filter(([value], index, values) => value && values.findIndex(([candidate]) => candidate === value) === index);
+  ]);
 
   const fixtureWorkspace = path.join(scratch, "fixture-workspace");
   const fixtureExistedBefore = await pathExists(fixtureWorkspace);
