@@ -8,8 +8,10 @@ import { REPAIR_FREE_CONTROL_IDS, REPAIR_FREE_IMPLEMENTATION_PATHS, collectRepai
 const contract = JSON.parse(await fs.readFile(new URL("../fixtures/repair-free/v1/fixture-contract.json", import.meta.url), "utf8"));
 const worker = await fs.readFile(new URL("../plugins/slidewright/skills/slidewright/scripts/repair_free/powerpoint_repair_free_roundtrip.ps1", import.meta.url), "utf8");
 const watcher = await fs.readFile(new URL("../plugins/slidewright/skills/slidewright/scripts/repair_free/watch_powerpoint_windows.ps1", import.meta.url), "utf8");
+const modalDismissal = await fs.readFile(new URL("../plugins/slidewright/skills/slidewright/scripts/repair_free/dismiss_owned_repair_modal.ps1", import.meta.url), "utf8");
 const orchestrator = await fs.readFile(new URL("../scripts/run-repair-free-benchmark.mjs", import.meta.url), "utf8");
 const inventory = await fs.readFile(new URL("../plugins/slidewright/skills/slidewright/scripts/repair_free/semantic_inventory.py", import.meta.url), "utf8");
+const negativeControls = await fs.readFile(new URL("../plugins/slidewright/skills/slidewright/scripts/repair_free/negative_controls.py", import.meta.url), "utf8");
 const packageJson = JSON.parse(await fs.readFile(new URL("../package.json", import.meta.url), "utf8"));
 
 test("C04 contract freezes 26 unique release fixtures and every category quota", () => {
@@ -44,6 +46,10 @@ test("C04 PowerPoint worker is isolated, alert-visible, SaveAs/reopen, and state
   assert.ok(worker.indexOf("Set-Content -Encoding UTF8 -LiteralPath $ownershipPath") < worker.indexOf("while (-not (Test-Path -LiteralPath $armedPath)"));
   assert.ok(worker.indexOf("while (-not (Test-Path -LiteralPath $armedPath)") < worker.indexOf("Presentations.Open($inputPath"));
   assert.match(worker, /SaveAs\(\$outputPath, 24\)/u);
+  assert.match(worker, /workerProcessStartTime/u);
+  assert.match(worker, /workerProcessName/u);
+  assert.match(worker, /if \(-not \(Test-Path -LiteralPath \$stopPath\)\) \{ New-Item -ItemType File -Path \$stopPath/u);
+  assert.doesNotMatch(worker, /New-Item -ItemType File -Force -Path \$stopPath/u);
   assert.match(worker, /Presentations\.Open\(\$outputPath/u);
   assert.match(worker, /exactLiveSemanticStatePreserved = \$statePreserved/u);
   assert.match(worker, /sourceUnchanged = \$sourceHashBefore -eq \$sourceHashAfter/u);
@@ -62,6 +68,8 @@ test("C04 watcher binds modal evidence to the exact owned PowerPoint identity", 
   assert.match(watcher, /Set-Content -Encoding UTF8 -LiteralPath \$armedPath/u);
   assert.ok(watcher.indexOf("Get-Process -Id $ownedPid") < watcher.indexOf("Set-Content -Encoding UTF8 -LiteralPath $armedPath"));
   assert.match(watcher, /repair\|removed content\|unreadable\|damaged\|corrupt/u);
+  assert.match(watcher, /ownershipSha256/u);
+  assert.match(watcher, /workerProcessStartTime/u);
 });
 
 test("C04 orchestrator requires pre/post OPC, schema, semantic, and real PowerPoint proof", () => {
@@ -78,6 +86,22 @@ test("C04 orchestrator requires pre/post OPC, schema, semantic, and real PowerPo
   assert.match(orchestrator, /powerpoint-control-repair-dialog/u);
   assert.match(orchestrator, /powerpoint-quiescence-final/u);
   assert.ok(orchestrator.indexOf("fsSync.existsSync(watcherReady)") < orchestrator.indexOf('spawn("powershell", workerArgs'));
+  assert.match(orchestrator, /dismiss_owned_repair_modal\.ps1/u);
+  assert.match(orchestrator, /powerpoint-control-modal-dismissal/u);
+  assert.match(orchestrator, /const rejected = timedOut && watcherExit\.code === 2/u);
+  assert.match(orchestrator, /exactModalEvidence: repairReceipt\.modalDismissal\?\.exactModalEvidence === true/u);
+  assert.match(orchestrator, /verifiedClosedModalHandleCount/u);
+  assert.match(orchestrator, /workerTermination\.matched === true && workerTermination\.terminated === true/u);
+  assert.match(negativeControls, /slidewright-missing-repair-control\.xml/u);
+  assert.doesNotMatch(negativeControls, /non_visual\[1\]\.set\("id"/u);
+  assert.match(modalDismissal, /unexpectedVisibleWindows/u);
+  assert.match(modalDismissal, /className -ne 'NUIDialog'/u);
+  assert.match(modalDismissal, /exact live PowerPoint worker identity/u);
+  assert.match(modalDismissal, /Global PowerPoint isolation was lost/u);
+  assert.match(modalDismissal, /ownershipSha256/u);
+  assert.match(modalDismissal, /\/AUTOMATION/u);
+  assert.match(modalDismissal, /PostMessage\(\[IntPtr\]\(\[int64\]\$window\.handle\), 0x0010/u);
+  assert.doesNotMatch(modalDismissal, /Stop-Process|taskkill|\.Kill\(\)|PostThreadMessage|0x0012/u);
 });
 
 test("C04 release mode regenerates producers and cannot reuse development outputs", () => {

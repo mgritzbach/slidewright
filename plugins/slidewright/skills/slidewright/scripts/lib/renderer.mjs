@@ -7,6 +7,7 @@ import { lintPlan } from "./linter.mjs";
 import { inspectPlanFonts } from "./font-audit.mjs";
 import { loadArtifactTool } from "./artifact-runtime.mjs";
 import { lintRenderedLayouts } from "./rendered-linter.mjs";
+import { addExecutiveReviewOverlays } from "./executive-review.mjs";
 
 async function writeBlob(filePath, blob) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -130,7 +131,7 @@ async function normalizePptx(out, plan) {
   }
 }
 
-export async function renderPlan(plan, { out, previewDir }) {
+export async function renderPlan(plan, { out, previewDir, executiveReview = null }) {
   const report = lintPlan(plan);
   if (!report.valid) {
     throw new Error(`Refusing to render an invalid plan with ${report.counts.error} error(s).`);
@@ -145,7 +146,7 @@ export async function renderPlan(plan, { out, previewDir }) {
   const { Presentation, PresentationFile } = artifact;
   const presentation = Presentation.create({ slideSize: plan.canvas });
 
-  for (const slidePlan of plan.slides) {
+  for (const [slideIndex, slidePlan] of plan.slides.entries()) {
     const slide = presentation.slides.add();
     slide.background.fill = slidePlan.background;
     for (const shape of slidePlan.shapes) {
@@ -223,6 +224,14 @@ export async function renderPlan(plan, { out, previewDir }) {
         typeface: shape.style.typeface,
         lineSpacing: shape.style.lineHeight,
       };
+    }
+    if (executiveReview?.reviewCopyRequired) {
+      addExecutiveReviewOverlays(
+        slide,
+        executiveReview.findings.filter((finding) => finding.slideIndex === slideIndex + 1),
+        executiveReview,
+        plan.theme.fontFamily,
+      );
     }
   }
 

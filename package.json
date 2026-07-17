@@ -1,6 +1,6 @@
 {
   "name": "slidewright-build-week",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Formatting-safe, editable PowerPoint generation for Codex",
@@ -47,6 +47,7 @@
     "semantic-mutation:review": "node scripts/finalize-semantic-mutation-review.mjs",
     "prompt-robustness": "npm run setup:runtime && node scripts/run-prompt-robustness-benchmark.mjs",
     "prompt-robustness:review": "node scripts/finalize-prompt-robustness-review.mjs",
+    "executive-review": "npm run setup:runtime && node scripts/run-executive-review-demo.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
     "release:check": "npm run preflight && npm run runtime:benchmark && npm run demo && npm run universal-design && npm run fidelity && npm run mutation && npm run repair && npm run copy-resilience && npm run copy-resilience:verify && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration && npm run design-profile && npm run feedback-contract && npm run prompt-robustness && npm run semantic-surface && npm run semantic-mutation && npm run repair-free && npm run repair-free:verify && npm run evidence:verify",
     "feedback-contract": "node scripts/run-feedback-contract-benchmark.mjs",

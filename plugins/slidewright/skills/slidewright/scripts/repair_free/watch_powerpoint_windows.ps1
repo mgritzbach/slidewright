@@ -50,9 +50,18 @@ while (-not (Test-Path -LiteralPath $ownershipPath) -and (Get-Date) -lt $deadlin
 if (-not (Test-Path -LiteralPath $ownershipPath)) { throw 'PowerPoint ownership record was not created before the watcher deadline.' }
 $ownershipObservedAt = Get-Date
 $ownership = Get-Content -Raw -LiteralPath $ownershipPath | ConvertFrom-Json
+$ownershipSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $ownershipPath).Hash.ToLowerInvariant()
 $ownedPid = [int]$ownership.processId
 $ownedStart = [string]$ownership.processStartTime
+$workerPid = [int]$ownership.workerProcessId
+$workerName = [string]$ownership.workerProcessName
+$workerStart = [string]$ownership.workerProcessStartTime
 if ($ownedPid -lt 1 -or [string]$ownership.processName -ne 'POWERPNT' -or -not $ownedStart) { throw 'PowerPoint ownership record is invalid.' }
+if ($workerPid -lt 1 -or $workerName -ne 'powershell' -or -not $workerStart) { throw 'PowerPoint worker ownership identity is invalid.' }
+$ownedWorker = Get-Process -Id $workerPid -ErrorAction SilentlyContinue
+if (-not $ownedWorker -or [string]$ownedWorker.ProcessName -ne $workerName -or $ownedWorker.StartTime.ToUniversalTime().ToString('o') -ne $workerStart) {
+  throw 'The exact PowerPoint worker identity disappeared before the watcher armed.'
+}
 $visible = @()
 $identityDrift = $false
 $ownedProcessExited = $false
@@ -118,6 +127,10 @@ $result = [ordered]@{
   finishedAt = $finished.ToUniversalTime().ToString('o')
   processId = $ownedPid
   processStartTime = $ownedStart
+  ownershipSha256 = $ownershipSha256
+  workerProcessId = $workerPid
+  workerProcessName = $workerName
+  workerProcessStartTime = $workerStart
   sampleCount = $sampleCount
   identityDrift = $identityDrift
   ownedProcessExited = $ownedProcessExited

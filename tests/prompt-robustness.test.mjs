@@ -39,7 +39,7 @@ test("C12 matrix has the required 12-case category coverage and three repeats", 
 });
 
 test("mandatory request stages and quality floors are code-owned", () => {
-  assert.deepEqual(IMMUTABLE_REQUEST_STAGES, ["policy", "compile", "fonts", "lint", "render", "audit", "delivery"]);
+  assert.deepEqual(IMMUTABLE_REQUEST_STAGES, ["policy", "compile", "fonts", "lint", "render", "audit", "executive-review", "delivery"]);
   assert.equal(REQUEST_QUALITY_CONTRACT.geometryTolerancePx, 1);
   assert.equal(REQUEST_QUALITY_CONTRACT.minimumFontSizeByRolePt.title, 28);
   assert.equal(REQUEST_QUALITY_CONTRACT.minimumFontSizeByRolePt.body, 16);
@@ -47,6 +47,15 @@ test("mandatory request stages and quality floors are code-owned", () => {
   assert.equal(REQUEST_QUALITY_CONTRACT.promptMayControlStages, false);
   assert.equal(REQUEST_QUALITY_CONTRACT.promptMayControlPaths, false);
   assert.equal(REQUEST_QUALITY_CONTRACT.atomicPublicationRequired, true);
+});
+
+test("E6 activation is explicit and invalid review controls fail closed", async () => {
+  const base = await requestFor(manifest.cases.find((fixture) => fixture.id === "minimal-demo"));
+  assert.equal(evaluateRequestPolicy({ ...base, reviewMode: "off" }).valid, true);
+  assert.equal(evaluateRequestPolicy({ ...base, reviewMode: "executive-overlay" }).valid, true);
+  const invalid = evaluateRequestPolicy({ ...base, reviewMode: "comments" });
+  assert.equal(invalid.valid, false);
+  assert.ok(invalid.diagnostics.some((item) => item.ruleId === "SWP000" && /reviewMode/u.test(item.message)));
 });
 
 for (const fixture of manifest.cases) {

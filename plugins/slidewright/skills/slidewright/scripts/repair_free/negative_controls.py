@@ -118,13 +118,14 @@ def main() -> int:
     write_parts(args.output / "removed-content.pptx", order, removed)
 
     repair = dict(original)
-    repair_slide = ET.fromstring(repair[slide_name])
-    non_visual = repair_slide.findall(f".//{{{P}}}cNvPr")
-    if len(non_visual) < 2:
-        raise ValueError("source slide lacks two non-visual shape IDs")
-    non_visual[1].set("id", non_visual[0].get("id", "1"))
-    repair[slide_name] = ET.tostring(repair_slide, encoding="utf-8", xml_declaration=True)
-    write_parts(args.output / "powerpoint-repair-duplicate-shape-id.pptx", order, repair)
+    repair_relation_name = str(Path(slide_name).parent / "_rels" / (Path(slide_name).name + ".rels")).replace("\\", "/")
+    repair_relations = ET.fromstring(repair[repair_relation_name])
+    layout_relation = next((item for item in repair_relations if item.get("Type", "").endswith("/slideLayout")), None)
+    if layout_relation is None:
+        raise ValueError("source slide lacks a slide-layout relationship")
+    layout_relation.set("Target", "../slideLayouts/slidewright-missing-repair-control.xml")
+    repair[repair_relation_name] = ET.tostring(repair_relations, encoding="utf-8", xml_declaration=True)
+    write_parts(args.output / "powerpoint-repair-missing-slide-layout-target.pptx", order, repair)
 
     semantic_order, semantic_original = read_parts(args.semantic_source)
     write_parts(args.output / "semantic-content-present.pptx", semantic_order, semantic_original)

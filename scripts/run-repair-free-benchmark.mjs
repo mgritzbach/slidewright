@@ -261,21 +261,29 @@ async function runPowerPointFixture({ fixture, source, roundtrip, report, owners
   watcher.stdout.setEncoding("utf8"); watcher.stderr.setEncoding("utf8"); worker.stdout.setEncoding("utf8"); worker.stderr.setEncoding("utf8");
   watcher.stdout.on("data", (value) => { watcherStdout += value; }); watcher.stderr.on("data", (value) => { watcherStderr += value; });
   worker.stdout.on("data", (value) => { workerStdout += value; }); worker.stderr.on("data", (value) => { workerStderr += value; });
-  let timedOut = false; let workerTermination = null; let ownershipCleanup = null;
-  const workerExit = await new Promise((resolve) => {
-    let settled = false;
-    const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
-    const timer = setTimeout(async () => {
-      timedOut = true;
-      workerTermination = terminateExactWorker(worker.pid, workerIdentity);
-      ownershipCleanup = cleanupOwnedPowerPoint(ownership, { root });
-      await fs.writeFile(stop, "timeout\n", "utf8");
+  let timedOut = false; let workerTermination = null; let ownershipCleanup = null; let workerFinalOutcome = null;
+  let timeoutHandle;
+  const workerFinalExit = new Promise((resolve) => {
+    worker.once("close", (code, signal) => {
       activeChildren.delete(worker.pid);
-      finish({ code: null, signal: "worker-timeout" });
-    }, workerTimeoutMs);
-    worker.once("close", (code, signal) => { clearTimeout(timer); activeChildren.delete(worker.pid); finish({ code, signal }); });
-    worker.once("error", (error) => { clearTimeout(timer); finish({ code: null, signal: null, error: error.message }); });
+      workerFinalOutcome = { code, signal };
+      resolve(workerFinalOutcome);
+    });
+    worker.once("error", (error) => {
+      activeChildren.delete(worker.pid);
+      workerFinalOutcome = { code: null, signal: null, error: error.message };
+      resolve(workerFinalOutcome);
+    });
   });
+  const workerTimeout = new Promise((resolve) => {
+    timeoutHandle = setTimeout(async () => {
+      timedOut = true;
+      await fs.writeFile(stop, expectedRepairSignal ? "repair-control-timeout\n" : "worker-timeout\n", "utf8");
+      resolve({ code: null, signal: "worker-timeout" });
+    }, workerTimeoutMs);
+  });
+  const workerExit = await Promise.race([workerFinalExit, workerTimeout]);
+  if (!timedOut) clearTimeout(timeoutHandle);
   if (!fsSync.existsSync(stop)) await fs.writeFile(stop, "worker-exited\n", "utf8");
   const watcherExit = await new Promise((resolve) => {
     const timer = setTimeout(() => {
@@ -285,6 +293,32 @@ async function runPowerPointFixture({ fixture, source, roundtrip, report, owners
     watcher.once("close", (code, signal) => { clearTimeout(timer); activeChildren.delete(watcher.pid); resolve({ code, signal }); });
     watcher.once("error", (error) => { clearTimeout(timer); resolve({ code: null, signal: null, error: error.message }); });
   });
+  let watcherEvidence = null;
+  let modalDismissal = null;
+  if (expectedRepairSignal && timedOut) {
+    watcherEvidence = await parseJson(watcherReport).catch(() => null);
+    const dismissalArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(scripts, "dismiss_owned_repair_modal.ps1"), "-OwnershipRecordJson", ownership, "-WatcherReportJson", watcherReport, "-StopMarker", stop];
+    const dismissalRun = run("powershell", dismissalArgs, { id: "powerpoint-control-modal-dismissal", timeoutMs: 60_000 });
+    const dismissalReceipt = receipts.at(-1);
+    dismissalReceipt.normalizedArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "$IMPLEMENTATION/dismiss_owned_repair_modal.ps1", "-OwnershipRecordJson", `${logicalRoot}/ownership.json`, "-WatcherReportJson", `${logicalRoot}/window-watch.json`, "-StopMarker", `${logicalRoot}/stop.marker`];
+    modalDismissal = JSON.parse((dismissalRun.stdout || "").replace(/^\uFEFF/u, "").trim());
+    workerFinalOutcome = await Promise.race([workerFinalExit, new Promise((resolve) => setTimeout(() => resolve(null), 30_000))]);
+    if (!workerFinalOutcome) {
+      workerTermination = terminateExactWorker(worker.pid, workerIdentity);
+      if (!(workerTermination.matched === true && workerTermination.terminated === true)) {
+        throw new Error(`Exact repair-control worker termination safely refused or failed: ${JSON.stringify(workerTermination)}.`);
+      }
+      workerFinalOutcome = await Promise.race([workerFinalExit, new Promise((resolve) => setTimeout(() => resolve(null), 15_000))]);
+      if (!workerFinalOutcome) throw new Error("Exact repair-control worker did not report exit after identity-bound termination.");
+    }
+    ownershipCleanup = cleanupOwnedPowerPoint(ownership, { root });
+  } else if (timedOut) {
+    workerTermination = terminateExactWorker(worker.pid, workerIdentity);
+    if (!(workerTermination.matched === true && workerTermination.terminated === true)) throw new Error(`Exact C04 worker termination failed: ${JSON.stringify(workerTermination)}.`);
+    workerFinalOutcome = await Promise.race([workerFinalExit, new Promise((resolve) => setTimeout(() => resolve(null), 15_000))]);
+    if (!workerFinalOutcome) throw new Error(`Timed-out C04 worker ${fixture.id} did not report exit after exact termination.`);
+    ownershipCleanup = cleanupOwnedPowerPoint(ownership, { root });
+  }
   const receipt = {
     id: receiptId,
     command: "powershell",
@@ -297,8 +331,10 @@ async function runPowerPointFixture({ fixture, source, roundtrip, report, owners
     timedOut,
     workerIdentity,
     workerTermination,
+    workerFinalOutcome,
     ownershipCleanup,
     expectedRepairSignal,
+    modalDismissal,
     workerTimeoutMs,
     normalizedArgs: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "$IMPLEMENTATION/powerpoint_repair_free_roundtrip.ps1", "-FixtureId", fixture.id, "-InputPptx", `${logicalRoot}/source.pptx`, "-OutputPptx", `${logicalRoot}/roundtrip.pptx`, "-ReportJson", `${logicalRoot}/powerpoint.json`, "-OwnershipRecordJson", `${logicalRoot}/ownership.json`, "-ArmedMarker", `${logicalRoot}/watcher-armed.marker`, "-StopMarker", `${logicalRoot}/stop.marker`],
     streams: writeCommandStreams(`powerpoint-${fixture.id}`, [["worker-stdout", workerStdout], ["worker-stderr", workerStderr], ["watcher-stdout", watcherStdout], ["watcher-stderr", watcherStderr]]),
@@ -312,16 +348,18 @@ async function runPowerPointFixture({ fixture, source, roundtrip, report, owners
   };
   receipts.push(receipt);
   if (expectedRepairSignal) {
+    if (!watcherEvidence) watcherEvidence = await parseJson(watcherReport).catch(() => null);
     if (!ownershipCleanup) ownershipCleanup = cleanupOwnedPowerPoint(ownership, { root });
     receipt.ownershipCleanup = ownershipCleanup;
     const quiescenceAfter = observePowerPointProcesses("powerpoint-quiescence-post-control-repair-dialog");
     receipt.quiescence = { before: quiescenceBefore, after: quiescenceAfter };
-    const watcherEvidence = await parseJson(watcherReport).catch(() => null);
-    const repairObserved = watcherEvidence?.valid === false && watcherEvidence?.ownedProcessExited === true
+    const repairObserved = watcherEvidence?.valid === false
       && ((watcherEvidence?.unexpectedVisibleWindows?.length ?? 0) > 0 || (watcherEvidence?.repairSignals?.length ?? 0) > 0);
-    const rejected = watcherExit.code === 2 && repairObserved && quiescenceAfter.length === 0
-      && (!timedOut || (ownershipCleanup?.valid === true && ownershipCleanup?.cleaned === true));
-    receipt.repairControl = { rejected, watcherValid: watcherEvidence?.valid ?? null, visibleWindowCount: watcherEvidence?.unexpectedVisibleWindows?.length ?? null, repairSignalCount: watcherEvidence?.repairSignals?.length ?? null };
+    const rejected = timedOut && watcherExit.code === 2 && repairObserved && quiescenceAfter.length === 0
+      && modalDismissal?.valid === true && modalDismissal?.dismissed === true && modalDismissal?.exactModalEvidence === true
+      && modalDismissal?.closedModalHandles?.length > 0 && modalDismissal.closedModalHandles.length === modalDismissal.verifiedClosedModalHandles?.length
+      && ownershipCleanup?.valid === true && ownershipCleanup?.cleaned === true;
+    receipt.repairControl = { rejected, watcherValid: watcherEvidence?.valid ?? null, watcherOwnedProcessExited: watcherEvidence?.ownedProcessExited ?? null, visibleWindowCount: watcherEvidence?.unexpectedVisibleWindows?.length ?? null, repairSignalCount: watcherEvidence?.repairSignals?.length ?? null };
     if (!rejected) throw new Error(`Real PowerPoint repair control was not safely rejected: ${JSON.stringify(receipt.repairControl)}; worker=${workerExit.code}, watcher=${watcherExit.code}, timedOut=${timedOut}.`);
     return receipt;
   }
@@ -430,7 +468,7 @@ async function runNegativeControls(source, semanticSource, openXmlRuntime, basel
     watcherArmed: path.join(repairDirectory, "watcher-armed.marker"),
     watcherReport: path.join(repairDirectory, "window-watch.json"),
   };
-  await fs.copyFile(path.join(directory, "powerpoint-repair-duplicate-shape-id.pptx"), repairPaths.source);
+  await fs.copyFile(path.join(directory, "powerpoint-repair-missing-slide-layout-target.pptx"), repairPaths.source);
   const repairReceipt = await runPowerPointFixture({
     fixture: { id: "control-repair-dialog" },
     ...repairPaths,
@@ -445,8 +483,18 @@ async function runNegativeControls(source, semanticSource, openXmlRuntime, basel
     watcherExitCode: repairReceipt.watcher.exitCode,
     visibleWindowCount: repairReceipt.repairControl.visibleWindowCount,
     repairSignalCount: repairReceipt.repairControl.repairSignalCount,
+    watcherOwnedProcessExited: repairReceipt.repairControl.watcherOwnedProcessExited,
     cleanupValid: repairReceipt.ownershipCleanup?.valid === true,
     cleanupPerformed: repairReceipt.ownershipCleanup?.cleaned === true,
+    cleanupReason: repairReceipt.ownershipCleanup?.reason ?? null,
+    modalDismissalValid: repairReceipt.modalDismissal?.valid === true,
+    modalDismissed: repairReceipt.modalDismissal?.dismissed === true,
+    exactModalEvidence: repairReceipt.modalDismissal?.exactModalEvidence === true,
+    modalDismissalReason: repairReceipt.modalDismissal?.reason ?? null,
+    closedModalHandleCount: repairReceipt.modalDismissal?.closedModalHandles?.length ?? 0,
+    verifiedClosedModalHandleCount: repairReceipt.modalDismissal?.verifiedClosedModalHandles?.length ?? 0,
+    workerFinalExited: repairReceipt.workerFinalOutcome != null,
+    workerTerminationUsed: repairReceipt.workerTermination != null,
   });
   for (const id of ["crc-corrupt", "duplicate-part", "traversal-part", "malformed-xml", "missing-content-type", "dangling-relationship"]) {
     const report = path.join(directory, `${id}-opc.json`);

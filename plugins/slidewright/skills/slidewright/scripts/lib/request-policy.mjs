@@ -2,7 +2,7 @@ const ZERO_WIDTH_OR_DIRECTIONAL = /[\u061c\u200b-\u200f\u202a-\u202e\u2060-\u206
 
 export const REQUEST_SCHEMA_VERSION = "slidewright-request/v1";
 export const REQUEST_POLICY_VERSION = "slidewright-request-policy/v1";
-export const IMMUTABLE_REQUEST_STAGES = Object.freeze(["policy", "compile", "fonts", "lint", "render", "audit", "delivery"]);
+export const IMMUTABLE_REQUEST_STAGES = Object.freeze(["policy", "compile", "fonts", "lint", "render", "audit", "executive-review", "delivery"]);
 export const REQUEST_QUALITY_CONTRACT = Object.freeze({
   schemaVersion: "slidewright-request-quality/v2",
   geometryTolerancePx: 1,
@@ -155,13 +155,19 @@ function envelopeDiagnostics(request) {
     message: "Request must include an inline deck specification object.",
     remediation: "Translate content and design intent into spec before invoking the immutable request runner.",
   });
-  const allowed = new Set(["schemaVersion", "id", "prompt", "spec"]);
+  const allowed = new Set(["schemaVersion", "id", "prompt", "spec", "reviewMode"]);
   const unknown = Object.keys(request).filter((key) => !allowed.has(key));
   if (unknown.length) diagnostics.push({
     ruleId: "SWP000",
     severity: "error",
     message: `Request contains unsupported control fields: ${unknown.sort().join(", ")}.`,
     remediation: "Remove output paths, commands, stage controls, and other fields; the runner owns all build mechanics.",
+  });
+  if (request.reviewMode != null && !["off", "executive-overlay"].includes(request.reviewMode)) diagnostics.push({
+    ruleId: "SWP000",
+    severity: "error",
+    message: `Unsupported reviewMode '${String(request.reviewMode)}'.`,
+    remediation: "Use 'off' for a clean-only delivery or 'executive-overlay' for a separate editable partner-review copy.",
   });
   if (request?.spec && typeof request.spec === "object" && !Array.isArray(request.spec)) diagnostics.push(...specStructureDiagnostics(request.spec));
   return diagnostics;

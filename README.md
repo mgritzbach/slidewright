@@ -6,7 +6,7 @@
 
 Slidewright is a Codex plugin and deterministic layout compiler that turns ideas and structured content into native, editable PowerPoint decks without the usual formatting damage. It treats slide generation like a build pipeline: compile constraints, render native objects, lint the result, inspect the exported OOXML, and retain evidence.
 
-Prompt-originated release builds use a sealed request runner that treats the prompt as inert data and unconditionally executes compile, font audit, plan lint, native render, realized-layout lint, plan-bound OOXML audit, and delivery verification before atomic publication. Run `npm run prompt-robustness` for the bounded 36-run adversarial proof.
+Prompt-originated release builds use a sealed request runner that treats the prompt as inert data and unconditionally executes compile, font audit, plan lint, native render, realized-layout lint, plan-bound OOXML audit, optional executive review, and delivery verification before atomic publication. Run `npm run prompt-robustness` for the bounded 36-run adversarial proof.
 
 The Build Week entry targets **Work & Productivity**. The initial vertical slice proves the hardest, most reusable behaviors:
 
@@ -73,6 +73,16 @@ The public CI matrix runs the same contract on native Windows, macOS, and Linux 
 The installed skill has the same self-contained bootstrap as `node <slidewright-skill>/scripts/slidewright.mjs bootstrap`; it links the already bundled Codex runtime into the active workspace and does not download or silently switch renderers. Slidewright's clean-home installation benchmark verifies real CLI installation plus Desktop- and VS Code-identified **app-server backend discovery** without relying on marketplace UI clicks; it does not claim to launch either GUI client. The pinned harness is isolated under `tools/installation/` and runs with `npm ci --prefix tools/installation` followed by `node scripts/run-installation-benchmark.mjs`. If an older Codex build does not expose `codex plugin`, update Codex before installing Slidewright.
 
 Outputs are written to `outputs/demo/` and include the editable PPTX, rendered previews, compiled layout plan, and QA reports.
+
+### Optional E6 partner review
+
+Set `"reviewMode": "executive-overlay"` in a guarded request to receive two decks: the clean verified `deck.pptx` and `deck.executive-review.pptx`, a separate editable copy with concise yellow partner-review boxes over claims, decisions, dense passages, or storyline transitions that need human judgment. Use `"reviewMode": "off"`—the default—to publish only the clean deck. Unsupported values fail before compilation.
+
+```powershell
+npm run executive-review
+```
+
+The toggle benchmark builds the same request both ways and requires the canonical PPTX to remain byte-identical, the off build to contain no review copy or hidden E6 objects, and every on-build note to be native editable text with a bound target, yellow fill, exact object name, and independent OOXML audit.
 
 To prove that ordinary edits do not collapse the layout, run the whole-word copy mutation benchmark:
 

@@ -11,10 +11,12 @@ import { renderPlan } from "./renderer.mjs";
 import { lintRenderedLayouts } from "./rendered-linter.mjs";
 import { evaluateRequestPolicy, IMMUTABLE_REQUEST_STAGES, REQUEST_QUALITY_CONTRACT } from "./request-policy.mjs";
 import { parseStrictJson } from "./strict-json.mjs";
+import { buildExecutiveReview, REVIEW_MODE_OFF, REVIEW_MODE_OVERLAY } from "./executive-review.mjs";
 
 const RUN_SCHEMA_VERSION = "slidewright-request-run/v1";
 const AUDIT_PATH = fileURLToPath(new URL("../audit_pptx.py", import.meta.url));
 const PLAN_AUDIT_PATH = fileURLToPath(new URL("../audit_request_plan.py", import.meta.url));
+const EXECUTIVE_REVIEW_AUDIT_PATH = fileURLToPath(new URL("../audit_executive_review.py", import.meta.url));
 const IMPLEMENTATION_PATHS = Object.freeze([
   fileURLToPath(import.meta.url),
   fileURLToPath(new URL("./request-policy.mjs", import.meta.url)),
@@ -24,9 +26,11 @@ const IMPLEMENTATION_PATHS = Object.freeze([
   fileURLToPath(new URL("./linter.mjs", import.meta.url)),
   fileURLToPath(new URL("./rendered-linter.mjs", import.meta.url)),
   fileURLToPath(new URL("./renderer.mjs", import.meta.url)),
+  fileURLToPath(new URL("./executive-review.mjs", import.meta.url)),
   fileURLToPath(new URL("./delivery.mjs", import.meta.url)),
   AUDIT_PATH,
   PLAN_AUDIT_PATH,
+  EXECUTIVE_REVIEW_AUDIT_PATH,
 ]);
 
 function stableValue(value) {
@@ -283,6 +287,70 @@ export async function runRequestBuild({ requestPath, outputDir }) {
     if (!audit.valid || !planAudit.valid) throw new Error("OOXML audit rejected the request deck.");
     faultAfter("audit");
 
+    const reviewMode = request.reviewMode ?? REVIEW_MODE_OFF;
+    const executiveReview = buildExecutiveReview(plan, reviewMode);
+    const executiveReviewPath = path.join(staging, "executive-review.json");
+    const cleanReviewAuditPath = path.join(staging, "executive-review-clean-audit.json");
+    await writeJson(executiveReviewPath, executiveReview);
+    const cleanReviewAuditRun = spawnSync(python, [EXECUTIVE_REVIEW_AUDIT_PATH, deckPath, "--expect-clean", "--json", cleanReviewAuditPath], {
+      cwd: process.cwd(), encoding: "utf8", windowsHide: true,
+    });
+    if (cleanReviewAuditRun.error || cleanReviewAuditRun.status !== 0) throw cleanReviewAuditRun.error ?? new Error(`Canonical-deck E6 audit failed: ${(cleanReviewAuditRun.stderr || cleanReviewAuditRun.stdout || "").trim()}`);
+    const cleanReviewAudit = await readJson(cleanReviewAuditPath);
+    if (!cleanReviewAudit.valid || cleanReviewAudit.actualOverlayCount !== 0) throw new Error("Canonical deck contains executive-review overlays.");
+
+    let reviewDeck = null;
+    let reviewDeckAudit = null;
+    let reviewOverlayAudit = null;
+    let reviewRendered = null;
+    let reviewPreviewHashes = [];
+    if (reviewMode === REVIEW_MODE_OVERLAY) {
+      const reviewDeckPath = path.join(staging, "deck.executive-review.pptx");
+      const reviewPreviewDir = path.join(staging, "executive-review-previews");
+      reviewRendered = await renderPlan(plan, { out: reviewDeckPath, previewDir: reviewPreviewDir, executiveReview });
+      const reviewDeckAuditPath = path.join(staging, "executive-review-deck-audit.json");
+      const reviewDeckAuditRun = spawnSync(python, [AUDIT_PATH, reviewDeckPath, "--json", reviewDeckAuditPath], {
+        cwd: process.cwd(), encoding: "utf8", windowsHide: true,
+      });
+      if (reviewDeckAuditRun.error || reviewDeckAuditRun.status !== 0) throw reviewDeckAuditRun.error ?? new Error(`Executive-review deck audit failed: ${(reviewDeckAuditRun.stderr || reviewDeckAuditRun.stdout || "").trim()}`);
+      reviewDeckAudit = await readJson(reviewDeckAuditPath);
+      const reviewOverlayAuditPath = path.join(staging, "executive-review-overlay-audit.json");
+      const reviewOverlayAuditRun = spawnSync(python, [EXECUTIVE_REVIEW_AUDIT_PATH, reviewDeckPath, "--manifest", executiveReviewPath, "--json", reviewOverlayAuditPath], {
+        cwd: process.cwd(), encoding: "utf8", windowsHide: true,
+      });
+      if (reviewOverlayAuditRun.error || reviewOverlayAuditRun.status !== 0) throw reviewOverlayAuditRun.error ?? new Error(`Executive-review overlay audit failed: ${(reviewOverlayAuditRun.stderr || reviewOverlayAuditRun.stdout || "").trim()}`);
+      reviewOverlayAudit = await readJson(reviewOverlayAuditPath);
+      const reviewPreviewFiles = (await fs.readdir(reviewPreviewDir)).filter((file) => /^slide-\d+\.png$/u.test(file)).sort();
+      reviewPreviewHashes = await Promise.all(reviewPreviewFiles.map(async (file) => ({ file, sha256: await sha256File(path.join(reviewPreviewDir, file)) })));
+      reviewDeck = {
+        path: "deck.executive-review.pptx",
+        sha256: await sha256File(reviewDeckPath),
+        bytes: (await fs.stat(reviewDeckPath)).size,
+      };
+      if (!reviewRendered.renderedLint.valid || reviewRendered.renderedLint.counts.warning !== 0 || !reviewDeckAudit.valid || !reviewOverlayAudit.valid) {
+        throw new Error("Executive-review copy failed render or OOXML quality closure.");
+      }
+    }
+    const executiveReviewSha256 = await sha256File(executiveReviewPath);
+    const cleanReviewAuditSha256 = await sha256File(cleanReviewAuditPath);
+    run.stages.push({
+      name: "executive-review",
+      status: "passed",
+      mode: reviewMode,
+      inputSha256: deckSha256,
+      manifestSha256: executiveReviewSha256,
+      cleanAuditSha256: cleanReviewAuditSha256,
+      canonicalDeckModified: false,
+      findingCount: executiveReview.counts.findings,
+      reviewDeck,
+      reviewPreviewHashes,
+      ...(reviewMode === REVIEW_MODE_OVERLAY ? {
+        reviewDeckAuditSha256: await sha256File(path.join(staging, "executive-review-deck-audit.json")),
+        reviewOverlayAuditSha256: await sha256File(path.join(staging, "executive-review-overlay-audit.json")),
+      } : {}),
+    });
+    faultAfter("executive-review");
+
     const deliveryPath = path.join(staging, "delivery.json");
     const deckBytes = (await fs.stat(deckPath)).size;
     const delivery = guardedDeliveryManifest({ deckSha256, deckBytes, slideCount: plan.slides.length, previewHashes });
@@ -295,6 +363,7 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       "Previews: previews/slide-XX.png",
       "Montage: previews/deck-montage.webp",
       "Receipt: run.json",
+      `Executive review: ${reviewMode === REVIEW_MODE_OVERLAY ? "deck.executive-review.pptx (editable yellow partner checks; canonical deck remains clean)" : "off (no annotated copy created)"}`,
       "",
       "Open deck.pptx in PowerPoint or another presentation application after request-verify passes.",
       "",
@@ -319,6 +388,10 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       matchedTextObjects: planAudit.matchedTextObjects,
       expectedTextObjects: planAudit.expectedTextObjects,
       deliveryValid: delivery.valid,
+      executiveReviewMode: reviewMode,
+      executiveReviewFindingCount: executiveReview.counts.findings,
+      canonicalExecutiveReviewOverlayCount: cleanReviewAudit.actualOverlayCount,
+      executiveReviewCopyValid: reviewMode === REVIEW_MODE_OFF || Boolean(reviewDeckAudit?.valid && reviewOverlayAudit?.valid && reviewRendered?.renderedLint?.valid),
     };
     run.valid = Object.values(quality).every((value) => typeof value !== "boolean" || value)
       && run.quality.zeroWarnings
@@ -327,6 +400,8 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       && Object.values(audit.checks).every(Boolean)
       && planAudit.valid
       && delivery.valid
+      && run.quality.canonicalExecutiveReviewOverlayCount === 0
+      && run.quality.executiveReviewCopyValid
       && run.stages.map((stage) => stage.name).join("|") === IMMUTABLE_REQUEST_STAGES.join("|")
       && run.stages.every((stage) => stage.status === "passed");
     run.outcome = run.valid ? "built" : "failed";
@@ -347,6 +422,12 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       fs.rm(path.join(staging, "plan-audit.json"), { force: true }),
       fs.rm(path.join(staging, "delivery.json"), { force: true }),
       fs.rm(path.join(staging, "DELIVERY.md"), { force: true }),
+      fs.rm(path.join(staging, "executive-review.json"), { force: true }),
+      fs.rm(path.join(staging, "executive-review-clean-audit.json"), { force: true }),
+      fs.rm(path.join(staging, "deck.executive-review.pptx"), { force: true }),
+      fs.rm(path.join(staging, "executive-review-deck-audit.json"), { force: true }),
+      fs.rm(path.join(staging, "executive-review-overlay-audit.json"), { force: true }),
+      fs.rm(path.join(staging, "executive-review-previews"), { recursive: true, force: true }),
     ]);
   }
   return finalizeRun(staging, absoluteOutput, run);
@@ -394,7 +475,7 @@ export async function verifyRequestRun(runDir) {
   if (run.outcome === "rejected") {
     if (policy?.valid !== false || !policy?.diagnostics?.length) diagnostics.push("Rejected run lacks policy diagnostics.");
     if (!sameJson(run.stages.map((stage) => stage.name), ["policy"]) || run.stages[0]?.status !== "rejected") diagnostics.push("Rejected run executed or claimed extra stages.");
-    const forbidden = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews"];
+    const forbidden = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "executive-review.json", "executive-review-clean-audit.json", "deck.executive-review.pptx", "executive-review-deck-audit.json", "executive-review-overlay-audit.json", "executive-review-previews", "delivery.json", "DELIVERY.md", "previews"];
     for (const item of forbidden) if (files.some((file) => file === item || file.startsWith(`${item}/`))) diagnostics.push(`Rejected run published forbidden artifact '${item}'.`);
     if (run.valid !== false) diagnostics.push("Rejected run cannot be marked valid.");
     return { valid: diagnostics.length === 0, outcome: run.outcome, diagnostics };
@@ -403,10 +484,10 @@ export async function verifyRequestRun(runDir) {
   if (run.outcome !== "built" || run.valid !== true || policy?.valid !== true) diagnostics.push("Accepted run is not a valid built run.");
   if (!sameJson(run.stages.map((stage) => stage.name), IMMUTABLE_REQUEST_STAGES)) diagnostics.push("Accepted run did not execute the exact immutable stage sequence.");
   if (!run.stages?.every((stage) => stage.status === "passed")) diagnostics.push("One or more mandatory stages did not pass.");
-  const required = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md", "previews/rendered-lint-report.json"];
+  const required = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "executive-review.json", "executive-review-clean-audit.json", "delivery.json", "DELIVERY.md", "previews/rendered-lint-report.json"];
   for (const item of required) if (!files.includes(item)) diagnostics.push(`Accepted run is missing '${item}'.`);
   if (!diagnostics.length) {
-    const [adaptedSpec, adaptationManifest, plan, fonts, lint, audit, planAudit, delivery, renderedLint] = await Promise.all([
+    const [adaptedSpec, adaptationManifest, plan, fonts, lint, audit, planAudit, executiveReview, cleanReviewAudit, delivery, renderedLint] = await Promise.all([
       readJson(path.join(runDir, "adapted-spec.json")),
       readJson(path.join(runDir, "adaptation.json")),
       readJson(path.join(runDir, "plan.json")),
@@ -414,14 +495,20 @@ export async function verifyRequestRun(runDir) {
       readJson(path.join(runDir, "lint-report.json")),
       readJson(path.join(runDir, "audit.json")),
       readJson(path.join(runDir, "plan-audit.json")),
+      readJson(path.join(runDir, "executive-review.json")),
+      readJson(path.join(runDir, "executive-review-clean-audit.json")),
       readJson(path.join(runDir, "delivery.json")),
       readJson(path.join(runDir, "previews", "rendered-lint-report.json")),
     ]);
     const recomputedAdaptation = adaptDeckCopyToFit(request.spec);
     const recomputedPlan = recomputedAdaptation.plan;
+    const reviewMode = request.reviewMode ?? REVIEW_MODE_OFF;
+    const recomputedExecutiveReview = buildExecutiveReview(recomputedPlan, reviewMode);
     if (!sameJson(adaptedSpec, recomputedAdaptation.spec)) diagnostics.push("Adapted specification does not match the bound request specification.");
     if (!sameJson(adaptationManifest, recomputedAdaptation.manifest)) diagnostics.push("Copy-adaptation evidence does not match the bound request specification.");
     if (!sameJson(plan, recomputedPlan)) diagnostics.push("Compiled plan does not match the bound request specification.");
+    if (!sameJson(executiveReview, recomputedExecutiveReview)) diagnostics.push("Executive-review manifest does not match the bound request and compiled plan.");
+    if (!cleanReviewAudit.valid || cleanReviewAudit.actualOverlayCount !== 0) diagnostics.push("Canonical deck contains executive-review overlays.");
     const recomputedLint = lintPlan(plan);
     if (!sameJson(lint, recomputedLint)) diagnostics.push("Plan lint report does not match an independent recomputation.");
     const layoutFiles = files.filter((file) => /^previews\/slide-\d+\.layout\.json$/u.test(file)).sort();
@@ -433,13 +520,40 @@ export async function verifyRequestRun(runDir) {
       const python = await resolvePython();
       const genericPath = path.join(auditTemp, "audit.json");
       const boundPath = path.join(auditTemp, "plan-audit.json");
+      const cleanReviewPath = path.join(auditTemp, "executive-review-clean-audit.json");
       const genericRun = spawnSync(python, [AUDIT_PATH, path.join(runDir, "deck.pptx"), "--json", genericPath], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
       const boundRun = spawnSync(python, [PLAN_AUDIT_PATH, path.join(runDir, "deck.pptx"), path.join(runDir, "plan.json"), "--json", boundPath], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
-      if (genericRun.error || genericRun.status !== 0 || boundRun.error || boundRun.status !== 0) diagnostics.push("Independent OOXML re-audit failed.");
+      const cleanReviewRun = spawnSync(python, [EXECUTIVE_REVIEW_AUDIT_PATH, path.join(runDir, "deck.pptx"), "--expect-clean", "--json", cleanReviewPath], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+      if (genericRun.error || genericRun.status !== 0 || boundRun.error || boundRun.status !== 0 || cleanReviewRun.error || cleanReviewRun.status !== 0) diagnostics.push("Independent OOXML re-audit failed.");
       else {
-        const [recomputedAudit, recomputedPlanAudit] = await Promise.all([readJson(genericPath), readJson(boundPath)]);
+        const [recomputedAudit, recomputedPlanAudit, recomputedCleanReviewAudit] = await Promise.all([readJson(genericPath), readJson(boundPath), readJson(cleanReviewPath)]);
         if (!sameJson(audit, recomputedAudit)) diagnostics.push("Generic OOXML audit does not match an independent recomputation.");
         if (!sameJson(planAudit, recomputedPlanAudit)) diagnostics.push("Plan-bound OOXML audit does not match an independent recomputation.");
+        if (!sameJson(cleanReviewAudit, recomputedCleanReviewAudit)) diagnostics.push("Canonical-deck executive-review audit does not match an independent recomputation.");
+      }
+
+      if (reviewMode === REVIEW_MODE_OVERLAY) {
+        const reviewRequired = ["deck.executive-review.pptx", "executive-review-deck-audit.json", "executive-review-overlay-audit.json", "executive-review-previews/rendered-lint-report.json"];
+        for (const item of reviewRequired) if (!files.includes(item)) diagnostics.push(`Executive-review mode is missing '${item}'.`);
+        if (reviewRequired.every((item) => files.includes(item))) {
+          const reviewGenericPath = path.join(auditTemp, "review-generic.json");
+          const reviewOverlayPath = path.join(auditTemp, "review-overlay.json");
+          const reviewGenericRun = spawnSync(python, [AUDIT_PATH, path.join(runDir, "deck.executive-review.pptx"), "--json", reviewGenericPath], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+          const reviewOverlayRun = spawnSync(python, [EXECUTIVE_REVIEW_AUDIT_PATH, path.join(runDir, "deck.executive-review.pptx"), "--manifest", path.join(runDir, "executive-review.json"), "--json", reviewOverlayPath], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+          if (reviewGenericRun.error || reviewGenericRun.status !== 0 || reviewOverlayRun.error || reviewOverlayRun.status !== 0) diagnostics.push("Independent executive-review copy audit failed.");
+          else {
+            const [recordedReviewAudit, recordedOverlayAudit, recomputedReviewAudit, recomputedOverlayAudit] = await Promise.all([
+              readJson(path.join(runDir, "executive-review-deck-audit.json")),
+              readJson(path.join(runDir, "executive-review-overlay-audit.json")),
+              readJson(reviewGenericPath),
+              readJson(reviewOverlayPath),
+            ]);
+            if (!sameJson(recordedReviewAudit, recomputedReviewAudit)) diagnostics.push("Executive-review generic audit does not match an independent recomputation.");
+            if (!sameJson(recordedOverlayAudit, recomputedOverlayAudit)) diagnostics.push("Executive-review overlay audit does not match an independent recomputation.");
+          }
+        }
+      } else if (files.some((file) => file === "deck.executive-review.pptx" || file.startsWith("executive-review-previews/") || file === "executive-review-deck-audit.json" || file === "executive-review-overlay-audit.json")) {
+        diagnostics.push("Review mode is off but annotated review-copy artifacts were published.");
       }
     } finally {
       await fs.rm(auditTemp, { recursive: true, force: true });
@@ -473,6 +587,10 @@ export async function verifyRequestRun(runDir) {
       matchedTextObjects: planAudit.matchedTextObjects,
       expectedTextObjects: planAudit.expectedTextObjects,
       deliveryValid: delivery.valid,
+      executiveReviewMode: reviewMode,
+      executiveReviewFindingCount: executiveReview.counts.findings,
+      canonicalExecutiveReviewOverlayCount: cleanReviewAudit.actualOverlayCount,
+      executiveReviewCopyValid: reviewMode === REVIEW_MODE_OFF || files.includes("deck.executive-review.pptx"),
     })) diagnostics.push("Recorded quality closure does not match artifacts.");
 
     const stage = Object.fromEntries(run.stages.map((item) => [item.name, item]));
@@ -483,6 +601,21 @@ export async function verifyRequestRun(runDir) {
     if (stage.lint.inputSha256 !== hashes["plan.json"] || stage.lint.outputSha256 !== hashes["lint-report.json"]) diagnostics.push("Lint stage binding mismatch.");
     if (stage.render.inputSha256 !== hashes["plan.json"] || stage.render.outputSha256 !== hashes["deck.pptx"] || stage.render.renderedLintSha256 !== hashes["previews/rendered-lint-report.json"]) diagnostics.push("Render stage binding mismatch.");
     if (stage.audit.inputSha256 !== hashes["deck.pptx"] || stage.audit.genericAuditSha256 !== hashes["audit.json"] || stage.audit.planAuditSha256 !== hashes["plan-audit.json"]) diagnostics.push("Audit stage binding mismatch.");
+    if (stage["executive-review"].inputSha256 !== hashes["deck.pptx"]
+      || stage["executive-review"].manifestSha256 !== hashes["executive-review.json"]
+      || stage["executive-review"].cleanAuditSha256 !== hashes["executive-review-clean-audit.json"]
+      || stage["executive-review"].mode !== reviewMode
+      || stage["executive-review"].canonicalDeckModified !== false
+      || stage["executive-review"].findingCount !== executiveReview.counts.findings) diagnostics.push("Executive-review stage binding mismatch.");
+    if (reviewMode === REVIEW_MODE_OVERLAY) {
+      const reviewSlidePngs = files.filter((file) => /^executive-review-previews\/slide-\d+\.png$/u.test(file)).sort();
+      const expectedReviewPreviewHashes = reviewSlidePngs.map((file) => ({ file: path.basename(file), sha256: hashes[file] }));
+      if (stage["executive-review"].reviewDeck?.sha256 !== hashes["deck.executive-review.pptx"]
+        || stage["executive-review"].reviewDeck?.bytes !== run.artifacts.find((item) => item.path === "deck.executive-review.pptx")?.bytes
+        || stage["executive-review"].reviewDeckAuditSha256 !== hashes["executive-review-deck-audit.json"]
+        || stage["executive-review"].reviewOverlayAuditSha256 !== hashes["executive-review-overlay-audit.json"]
+        || !sameJson(stage["executive-review"].reviewPreviewHashes, expectedReviewPreviewHashes)) diagnostics.push("Executive-review copy binding mismatch.");
+    } else if (stage["executive-review"].reviewDeck !== null || !sameJson(stage["executive-review"].reviewPreviewHashes, [])) diagnostics.push("Disabled executive-review stage claims review-copy outputs.");
     if (stage.delivery.inputSha256 !== hashes["deck.pptx"] || stage.delivery.outputSha256 !== hashes["delivery.json"]) diagnostics.push("Delivery stage binding mismatch.");
     const previewHashes = slidePngs.sort().map((file) => ({ file: path.basename(file), sha256: hashes[file] }));
     if (!sameJson(stage.render.previewHashes, previewHashes)) diagnostics.push("Render preview hash binding mismatch.");

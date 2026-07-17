@@ -17,6 +17,7 @@ export const REPAIR_FREE_IMPLEMENTATION_PATHS = Object.freeze([
   "package-lock.json",
   "fixtures/repair-free/v1/fixture-contract.json",
   "plugins/slidewright/skills/slidewright/scripts/repair_free/audit_opc_package.py",
+  "plugins/slidewright/skills/slidewright/scripts/repair_free/dismiss_owned_repair_modal.ps1",
   "plugins/slidewright/skills/slidewright/scripts/repair_free/generate_fidelity_fixtures.mjs",
   "plugins/slidewright/skills/slidewright/scripts/repair_free/negative_controls.py",
   "plugins/slidewright/skills/slidewright/scripts/repair_free/powerpoint_repair_free_roundtrip.ps1",
@@ -303,14 +304,21 @@ async function verifyNegativeControls(runDirectory, scorecard) {
   ]);
   const repairReady = Date.parse((await fs.readFile((await regularFile(repairDirectory, "watcher-ready.marker")).absolute, "utf8")).replace(/^\uFEFF/u, "").trim());
   const repairArmed = Date.parse((await fs.readFile((await regularFile(repairDirectory, "watcher-armed.marker")).absolute, "utf8")).replace(/^\uFEFF/u, "").trim());
+  const repairStop = (await fs.readFile((await regularFile(repairDirectory, "stop.marker")).absolute, "utf8")).replace(/^\uFEFF/u, "").trim();
   const repairOwnershipStarted = Date.parse(repairOwnership.processStartTime);
   const repairRoundtrip = await fs.lstat(path.join(repairDirectory, "roundtrip.pptx")).catch(() => null);
   const repairWorkerReport = await fs.lstat(path.join(repairDirectory, "powerpoint.json")).catch(() => null);
   if (repairControl?.gate !== "real-powerpoint-watcher" || repairControl.rejected !== true || repairControl.workerTimedOut !== true || repairControl.watcherExitCode !== 2
-    || repairControl.cleanupValid !== true || repairControl.cleanupPerformed !== true || repairWatcher.schemaVersion !== "slidewright-powerpoint-window-watch/v1"
-    || repairWatcher.valid !== false || repairWatcher.ownedProcessExited !== true || ((repairWatcher.unexpectedVisibleWindows?.length ?? 0) + (repairWatcher.repairSignals?.length ?? 0)) < 1
+    || repairControl.cleanupValid !== true || repairControl.cleanupPerformed !== true || repairControl.modalDismissalValid !== true || repairControl.modalDismissed !== true || repairControl.exactModalEvidence !== true
+    || repairControl.modalDismissalReason !== "exact-persistent-repair-modal-dismissed" || !Number.isInteger(repairControl.closedModalHandleCount) || repairControl.closedModalHandleCount < 1
+    || repairControl.verifiedClosedModalHandleCount !== repairControl.closedModalHandleCount || repairControl.workerFinalExited !== true
+    || repairWatcher.schemaVersion !== "slidewright-powerpoint-window-watch/v1" || repairWatcher.valid !== false || repairWatcher.ownedProcessExited !== false
+    || repairControl.watcherOwnedProcessExited !== repairWatcher.ownedProcessExited
+    || repairWatcher.ownershipSha256 !== (await sha256File(path.join(repairDirectory, "ownership.json"))) || repairWatcher.workerProcessId !== repairOwnership.workerProcessId
+    || repairWatcher.workerProcessName !== repairOwnership.workerProcessName || repairWatcher.workerProcessStartTime !== repairOwnership.workerProcessStartTime
+    || !repairWatcher.unexpectedVisibleWindows?.some((item) => item.className === "NUIDialog")
     || repairControl.visibleWindowCount !== repairWatcher.unexpectedVisibleWindows.length || repairControl.repairSignalCount !== repairWatcher.repairSignals.length
-    || !Number.isFinite(repairReady) || !Number.isFinite(repairArmed) || !Number.isFinite(repairOwnershipStarted) || repairReady > repairOwnershipStarted || repairArmed < repairOwnershipStarted
+    || repairStop !== "repair-control-timeout" || !Number.isFinite(repairReady) || !Number.isFinite(repairArmed) || !Number.isFinite(repairOwnershipStarted) || repairReady > repairOwnershipStarted || repairArmed < repairOwnershipStarted
     || repairRoundtrip !== null || repairWorkerReport !== null) fail("real PowerPoint repair-dialog control was not safely rejected without a published output");
   for (const [id, code] of Object.entries(OPC_CONTROL_CODES)) {
     const report = await jsonFile(directory, `${id}-opc.json`);
@@ -353,7 +361,7 @@ async function verifyNegativeControls(runDirectory, scorecard) {
 
 function verifyCommandReceipts(receipts, contract, { reusedProducerOutputs = false } = {}) {
   const producers = ["setup:runtime", "fidelity", "copy-resilience", "semantic-mutation", "template", "design-profile", "feedback-contract", "ingestion", "prompt-robustness", "demo", "semantic-surface"];
-  const expected = ["git-commit", "git-status", "git-commit", "git-status", "powerpoint-quiescence-initial", "powerpoint-quiescence-post-producers", "powerpoint-quiescence-final", "powerpoint-quiescence-pre-control-repair-dialog", "powerpoint-control-repair-dialog", "powerpoint-quiescence-post-control-repair-dialog", "producer-in-run-design", ...(!reusedProducerOutputs ? producers.map((id) => `producer-${id}`) : [])];
+  const expected = ["git-commit", "git-status", "git-commit", "git-status", "powerpoint-quiescence-initial", "powerpoint-quiescence-post-producers", "powerpoint-quiescence-final", "powerpoint-quiescence-pre-control-repair-dialog", "powerpoint-control-repair-dialog", "powerpoint-control-modal-dismissal", "powerpoint-quiescence-post-control-repair-dialog", "producer-in-run-design", ...(!reusedProducerOutputs ? producers.map((id) => `producer-${id}`) : [])];
   for (const fixture of contract.fixtures) expected.push(
     `opc-source-${fixture.id}`, `openxml-source-${fixture.id}`, `inventory-source-${fixture.id}`, `powerpoint-quiescence-pre-${fixture.id}`, `powerpoint-${fixture.id}`, `powerpoint-quiescence-post-${fixture.id}`,
     `opc-roundtrip-${fixture.id}`, `openxml-roundtrip-${fixture.id}`, `inventory-roundtrip-${fixture.id}`,
@@ -372,9 +380,20 @@ function verifyCommandReceipts(receipts, contract, { reusedProducerOutputs = fal
       const expectedWatcher = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "$IMPLEMENTATION/watch_powerpoint_windows.ps1", "-OwnershipRecordJson", `${logicalRoot}/ownership.json`, "-StopMarker", `${logicalRoot}/stop.marker`, "-ReadyMarker", `${logicalRoot}/watcher-ready.marker`, "-ArmedMarker", `${logicalRoot}/watcher-armed.marker`, "-ReportJson", `${logicalRoot}/window-watch.json`, "-TimeoutSeconds", "150"];
       if (item.command !== "powershell" || item.exitCode !== null || item.signal !== "worker-timeout" || item.timedOut !== true || item.workerTimeoutMs !== 20_000
         || item.watcher?.exitCode !== 2 || item.watcher?.signal !== null || item.repairControl?.rejected !== true || item.ownershipCleanup?.valid !== true || item.ownershipCleanup?.cleaned !== true
+        || item.modalDismissal?.valid !== true || item.modalDismissal?.dismissed !== true || item.modalDismissal?.exactModalEvidence !== true
+        || item.modalDismissal?.reason !== "exact-persistent-repair-modal-dismissed" || item.modalDismissal?.closedModalHandles?.length < 1
+        || item.modalDismissal.closedModalHandles.length !== item.modalDismissal.verifiedClosedModalHandles?.length || item.workerFinalOutcome == null
+        || (item.workerTermination != null && !(item.workerTermination.matched === true && item.workerTermination.terminated === true))
         || item.quiescence?.before?.length !== 0 || item.quiescence?.after?.length !== 0
         || canonicalHash(item.normalizedArgs) !== canonicalHash(expectedWorker) || canonicalHash(item.watcher.normalizedArgs) !== canonicalHash(expectedWatcher)
         || !Number.isFinite(Date.parse(item.startedAt)) || !Number.isFinite(Date.parse(item.finishedAt)) || Date.parse(item.finishedAt) < Date.parse(item.startedAt)) fail("real PowerPoint repair control receipt is incomplete");
+      continue;
+    }
+    if (item.id === "powerpoint-control-modal-dismissal") {
+      const logicalRoot = "$RUN/negative-controls/powerpoint-repair-dialog";
+      const expectedDismissal = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "$IMPLEMENTATION/dismiss_owned_repair_modal.ps1", "-OwnershipRecordJson", `${logicalRoot}/ownership.json`, "-WatcherReportJson", `${logicalRoot}/window-watch.json`, "-StopMarker", `${logicalRoot}/stop.marker`];
+      if (item.command !== "powershell" || item.exitCode !== 0 || item.signal !== null || item.timedOut !== false || item.timeoutMs !== 60_000
+        || canonicalHash(item.normalizedArgs) !== canonicalHash(expectedDismissal) || item.streams?.length !== 2) fail("repair-modal dismissal command receipt is incomplete");
       continue;
     }
     const intendedNonzero = item.id?.startsWith("negative-opc-") ? 1 : item.id === "negative-schema-sdk" ? 2 : 0;
@@ -492,9 +511,10 @@ export async function verifyRepairFreeEvidence({ root, runDirectory, requireCurr
       if (fixture.source !== `fixtures/${fixture.id}/source.pptx` || fixture.roundtrip !== `fixtures/${fixture.id}/roundtrip.pptx` || fixture.sourceScope !== "run" || typeof fixture.originPath !== "string" || fixture.originPath.includes("..")) fail(`fixture '${fixture.id}' source binding is unsafe`);
       const expectedProducer = expectedProducerReceipt(expected);
       const producer = commandLog.find((item) => item.id === expectedProducer);
-      if (fixture.producerReceiptId !== expectedProducer || !producer) fail(`fixture '${fixture.id}' producer binding is missing`);
-      const producerStartedMs = Date.parse(producer.startedAt);
-      const producerFinishedMs = Date.parse(producer.finishedAt);
+      const producerRequired = !scorecard.reusedProducerOutputs || expectedProducer === "producer-in-run-design";
+      if (fixture.producerReceiptId !== expectedProducer || (producerRequired && !producer) || (!producerRequired && producer)) fail(`fixture '${fixture.id}' producer binding is missing or inconsistent with reuse mode`);
+      const producerStartedMs = producer ? Date.parse(producer.startedAt) : Number.NaN;
+      const producerFinishedMs = producer ? Date.parse(producer.finishedAt) : Number.NaN;
       let originMtimeMs = fixture.originMtimeMs;
       if (fixture.originScope === "run" || (fixture.originScope === "workspace" && requireCurrentGit)) {
         const originRoot = fixture.originScope === "run" ? runDirectory : root;

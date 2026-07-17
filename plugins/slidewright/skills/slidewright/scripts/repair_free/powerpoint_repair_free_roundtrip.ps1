@@ -237,6 +237,8 @@ try {
     processId = [int]$resolvedPid
     processStartTime = $ownedProcess.StartTime.ToUniversalTime().ToString('o')
     workerProcessId = [int]$PID
+    workerProcessName = [string](Get-Process -Id $PID -ErrorAction Stop).ProcessName
+    workerProcessStartTime = (Get-Process -Id $PID -ErrorAction Stop).StartTime.ToUniversalTime().ToString('o')
     purpose = "repair-free-$FixtureId"
     version = [string]$application.Version
     build = [string]$application.Build
@@ -312,7 +314,7 @@ try {
   if ($ownedProcess) { $ownedProcessExited = $ownedProcess.WaitForExit(30000) }
   if (-not $ownedProcessExited -and -not $primaryError) { $primaryError = "Owned PowerPoint process did not exit after COM release for fixture '$FixtureId'." }
   if ($ownedProcessExited) {
-    New-Item -ItemType File -Force -Path $stopPath | Out-Null
+    if (-not (Test-Path -LiteralPath $stopPath)) { New-Item -ItemType File -Path $stopPath | Out-Null }
     if (Test-Path -LiteralPath $localRoot) { Remove-Item -Recurse -Force -LiteralPath $localRoot }
   }
 }
