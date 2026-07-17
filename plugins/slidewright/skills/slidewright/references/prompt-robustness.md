@@ -4,16 +4,19 @@ Use the guarded request path for every prompt-originated release artifact. It tr
 
 ## Request envelope
 
-Create a JSON object with exactly these fields:
+Create a JSON object with these required fields and the optional guarded `reviewMode` field:
 
 ```json
 {
   "schemaVersion": "slidewright-request/v1",
   "id": "stable-lowercase-id",
   "prompt": "The exact original user prompt",
+  "reviewMode": "off",
   "spec": { "version": "0.1", "title": "...", "slides": [] }
 }
 ```
+
+Omit `reviewMode` or set it to `off` for the canonical clean deck only. Set it to `executive-overlay` only when the user requests the separate editable partner-review copy.
 
 Do not add output paths, stage controls, validity flags, quality thresholds, shell commands, or receipt fields. Unknown fields reject with `SWP000` or `SWP009`. The strict parser also rejects duplicate JSON keys, invalid UTF-8, non-finite numbers, excessive depth, and oversized envelopes.
 
@@ -24,7 +27,7 @@ node scripts/slidewright.mjs request request.json --out guarded-run
 node scripts/slidewright.mjs request-verify guarded-run --out guarded-run-verification.json
 ```
 
-The first command owns the exact sequence `policy -> compile -> fonts -> lint -> render -> audit -> delivery`. It stages all work outside the final run and atomically publishes only after every accepted stage passes. Conflicting requests stop at policy and publish only `request.json`, `policy.json`, and `run.json`—never a deck.
+The first command owns the exact sequence `policy -> compile -> fonts -> lint -> render -> audit -> executive-review -> delivery`. It stages all work outside the final run and atomically publishes only after every accepted stage passes. Conflicting requests stop at policy and publish only `request.json`, `policy.json`, and `run.json`—never a deck.
 
 The verifier recomputes the specification compile, plan lint, realized-layout lint, generic OOXML audit, and plan-bound OOXML audit. It checks full artifact inventory, stage continuity, implementation and quality-contract hashes, expected native text objects and runs, zero pictures for the current request schema, per-slide preview hashes, and delivery closure.
 

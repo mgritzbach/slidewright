@@ -16,6 +16,7 @@ import { parseStrictJson } from "../plugins/slidewright/skills/slidewright/scrip
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureDir = path.join(root, "fixtures", "prompt-robustness", "v1");
 const manifest = JSON.parse(await fs.readFile(path.join(fixtureDir, "fixture-manifest.json"), "utf8"));
+const benchmarkRunner = await fs.readFile(path.join(root, "scripts", "run-prompt-robustness-benchmark.mjs"), "utf8");
 
 async function requestFor(fixture) {
   const spec = JSON.parse(await fs.readFile(path.resolve(fixtureDir, fixture.spec), "utf8"));
@@ -47,6 +48,14 @@ test("mandatory request stages and quality floors are code-owned", () => {
   assert.equal(REQUEST_QUALITY_CONTRACT.promptMayControlStages, false);
   assert.equal(REQUEST_QUALITY_CONTRACT.promptMayControlPaths, false);
   assert.equal(REQUEST_QUALITY_CONTRACT.atomicPublicationRequired, true);
+});
+
+test("C12 scorecard and fault controls consume the shared immutable stage contract", () => {
+  assert.match(benchmarkRunner, /for \(const stage of \[\.\.\.IMMUTABLE_REQUEST_STAGES, "before-publication"\]\)/u);
+  assert.match(benchmarkRunner, /stableJson\(run\.stageNames\) === stableJson\(IMMUTABLE_REQUEST_STAGES\)/u);
+  assert.match(benchmarkRunner, /"executive-review-clean-audit\.json"/u);
+  assert.match(benchmarkRunner, /"executive-review-previews"/u);
+  assert.doesNotMatch(benchmarkRunner, /stableJson\(\["policy", "compile", "fonts", "lint", "render", "audit", "delivery"\]\)/u);
 });
 
 test("E6 activation is explicit and invalid review controls fail closed", async () => {

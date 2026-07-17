@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyRequestRun, stableJson } from "../plugins/slidewright/skills/slidewright/scripts/lib/request-build.mjs";
-import { REQUEST_SCHEMA_VERSION } from "../plugins/slidewright/skills/slidewright/scripts/lib/request-policy.mjs";
+import { IMMUTABLE_REQUEST_STAGES, REQUEST_SCHEMA_VERSION } from "../plugins/slidewright/skills/slidewright/scripts/lib/request-policy.mjs";
 import { publishVersionedEvidence } from "./lib/versioned-evidence-publish.mjs";
 
 const root = process.cwd();
@@ -291,10 +291,23 @@ async function runDestructiveControls(positiveRun, rejectedRun, alternateRun) {
 
 async function runFaultControls(requestPath) {
   const controls = [];
-  for (const stage of ["policy", "compile", "fonts", "lint", "render", "audit", "delivery", "before-publication"]) {
+  for (const stage of [...IMMUTABLE_REQUEST_STAGES, "before-publication"]) {
     const output = path.join(staging, "fault-work", stage);
     const command = await runCli(["request", requestPath, "--out", output], 2, { ...process.env, SLIDEWRIGHT_REQUEST_FAULT_AFTER: stage });
-    const forbidden = ["deck.pptx", "previews", "audit.json", "plan-audit.json", "delivery.json", "DELIVERY.md"];
+    const forbidden = [
+      "deck.pptx",
+      "previews",
+      "audit.json",
+      "plan-audit.json",
+      "executive-review.json",
+      "executive-review-clean-audit.json",
+      "deck.executive-review.pptx",
+      "executive-review-deck-audit.json",
+      "executive-review-overlay-audit.json",
+      "executive-review-previews",
+      "delivery.json",
+      "DELIVERY.md",
+    ];
     const absent = (await Promise.all(forbidden.map((item) => exists(path.join(output, item))))).every((value) => !value);
     const run = JSON.parse(await fs.readFile(path.join(output, "run.json"), "utf8"));
     const passed = command.exitCode === 2 && run.outcome === "failed" && run.valid === false && absent;
@@ -363,7 +376,8 @@ try {
     rejectedRunCount: runs.filter((run) => run.outcome === "rejected").length,
     allRunVerificationsPassed: runs.every((run) => run.verificationValid),
     allExpectedOutcomesMatched: runs.every((run) => run.outcome === run.expectedOutcome),
-    exactStageClosure: runs.filter((run) => run.outcome === "built").every((run) => stableJson(run.stageNames) === stableJson(["policy", "compile", "fonts", "lint", "render", "audit", "delivery"])),
+    immutableRequestStages: [...IMMUTABLE_REQUEST_STAGES],
+    exactStageClosure: runs.filter((run) => run.outcome === "built").every((run) => stableJson(run.stageNames) === stableJson(IMMUTABLE_REQUEST_STAGES)),
     repeatDeterminism,
     semanticPairEquivalence: equivalence,
     destructiveControls,
