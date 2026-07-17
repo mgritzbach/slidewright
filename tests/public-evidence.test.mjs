@@ -27,6 +27,13 @@ const portableResult = (total) => ({ testsTotal: total, testsFailed: 0, testsCan
 async function writeCommandLogs(directory, commands, testLog) {
   for (const command of commands) await fsp.writeFile(path.join(directory, command.logFile), commandLog(command.id, testLog));
 }
+function runSyntheticAggregate(input, output) {
+  const env = { ...process.env };
+  delete env.GITHUB_SHA;
+  delete env.GITHUB_REPOSITORY;
+  delete env.GITHUB_RUN_ID;
+  return spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", output], { cwd: root, encoding: "utf8", env });
+}
 
 test("committed public evidence verifies as content-addressed release data", () => {
   const result = spawnSync(process.execPath, ["scripts/verify-public-evidence.mjs"], { cwd: root, encoding: "utf8" });
@@ -89,7 +96,7 @@ test("cross-platform aggregation rejects divergent portable results", async () =
   await fsp.writeFile(path.join(input, "linux", "fresh-host-scorecard.json"), JSON.stringify(base));
   await fsp.writeFile(path.join(input, "windows", "fresh-host-scorecard.json"), JSON.stringify(windows));
   for (const directory of ["linux", "windows"]) await writeCommandLogs(path.join(input, directory), commands, log);
-  const result = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", output], { cwd: root, encoding: "utf8" });
+  const result = runSyntheticAggregate(input, output);
   assert.equal(result.status, 1);
   const aggregate = JSON.parse(await fsp.readFile(path.join(output, "aggregate-scorecard.json"), "utf8"));
   assert.equal(aggregate.valid, false);
@@ -120,11 +127,11 @@ test("cross-platform aggregation accepts platform-specific skips when totals and
     await fsp.writeFile(path.join(input, directory, "fresh-host-scorecard.json"), JSON.stringify(value));
     await writeCommandLogs(path.join(input, directory), value.commands, passingTestLog(value.tests.passed, value.tests.skipped, value.tests.total));
   }
-  const result = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", output], { cwd: root, encoding: "utf8" });
+  const result = runSyntheticAggregate(input, output);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(await fsp.readFile(path.join(output, "aggregate-scorecard.json"), "utf8")).valid, true);
   await fsp.writeFile(path.join(input, "windows", "tests.log"), "tampered\n");
-  const tampered = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", `${output}-tampered`], { cwd: root, encoding: "utf8" });
+  const tampered = runSyntheticAggregate(input, `${output}-tampered`);
   assert.equal(tampered.status, 1);
   assert.ok(JSON.parse(await fsp.readFile(path.join(`${output}-tampered`, "aggregate-scorecard.json"), "utf8")).failures.includes("Windows: command log mismatch (tests)"));
   await fsp.writeFile(path.join(input, "windows", "tests.log"), passingTestLog(79, 1, 80));
@@ -137,7 +144,7 @@ test("cross-platform aggregation accepts platform-specific skips when totals and
     mutated.scorecardHash = contentHash(mutated, "scorecardHash");
     await fsp.writeFile(windowsPath, JSON.stringify(mutated));
     await fsp.writeFile(path.join(input, "windows", "tests.log"), log);
-    const outcome = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", `${output}-${suffix}`], { cwd: root, encoding: "utf8" });
+    const outcome = runSyntheticAggregate(input, `${output}-${suffix}`);
     assert.equal(outcome.status, 1);
     assert.ok(JSON.parse(await fsp.readFile(path.join(`${output}-${suffix}`, "aggregate-scorecard.json"), "utf8")).failures.includes(expectedFailure));
   };
@@ -157,7 +164,7 @@ test("cross-platform aggregation accepts platform-specific skips when totals and
     malformed.portableResultHash = contentHash(malformed.portableResult, "unused");
     malformed.scorecardHash = contentHash(malformed, "scorecardHash");
     await fsp.writeFile(windowsPath, JSON.stringify(malformed));
-    const outcome = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", `${output}-${suffix}`], { cwd: root, encoding: "utf8" });
+    const outcome = runSyntheticAggregate(input, `${output}-${suffix}`);
     assert.equal(outcome.status, 1);
     assert.ok(JSON.parse(await fsp.readFile(path.join(`${output}-${suffix}`, "aggregate-scorecard.json"), "utf8")).failures.includes("Windows: portable test summary mismatch"));
   }
@@ -167,7 +174,7 @@ test("cross-platform aggregation accepts platform-specific skips when totals and
     await fsp.writeFile(outsideLog, passingTestLog(79, 1, 80));
     await fsp.rm(path.join(input, "windows", "tests.log"));
     await fsp.symlink(outsideLog, path.join(input, "windows", "tests.log"));
-    const linked = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", `${output}-symlink`], { cwd: root, encoding: "utf8" });
+    const linked = runSyntheticAggregate(input, `${output}-symlink`);
     assert.equal(linked.status, 1);
     assert.ok(JSON.parse(await fsp.readFile(path.join(`${output}-symlink`, "aggregate-scorecard.json"), "utf8")).failures.includes("Windows: command log path invalid"));
     await fsp.rm(path.join(input, "windows", "tests.log"));
@@ -177,7 +184,7 @@ test("cross-platform aggregation accepts platform-specific skips when totals and
   windows.commands[0].logFile = "../tests.log";
   windows.scorecardHash = contentHash(windows, "scorecardHash");
   await fsp.writeFile(windowsPath, JSON.stringify(windows));
-  const unsafe = spawnSync(process.execPath, ["scripts/aggregate-public-evidence.mjs", "--input", input, "--out", `${output}-unsafe`], { cwd: root, encoding: "utf8" });
+  const unsafe = runSyntheticAggregate(input, `${output}-unsafe`);
   assert.equal(unsafe.status, 1);
   assert.ok(JSON.parse(await fsp.readFile(path.join(`${output}-unsafe`, "aggregate-scorecard.json"), "utf8")).failures.includes("Windows: command log path invalid"));
 });
