@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "slidewright-runtime-bootstrap-contract-v1",
+  "minimumArtifactToolVersion": "2.7.3",
+  "requiredProfiles": [
+    "windows",
+    "macos",
+    "linux",
+    "wsl"
+  ],
+  "nativeCiProfiles": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "requiredControls": [
+    "resolver-contract-fixture",
+    "actual-host-outcome",
+    "clean-host-actionable-failure",
+    "invalid-override-fails-closed",
+    "local-only-source-audit"
+  ],
+  "implementationFiles": [
+    ".github/workflows/ci.yml",
+    "evidence/runtime-bootstrap-contract.json",
+    "plugins/slidewright/skills/slidewright/scripts/lib/artifact-runtime.mjs",
+    "plugins/slidewright/skills/slidewright/scripts/lib/preflight.mjs",
+    "scripts/aggregate-runtime-bootstrap-evidence.mjs",
+    "scripts/lib/runtime-bootstrap-evidence.mjs",
+    "scripts/run-runtime-bootstrap-benchmark.mjs",
+    "scripts/setup-artifact-runtime.mjs",
+    "tests/runtime-bootstrap.test.mjs"
+  ],
+  "sourceAuditFiles": [
+    "plugins/slidewright/skills/slidewright/scripts/lib/artifact-runtime.mjs",
+    "scripts/setup-artifact-runtime.mjs"
+  ],
+  "networkPolicy": "local-only-no-download",
+  "rendererPolicy": "codex-presentation-runtime-only-no-switch",
+  "failureCodes": {
+    "unavailable": "SW_RUNTIME_UNAVAILABLE",
+    "invalidOverride": "SW_RUNTIME_OVERRIDE_INVALID"
+  }
+}

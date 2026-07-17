@@ -125,3 +125,53 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 9
+
+  runtime-bootstrap-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            profile: windows
+          - os: macos-latest
+            profile: macos
+          - os: ubuntu-latest
+            profile: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node --test tests/runtime-bootstrap.test.mjs tests/reliability.test.mjs
+      - run: node scripts/run-runtime-bootstrap-benchmark.mjs --profile ${{ matrix.profile }} --out outputs/runtime-bootstrap/${{ matrix.profile }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: slidewright-runtime-bootstrap-${{ matrix.profile }}-${{ github.sha }}
+          path: outputs/runtime-bootstrap/${{ matrix.profile }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+  runtime-bootstrap-aggregate:
+    needs: [runtime-bootstrap-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: slidewright-runtime-bootstrap-*-${{ github.sha }}
+          path: outputs/runtime-bootstrap-hosts
+      - run: node scripts/aggregate-runtime-bootstrap-evidence.mjs --scope native --input outputs/runtime-bootstrap-hosts --out outputs/runtime-bootstrap-aggregate
+      - uses: actions/upload-artifact@v7
+        with:
+          name: slidewright-runtime-bootstrap-aggregate-${{ github.sha }}
+          path: outputs/runtime-bootstrap-aggregate/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9

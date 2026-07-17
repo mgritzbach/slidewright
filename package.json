@@ -15,6 +15,8 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "setup:runtime": "node scripts/setup-artifact-runtime.mjs",
+    "runtime:benchmark": "node scripts/run-runtime-bootstrap-benchmark.mjs",
+    "runtime:aggregate": "node scripts/aggregate-runtime-bootstrap-evidence.mjs",
     "preflight": "node packages/cli/src/cli.mjs preflight --out outputs/preflight.json",
     "demo:compile": "node packages/cli/src/cli.mjs compile examples/demo/deck-spec.json --out outputs/demo/plan.json",
     "demo:fonts": "node packages/cli/src/cli.mjs fonts outputs/demo/plan.json --out outputs/demo/font-report.json",
@@ -42,7 +44,7 @@
     "prompt-robustness": "npm run setup:runtime && node scripts/run-prompt-robustness-benchmark.mjs",
     "prompt-robustness:review": "node scripts/finalize-prompt-robustness-review.mjs",
     "verify:fidelity": "node packages/cli/src/cli.mjs verify outputs/fidelity/slidewright-fidelity-benchmark.pptx --out outputs/fidelity/delivery-manifest.json --preview-dir outputs/fidelity/slidewright-fidelity-benchmark --montage outputs/fidelity/slidewright-fidelity-montage.png --handoff outputs/fidelity/DELIVERY.md --require-bundle",
-    "release:check": "npm run preflight && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run copy-resilience && npm run copy-resilience:verify && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration && npm run design-profile && npm run feedback-contract && npm run prompt-robustness && npm run semantic-surface && npm run evidence:verify",
+    "release:check": "npm run preflight && npm run runtime:benchmark && npm run demo && npm run fidelity && npm run mutation && npm run repair && npm run copy-resilience && npm run copy-resilience:verify && npm run ingestion && npm run template && npm run defects && npm run powerpoint:adapter && npm run iteration && npm run design-profile && npm run feedback-contract && npm run prompt-robustness && npm run semantic-surface && npm run evidence:verify",
     "feedback-contract": "node scripts/run-feedback-contract-benchmark.mjs",
     "evidence:publish": "node scripts/publish-public-evidence.mjs",
     "evidence:verify": "node scripts/verify-public-evidence.mjs",

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { findArtifactSetupScript } from "./artifact-runtime.mjs";
+import { resolveArtifactRuntime } from "./artifact-runtime.mjs";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,32 +22,6 @@ function commandProbe(command, args = ["--version"]) {
     available: !result.error && result.status === 0,
     detail: (result.stdout || result.stderr || result.error?.message || "").trim().split(/\r?\n/)[0] || null,
   };
-}
-
-async function findPresentationRuntime(env) {
-  const codexHome = env.CODEX_HOME || path.join(os.homedir(), ".codex");
-  const root = path.join(codexHome, "plugins", "cache", "openai-primary-runtime", "presentations");
-  let entries = [];
-  try {
-    entries = await fs.readdir(root, { withFileTypes: true });
-  } catch {
-    return null;
-  }
-  const versions = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-  for (const version of versions) {
-    const tools = path.join(root, version, "skills", "presentations", "container_tools");
-    if (await exists(path.join(tools, "render_slides.py")) && await exists(path.join(tools, "slides_test.py"))) {
-      return { version, tools };
-    }
-  }
-  return null;
-}
-
-async function findArtifactTool(cwd) {
-  const candidate = path.join(cwd, "node_modules", "@oai", "artifact-tool", "package.json");
-  if (!await exists(candidate)) return null;
-  const pkg = JSON.parse(await fs.readFile(candidate, "utf8"));
-  return { path: candidate, version: pkg.version ?? "unknown" };
 }
 
 async function fontProbe(platform) {
@@ -78,12 +52,21 @@ async function fontProbe(platform) {
 }
 
 export function buildPreflightReport(probes) {
+  const runtimeDetail = probes.presentationRuntime ? {
+    source: probes.presentationRuntime.source,
+    hostProfile: probes.presentationRuntime.hostProfile,
+    version: probes.presentationRuntime.artifactTool?.version ?? probes.presentationRuntime.setup?.version ?? null,
+    package: probes.presentationRuntime.artifactTool?.packageDir ?? null,
+    setupScript: probes.presentationRuntime.setup?.script ?? null,
+    downloaded: false,
+    rendererSwitched: false,
+  } : probes.runtimeFailure ?? null;
   const checks = [
     { id: "skill", required: true, ok: probes.skill, detail: probes.skillPath, remediation: "Install the Slidewright plugin or run from its repository root." },
     { id: "node", required: true, ok: Number.parseInt(probes.nodeVersion.split(".")[0], 10) >= 20, detail: `Node ${probes.nodeVersion}`, remediation: "Install Node.js 20 or newer." },
     { id: "python", required: true, ok: probes.python.available, detail: probes.python.detail, remediation: "Install Python 3.11+ or set SLIDEWRIGHT_PYTHON to a working executable." },
-    { id: "artifact-tool", required: true, ok: Boolean(probes.artifactTool), detail: probes.artifactTool, remediation: probes.artifactBootstrap ? "Run 'node <slidewright-skill>/scripts/slidewright.mjs bootstrap' in the target workspace, then rerun preflight." : "Install or repair Codex's bundled presentation runtime; no bootstrap script was found." },
-    { id: "presentation-renderer", required: true, ok: Boolean(probes.presentationRuntime), detail: probes.presentationRuntime, remediation: "Install or repair the bundled Codex presentations runtime; render_slides.py and slides_test.py are required." },
+    { id: "artifact-tool", required: true, ok: Boolean(probes.artifactTool), detail: probes.artifactTool, remediation: probes.presentationRuntime ? "Run 'node <slidewright-skill>/scripts/slidewright.mjs bootstrap' in the target workspace, then rerun preflight." : "Install or repair Codex's bundled Presentations runtime, or set SLIDEWRIGHT_CODEX_RUNTIME_ROOT / SLIDEWRIGHT_ARTIFACT_TOOL_PATH to an existing local runtime." },
+    { id: "presentation-renderer", required: true, ok: Boolean(probes.presentationRuntime), detail: runtimeDetail, remediation: "Install or repair Codex's bundled Presentations runtime; Slidewright will not download or silently switch renderers." },
     { id: "fonts", required: true, ok: Object.values(probes.fonts).every(Boolean), detail: probes.fonts, remediation: `Install the missing required fonts: ${Object.entries(probes.fonts).filter(([, ok]) => !ok).map(([name]) => name).join(", ") || "none"}.` },
     { id: "powerpoint", required: false, ok: probes.powerPoint.available, detail: probes.powerPoint.detail, remediation: "Optional: install Microsoft PowerPoint for application-level round-trip tests." },
     { id: "libreoffice", required: false, ok: probes.libreOffice.available, detail: probes.libreOffice.detail, remediation: "Optional: install LibreOffice only if you explicitly choose its renderer." },
@@ -95,8 +78,12 @@ export function buildPreflightReport(probes) {
       platform: probes.platform ?? process.platform,
       architecture: probes.architecture ?? process.arch,
       selectedRenderer: probes.presentationRuntime ? "codex-presentation-runtime" : null,
-      rendererVersion: probes.presentationRuntime?.version ?? null,
+      hostProfile: probes.presentationRuntime?.hostProfile ?? probes.hostProfile ?? null,
+      rendererSource: probes.presentationRuntime?.source ?? null,
+      rendererVersion: probes.presentationRuntime?.artifactTool?.version ?? probes.presentationRuntime?.setup?.version ?? null,
       artifactToolVersion: probes.artifactTool?.version ?? null,
+      runtimeDownloaded: false,
+      rendererSwitched: false,
       requiredFonts: Object.keys(probes.fonts),
     },
     checks,
@@ -108,18 +95,31 @@ export async function collectPreflight({ cwd = process.cwd(), env = process.env,
   const bundledPython = path.join(os.homedir(), ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", platform === "win32" ? "python.exe" : "bin/python");
   const pythonCommand = env.SLIDEWRIGHT_PYTHON || (await exists(bundledPython) ? bundledPython : "python");
   const commonPowerPoint = platform === "win32" ? "C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE" : "";
+  let presentationRuntime = null;
+  let runtimeFailure = null;
+  let artifactTool = null;
+  try {
+    presentationRuntime = await resolveArtifactRuntime({ cwd, env, platform });
+    if (presentationRuntime.source === "workspace") {
+      artifactTool = { path: presentationRuntime.artifactTool.packagePath, version: presentationRuntime.artifactTool.version };
+    }
+  } catch (error) {
+    presentationRuntime = null;
+    runtimeFailure = { code: error.code ?? "SW_RUNTIME_PROBE_FAILED", message: error.message };
+  }
   return buildPreflightReport({
     skill: await exists(skillPath),
     skillPath,
     nodeVersion: process.versions.node,
     python: commandProbe(pythonCommand),
-    artifactTool: await findArtifactTool(cwd),
-    artifactBootstrap: await findArtifactSetupScript(env),
-    presentationRuntime: await findPresentationRuntime(env),
+    artifactTool,
+    presentationRuntime,
+    runtimeFailure,
     fonts: await fontProbe(platform),
     powerPoint: platform === "win32" && await exists(commonPowerPoint) ? { available: true, detail: commonPowerPoint } : { available: false, detail: null },
     libreOffice: commandProbe(platform === "win32" ? "soffice.exe" : "soffice"),
     platform,
     architecture: process.arch,
+    hostProfile: presentationRuntime?.hostProfile ?? null,
   });
 }

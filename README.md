@@ -50,7 +50,15 @@ To execute the full artifact-level demo, run:
 npm run demo
 ```
 
-`npm run setup:runtime` discovers the installed Codex presentation runtime rather than relying on a version-specific local path.
+`npm run setup:runtime` discovers a supported local Codex presentation runtime rather than relying on a version-specific path or public download. Resolution is deterministic: an explicit local override, an already valid workspace package, then Codex's bundled dependency runtime. Explicit overrides fail closed when invalid instead of silently selecting something else. Every successful bootstrap smoke-imports `Presentation` and `PresentationFile` and reports the exact source, host profile, artifact-tool version, download state, and renderer-switch state.
+
+Supported local overrides are `SLIDEWRIGHT_CODEX_RUNTIME_ROOT` and `SLIDEWRIGHT_ARTIFACT_TOOL_PATH`. They must point to existing local resources; Slidewright never interprets them as URLs or executes an external bootstrap helper. A clean host with no supported runtime exits once with `SW_RUNTIME_UNAVAILABLE` and one recovery instruction. Test the current native-host checkpoint with:
+
+```powershell
+npm run runtime:benchmark
+```
+
+The public CI matrix runs the same contract on native Windows, macOS, and Linux hosts, uploads semantically verified raw command receipts, and aggregates the three scorecards only when their implementation and contract hashes match. Genuine WSL execution remains an explicit uncredited requirement; a Linux runner with injected WSL variables is not accepted as proof.
 
 The installed skill has the same self-contained bootstrap as `node <slidewright-skill>/scripts/slidewright.mjs bootstrap`; it links the already bundled Codex runtime into the active workspace and does not download or silently switch renderers. Slidewright's clean-home installation benchmark verifies real CLI installation plus Desktop- and VS Code-identified **app-server backend discovery** without relying on marketplace UI clicks; it does not claim to launch either GUI client. The pinned harness is isolated under `tools/installation/` and runs with `npm ci --prefix tools/installation` followed by `node scripts/run-installation-benchmark.mjs`. If an older Codex build does not expose `codex plugin`, update Codex before installing Slidewright.
 
