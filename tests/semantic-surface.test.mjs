@@ -422,6 +422,10 @@ test("C08 clean Git gate rejects tracked and untracked drift", async () => {
     assert.equal(runGit(["add", "tracked.txt"]).status, 0);
     assert.equal(runGit(["commit", "-qm", "control"]).status, 0);
     assert.equal(captureCleanGit(directory).clean, true);
+    if (process.platform === "win32") assert.equal(captureCleanGit(directory.toUpperCase()).clean, true);
+    const nested = path.join(directory, "nested");
+    await fs.mkdir(nested);
+    assert.throws(() => captureCleanGit(nested), /requires a clean exact Git checkout/u);
     await fs.writeFile(path.join(directory, "untracked.txt"), "drift\n", "utf8");
     assert.throws(() => captureCleanGit(directory), /requires a clean exact Git checkout/u);
     await fs.rm(path.join(directory, "untracked.txt"));

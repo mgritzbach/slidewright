@@ -6,7 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { assertPublicScorecard, contentHash, rejectMachineSpecificContent } from "../scripts/public-evidence-lib.mjs";
+import { assertPublicScorecard, contentHash, parseNodeTestSummary, rejectMachineSpecificContent } from "../scripts/public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -31,6 +31,14 @@ test("public suite gates reject removed destructive controls", () => {
   const published = JSON.parse(fs.readFileSync(path.join(root, "evidence", "scorecards", "v1", "g22-g23-design-profile.json"), "utf8"));
   published.scorecard.negativeControls.pop();
   assert.throws(() => assertPublicScorecard(published.suiteId, published.scorecard), /eight destructive controls/);
+});
+
+test("fresh-host evidence parses Node 22 TAP and Node 24 spec summaries without hiding failures", () => {
+  const node22 = "# tests 190\n# pass 188\n# fail 1\n# cancelled 0\n# skipped 1\n";
+  const node24 = "ℹ tests 190\nℹ pass 190\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\n";
+  assert.deepEqual(parseNodeTestSummary(node22), { total: 190, passed: 188, failed: 1, cancelled: 0, skipped: 1 });
+  assert.deepEqual(parseNodeTestSummary(node24), { total: 190, passed: 190, failed: 0, cancelled: 0, skipped: 0 });
+  assert.deepEqual(parseNodeTestSummary("ok 1 - a test\n"), { total: 0, passed: 0, failed: 0, cancelled: 0, skipped: 0 });
 });
 
 test("cross-platform aggregation rejects divergent portable results", async () => {

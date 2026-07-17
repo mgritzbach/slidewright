@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { contentHash } from "./public-evidence-lib.mjs";
+import { contentHash, parseNodeTestSummary, sha256 } from "./public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const platform = process.env.RUNNER_OS || `${process.platform}-${process.arch}`;
@@ -15,12 +15,18 @@ async function run(id, command, args, displayCommand) {
   const started = Date.now();
   const result = spawnSync(command, args, { cwd: root, encoding: "utf8", shell: false });
   const log = `${result.stdout || ""}${result.stderr || ""}${result.error ? `\n${result.error.stack || result.error.message}\n` : ""}`;
-  await fs.writeFile(path.join(output, `${id}.log`), log, "utf8");
+  const logFile = `${id}.log`;
+  await fs.writeFile(path.join(output, logFile), log, "utf8");
   return {
     id,
     command: displayCommand || [command, ...args].join(" "),
     exitCode: result.status ?? 1,
+    signal: result.signal ?? null,
+    error: result.error ? (result.error.code || result.error.message) : null,
     durationMs: Date.now() - started,
+    logFile,
+    logBytes: Buffer.byteLength(log, "utf8"),
+    logSha256: sha256(log),
     log,
   };
 }
@@ -38,16 +44,19 @@ commands.push(await run("demo-lint", node, [npmCli, "run", "demo:lint"], "npm ru
 const relativeVerification = path.posix.join("outputs", "public-evidence", slug, "verified-evidence.json");
 commands.push(await run("public-evidence", node, ["scripts/verify-public-evidence.mjs", "--out", relativeVerification], `node scripts/verify-public-evidence.mjs --out ${relativeVerification}`));
 
-const testMatch = commands[0].log.match(/\btests\s+(\d+)/);
 const lint = JSON.parse(await fs.readFile(path.join(root, "outputs", "demo", "lint-report.json"), "utf8"));
 const plan = JSON.parse(await fs.readFile(path.join(root, "outputs", "demo", "plan.json"), "utf8"));
 const verifiedEvidence = JSON.parse(await fs.readFile(path.join(output, "verified-evidence.json"), "utf8"));
 const python = spawnSync(process.platform === "win32" ? "python.exe" : "python", ["--version"], { encoding: "utf8" });
 const git = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" });
-const passed = Number(testMatch?.[1] || 0);
+const { total, passed, failed, cancelled, skipped } = parseNodeTestSummary(commands[0].log);
 const missingRequiredTests = contract.requiredTestNames.filter((name) => !commands[0].log.includes(name));
 const portableResult = {
+  testsTotal: total,
   testsPassed: passed,
+  testsFailed: failed,
+  testsCancelled: cancelled,
+  testsSkipped: skipped,
   minimumTests: contract.minimumTestCount,
   requiredTestsVerified: contract.requiredTestNames.length - missingRequiredTests.length,
   requiredTestsExpected: contract.requiredTestNames.length,
@@ -62,7 +71,9 @@ const portableResultHash = contentHash(portableResult, "unused");
 const scorecard = {
   schemaVersion: "slidewright-fresh-host-scorecard/v1",
   valid: commands.every((item) => item.exitCode === 0)
-    && passed >= contract.minimumTestCount
+    && total >= contract.minimumTestCount
+    && failed === 0
+    && cancelled === 0
     && missingRequiredTests.length === 0
     && lint.counts?.error <= contract.maximumErrors
     && lint.counts?.warning <= contract.maximumWarnings
@@ -83,10 +94,10 @@ const scorecard = {
   },
   portableResult,
   portableResultHash,
-  tests: { passed, minimum: contract.minimumTestCount, required: contract.requiredTestNames, missingRequiredTests },
+  tests: { total, passed, failed, cancelled, skipped, minimum: contract.minimumTestCount, required: contract.requiredTestNames, missingRequiredTests },
   demo: { slides: plan.slides?.length || 0, errors: lint.counts?.error, warnings: lint.counts?.warning },
   publicEvidence: { manifestHash: verifiedEvidence.manifestHash, scorecards: verifiedEvidence.scorecards.length },
-  commands: commands.map(({ id, command, exitCode, durationMs }) => ({ id, command, exitCode, durationMs })),
+  commands: commands.map(({ id, command, exitCode, signal, error, durationMs, logFile, logBytes, logSha256 }) => ({ id, command, exitCode, signal, error, durationMs, logFile, logBytes, logSha256 })),
   limitations: [
     "This fresh-host job reproduces the portable compiler, linter, unit/destructive-control tests, and public-evidence integrity checks.",
     "PowerPoint-only and Codex-runtime rendering scorecards are verified as content-addressed curated evidence; they require the documented capable-host commands to regenerate.",
@@ -95,7 +106,7 @@ const scorecard = {
 scorecard.scorecardHash = contentHash(scorecard, "scorecardHash");
 await fs.writeFile(path.join(output, "fresh-host-scorecard.json"), `${JSON.stringify(scorecard, null, 2)}\n`, "utf8");
 
-const report = `# Slidewright fresh-host replication\n\n- Valid: **${scorecard.valid}**\n- Platform: ${platform} (${process.platform}/${process.arch})\n- Git commit: \`${scorecard.environment.gitSha}\`\n- Node: ${scorecard.environment.node}\n- Python: ${scorecard.environment.python}\n- Tests: ${scorecard.tests.passed} (minimum ${scorecard.tests.minimum})\n- Required destructive-control tests: ${scorecard.portableResult.requiredTestsVerified}/${scorecard.portableResult.requiredTestsExpected}\n- Demo: ${scorecard.demo.slides} slides, ${scorecard.demo.errors} errors, ${scorecard.demo.warnings} warnings\n- Public scorecards verified: ${scorecard.publicEvidence.scorecards}\n- Evidence manifest: \`${scorecard.publicEvidence.manifestHash}\`\n- Portable result: \`${scorecard.portableResultHash}\`\n- Scorecard: \`${scorecard.scorecardHash}\`\n\n## Exact commands\n\n${scorecard.commands.map((item) => `- \`${item.command}\` -> exit ${item.exitCode}`).join("\n")}\n\n## Scope\n\n${scorecard.limitations.map((item) => `- ${item}`).join("\n")}\n`;
+const report = `# Slidewright fresh-host replication\n\n- Valid: **${scorecard.valid}**\n- Platform: ${platform} (${process.platform}/${process.arch})\n- Git commit: \`${scorecard.environment.gitSha}\`\n- Node: ${scorecard.environment.node}\n- Python: ${scorecard.environment.python}\n- Tests: ${scorecard.tests.passed} passed, ${scorecard.tests.failed} failed, ${scorecard.tests.cancelled} cancelled, ${scorecard.tests.skipped} skipped (${scorecard.tests.total} total; minimum ${scorecard.tests.minimum})\n- Required destructive-control tests: ${scorecard.portableResult.requiredTestsVerified}/${scorecard.portableResult.requiredTestsExpected}\n- Demo: ${scorecard.demo.slides} slides, ${scorecard.demo.errors} errors, ${scorecard.demo.warnings} warnings\n- Public scorecards verified: ${scorecard.publicEvidence.scorecards}\n- Evidence manifest: \`${scorecard.publicEvidence.manifestHash}\`\n- Portable result: \`${scorecard.portableResultHash}\`\n- Scorecard: \`${scorecard.scorecardHash}\`\n\n## Exact commands\n\n${scorecard.commands.map((item) => `- \`${item.command}\` -> exit ${item.exitCode}${item.signal ? `, signal ${item.signal}` : ""}${item.error ? `, error ${item.error}` : ""}`).join("\n")}\n\n## Scope\n\n${scorecard.limitations.map((item) => `- ${item}`).join("\n")}\n`;
 await fs.writeFile(path.join(output, "FRESH_HOST_REPORT.md"), report, "utf8");
 
 if (!scorecard.valid) {

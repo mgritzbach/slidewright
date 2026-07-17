@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -103,8 +104,16 @@ export function captureCleanGit(root) {
   const topLevel = path.resolve(git(root, ["rev-parse", "--show-toplevel"]));
   const commit = git(root, ["rev-parse", "HEAD"]);
   const status = git(root, ["status", "--porcelain", "--untracked-files=all"]);
-  const clean = topLevel === path.resolve(root) && /^[a-f0-9]{40}$/u.test(commit) && status === "";
-  if (!clean) throw new Error(`C08 requires a clean exact Git checkout; commit=${commit}, status=${JSON.stringify(status)}.`);
+  const canonical = (directory) => {
+    const real = fsSync.realpathSync.native(path.resolve(directory));
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
+  const requestedRoot = canonical(root);
+  const repositoryRoot = canonical(topLevel);
+  const clean = repositoryRoot === requestedRoot && /^[a-f0-9]{40}$/u.test(commit) && status === "";
+  if (!clean) {
+    throw new Error(`C08 requires a clean exact Git checkout; commit=${commit}, status=${JSON.stringify(status)}, requestedRoot=${JSON.stringify(requestedRoot)}, repositoryRoot=${JSON.stringify(repositoryRoot)}.`);
+  }
   return { commit, clean: true };
 }
 

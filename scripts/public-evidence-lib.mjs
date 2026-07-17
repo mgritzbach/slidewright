@@ -19,6 +19,17 @@ export function contentHash(value, hashField) {
   return sha256(stable(copy));
 }
 
+export function parseNodeTestSummary(log) {
+  const count = (label) => Number(String(log).match(new RegExp(`^(?:#|ℹ)\\s+${label}\\s+(\\d+)\\s*$`, "mu"))?.[1] || 0);
+  return {
+    total: count("tests"),
+    passed: count("pass"),
+    failed: count("fail"),
+    cancelled: count("cancelled"),
+    skipped: count("skipped"),
+  };
+}
+
 export const PUBLIC_SUITES = [
   {
     id: "c14-geometric-readability",
