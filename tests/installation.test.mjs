@@ -13,6 +13,7 @@ import {
   findAppServerPlugin,
   findCliPlugin,
   findSkill,
+  hashPortableImplementationFile,
   isPathInside,
 } from "../scripts/lib/install-evidence.mjs";
 import { sha256, stable } from "../scripts/public-evidence-lib.mjs";
@@ -100,6 +101,19 @@ test("C02 path confinement accepts a true descendant and rejects equality, sibli
   assert.equal(isPathInside(parent, parent), false);
   assert.equal(isPathInside(parent, path.resolve(parent, "..", "other-home")), false);
   assert.equal(isPathInside(parent, `${parent}-escape`), false);
+});
+
+test("C02 implementation binding treats LF and CRLF checkouts identically", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "slidewright-portable-hash-"));
+  const lf = path.join(directory, "lf.txt");
+  const crlf = path.join(directory, "crlf.txt");
+  try {
+    fs.writeFileSync(lf, "alpha\nbeta\n", "utf8");
+    fs.writeFileSync(crlf, "alpha\r\nbeta\r\n", "utf8");
+    assert.equal(await hashPortableImplementationFile(lf), await hashPortableImplementationFile(crlf));
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test("C02 installation scorecard requires real CLI install and both declared app-server backends", () => {

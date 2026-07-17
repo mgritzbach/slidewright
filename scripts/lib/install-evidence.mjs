@@ -42,6 +42,14 @@ export async function hashFile(file) {
   return crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
 }
 
+export async function hashPortableImplementationFile(file) {
+  const bytes = await fs.readFile(file);
+  let text;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  catch (error) { throw new Error(`Installation implementation binding requires UTF-8 text: ${file}.`, { cause: error }); }
+  return crypto.createHash("sha256").update(text.replace(/\r\n?/g, "\n"), "utf8").digest("hex");
+}
+
 export async function hashTree(root) {
   const files = await listRegularFiles(root);
   const entries = [];
@@ -58,7 +66,7 @@ export async function hashTree(root) {
 export async function computeInstallImplementationBinding(root) {
   const files = [];
   for (const relative of INSTALL_IMPLEMENTATION_FILES) {
-    files.push({ relative, sha256: await hashFile(path.join(root, ...relative.split("/"))) });
+    files.push({ relative, sha256: await hashPortableImplementationFile(path.join(root, ...relative.split("/"))) });
   }
   return {
     files,
