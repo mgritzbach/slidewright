@@ -1,5 +1,17 @@
 import { compileDeck } from "../lib/compiler.mjs";
 
+const SUBSTANTIVE_HEADLINES = Object.freeze({
+  "what-is-codex": "Codex, explained",
+  capabilities: "What Codex can do",
+  setup: "Get Codex set up",
+  "instruction-contract": "A clear task contract",
+  agents: "One agent or many?",
+  extensions: "Extend Codex",
+  building: "Build and test across platforms",
+  demonstration: "A narrated event workflow",
+  "life-sciences": "Two Life Sciences examples",
+});
+
 function paragraphBody(index) {
   const paragraphs = [
     { bullet: true, runs: [{ text: `Core explanation ${index + 1} remains native and editable.` }] },
@@ -30,7 +42,7 @@ export function buildFeedbackSpec(manifest) {
         coverageRole: "substantive",
         ...(index === 2 ? { headlineSplit: { ratio: "two-thirds", side: "left" } } : {}),
         eyebrow: `Topic ${String(index + 1).padStart(2, "0")}`,
-        title: `A substantive, editable explanation of ${topic.title.replace(/\?$/u, "")}`,
+        title: SUBSTANTIVE_HEADLINES[topic.id] ?? topic.title.replace(/\?$/u, ""),
         body: index === 0 ? paragraphBody(index) : `This teaching slide gives ${topic.title.toLowerCase()} its own audience-facing explanation instead of only mentioning it inside another chapter.`,
         callout: "The compiler must preserve safe width, fit, spacing, and editability before this slide can ship.",
       });

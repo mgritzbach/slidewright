@@ -3,6 +3,8 @@ import test from "node:test";
 import { compileDeck } from "../plugins/slidewright/skills/slidewright/scripts/lib/compiler.mjs";
 import { lintPlan } from "../plugins/slidewright/skills/slidewright/scripts/lib/linter.mjs";
 import { lintRenderedLayouts } from "../plugins/slidewright/skills/slidewright/scripts/lib/rendered-linter.mjs";
+import { buildFeedbackSpec } from "../plugins/slidewright/skills/slidewright/scripts/benchmark/feedback_suite.mjs";
+import fs from "node:fs";
 
 function topicSpec() {
   return {
@@ -108,6 +110,20 @@ test("feedback contract compiles full-width headlines, growing title regions, co
   assert.equal(body.text.paragraphs.length, 3);
   assert.equal(body.text.runs.filter((run) => run.text.includes("\u2022")).length, 3);
   assert.equal(lintRenderedLayouts(plan, syntheticLayouts(plan)).valid, true);
+});
+
+test("the full 17-topic feedback corpus respects the universal headline budget", () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL("../fixtures/feedback/locate-event-v1/fixture-manifest.json", import.meta.url), "utf8"));
+  const plan = compileDeck(buildFeedbackSpec(manifest));
+  const report = lintPlan(plan);
+  assert.equal(report.valid, true, JSON.stringify(report.diagnostics, null, 2));
+  assert.equal(plan.slides.length, 34);
+  for (const slide of plan.slides.filter((item) => item.coverageRole === "substantive")) {
+    const title = slide.shapes.find((shape) => shape.role === "title");
+    if (!title.headlinePolicy?.constrained) continue;
+    assert.ok(title.fit.lines <= title.headlinePolicy.maximumLines);
+    assert.ok(title.fit.autoSizeSteps <= title.headlinePolicy.maximumAutoSizeSteps);
+  }
 });
 
 test("G24 rejects text overlap even when a generic waiver is present", () => {
