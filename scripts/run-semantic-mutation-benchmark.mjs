@@ -4,12 +4,24 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cleanupOwnedPowerPoint } from "./lib/owned-process-cleanup.mjs";
-import { publishVersionedEvidence } from "./lib/versioned-evidence-publish.mjs";
 import { captureWorkerIdentity, terminateExactWorker } from "./lib/exact-worker-process.mjs";
 import { startRunnerWatchdog } from "./lib/runner-watchdog.mjs";
-import { verifySemanticSurfaceEvidence } from "./lib/semantic-surface-evidence.mjs";
+import {
+  captureCleanGit,
+  collectReceiptTree,
+  normalizeCommandArgument,
+  sha256File,
+  validateNormalWatchdogEvidence,
+  verifySemanticSurfaceEvidence,
+} from "./lib/semantic-surface-evidence.mjs";
+import {
+  captureSemanticMutationImplementation,
+  captureSemanticMutationRuntime,
+  publishSemanticMutationEvidence,
+  verifySemanticMutationEvidence,
+} from "./lib/semantic-mutation-evidence.mjs";
 
 const root = process.cwd();
 const publishedOutput = path.join(root, "outputs", "semantic-mutation");
@@ -37,10 +49,41 @@ let python = process.env.SLIDEWRIGHT_PYTHON || "python";
 try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
 
 const activeWorkers = new Map();
+const commandReceipts = [];
 let signalCleanupStarted = false;
+
+function logicalArgument(value) {
+  return normalizeCommandArgument(root, value);
+}
 
 function terminateWorkerOnly(workerPid, expectedIdentity) {
   return terminateExactWorker(workerPid, expectedIdentity);
+}
+
+async function captureOwnedPowerPointRuntime(ownershipRecordPath, receiptPath, processes = []) {
+  let ownership;
+  try { ownership = await readJson(ownershipRecordPath); } catch { return null; }
+  const expected = { processId: ownership.processId, processName: ownership.processName, processStartTime: ownership.processStartTime };
+  if (processes.some((item) => item.processId === expected.processId && item.processName === expected.processName && item.processStartTime === expected.processStartTime)) {
+    return { schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes };
+  }
+  const liveBefore = captureWorkerIdentity(expected.processId);
+  if (!liveBefore || liveBefore.processName !== expected.processName || liveBefore.processStartTime !== expected.processStartTime) return null;
+  const query = spawnSync("powershell.exe", ["-NoProfile", "-Command", `(Get-Process -Id ${expected.processId} -ErrorAction Stop).Path`], { cwd: root, encoding: "utf8", windowsHide: true, timeout: 10_000 });
+  if (query.error || query.status !== 0 || !query.stdout.trim()) return null;
+  const executablePath = await fs.realpath(query.stdout.trim());
+  const liveAfter = captureWorkerIdentity(expected.processId);
+  if (!liveAfter || liveAfter.processName !== expected.processName || liveAfter.processStartTime !== expected.processStartTime) return null;
+  const processReceipt = {
+    processId: expected.processId,
+    processName: expected.processName,
+    processStartTime: expected.processStartTime,
+    executablePath,
+    executableSha256: await sha256File(executablePath),
+  };
+  const receipt = { schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes: [...processes, processReceipt] };
+  await writeJson(receiptPath, receipt);
+  return receipt;
 }
 
 function cleanupForSignal(signal) {
@@ -56,17 +99,42 @@ function cleanupForSignal(signal) {
 process.once("SIGINT", () => cleanupForSignal("SIGINT"));
 process.once("SIGTERM", () => cleanupForSignal("SIGTERM"));
 
+async function appendCommandReceipt({ command, args, exitCode, signal = null, timedOut = false, error = null, stdout, stderr }) {
+  const sequence = String(commandReceipts.length + 1).padStart(4, "0");
+  const stdoutPath = `command-receipts/${sequence}.stdout.txt`;
+  const stderrPath = `command-receipts/${sequence}.stderr.txt`;
+  await fs.mkdir(path.join(output, "command-receipts"), { recursive: true });
+  await Promise.all([
+    fs.writeFile(path.join(output, ...stdoutPath.split("/")), stdout, "utf8"),
+    fs.writeFile(path.join(output, ...stderrPath.split("/")), stderr, "utf8"),
+  ]);
+  commandReceipts.push({
+    command: logicalArgument(command),
+    args: args.map(logicalArgument),
+    exitCode,
+    signal,
+    timedOut,
+    ...(error ? { error } : {}),
+    stdoutPath,
+    stderrPath,
+    stdoutSha256: crypto.createHash("sha256").update(stdout).digest("hex"),
+    stderrSha256: crypto.createHash("sha256").update(stderr).digest("hex"),
+  });
+}
+
 function run(command, args, {
   capture = false,
   timeoutMs = 120_000,
   ownershipRecordPath = null,
+  powerPointRuntimeReceiptPath = null,
+  expectedPowerPointRuntimeProcessCount = 0,
   timeoutStartMarkerPath = null,
   timeoutStartDeadlineMs = 120_000,
 } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
-      stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
+      stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
     const identity = child.pid ? captureWorkerIdentity(child.pid) : null;
@@ -79,12 +147,25 @@ function run(command, args, {
     let settled = false;
     let timeoutPhase = null;
     let timeoutLimitMs = timeoutMs;
-    if (capture) {
-      child.stdout.setEncoding("utf8");
-      child.stderr.setEncoding("utf8");
-      child.stdout.on("data", (chunk) => { stdout += chunk; });
-      child.stderr.on("data", (chunk) => { stderr += chunk; });
-    }
+    let powerPointRuntimeReceipt = null;
+    let powerPointRuntimeProcesses = [];
+    let runtimeCaptureInFlight = null;
+    const attemptRuntimeCapture = async () => {
+      if (!ownershipRecordPath || !powerPointRuntimeReceiptPath || runtimeCaptureInFlight) return powerPointRuntimeReceipt;
+      runtimeCaptureInFlight = captureOwnedPowerPointRuntime(ownershipRecordPath, powerPointRuntimeReceiptPath, powerPointRuntimeProcesses)
+        .catch(() => null)
+        .then((value) => {
+          if (value) { powerPointRuntimeReceipt = value; powerPointRuntimeProcesses = value.processes; }
+          return value;
+        })
+        .finally(() => { runtimeCaptureInFlight = null; });
+      return runtimeCaptureInFlight;
+    };
+    const runtimeCapturePoll = powerPointRuntimeReceiptPath ? setInterval(() => { void attemptRuntimeCapture(); }, 100) : null;
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; if (!capture) process.stdout.write(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += chunk; if (!capture) process.stderr.write(chunk); });
     const timeoutWorker = (phase, limitMs) => {
       if (settled || timedOut) return;
       timedOut = true;
@@ -114,19 +195,34 @@ function run(command, args, {
       if (timer) clearTimeout(timer);
       if (readinessTimer) clearTimeout(readinessTimer);
       if (readinessPoll) clearInterval(readinessPoll);
+      if (runtimeCapturePoll) clearInterval(runtimeCapturePoll);
     };
-    child.once("error", (error) => {
+    child.once("error", async (error) => {
       if (settled) return;
       settled = true;
       clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
-      reject(error);
+      try { await appendCommandReceipt({ command, args, exitCode: null, error: error.message, stdout, stderr }); reject(error); }
+      catch (receiptError) { reject(receiptError); }
     });
-    child.once("close", (status, signal) => {
+    child.once("close", async (status, signal) => {
       if (settled) return;
       settled = true;
       clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      if (runtimeCaptureInFlight) await runtimeCaptureInFlight;
+      if (powerPointRuntimeReceiptPath) await attemptRuntimeCapture();
+      let finalOwnership = null;
+      try { if (ownershipRecordPath) finalOwnership = await readJson(ownershipRecordPath); } catch { /* fail below */ }
+      const finalIdentityCaptured = finalOwnership && powerPointRuntimeProcesses.some((item) => item.processId === finalOwnership.processId
+        && item.processName === finalOwnership.processName && item.processStartTime === finalOwnership.processStartTime);
+      if (powerPointRuntimeReceiptPath && (!powerPointRuntimeReceipt || !finalIdentityCaptured
+        || powerPointRuntimeProcesses.length !== expectedPowerPointRuntimeProcessCount)) {
+        reject(new Error(`Could not bind the live owned PowerPoint executable for ${ownershipRecordPath}.`));
+        return;
+      }
+      try { await appendCommandReceipt({ command, args, exitCode: status, signal: signal ?? null, timedOut, stdout, stderr }); }
+      catch (receiptError) { reject(receiptError); return; }
       if (timedOut) {
         const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutLimitMs} ms during ${timeoutPhase}; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
         error.timeoutCleanup = timeoutCleanup;
@@ -178,6 +274,18 @@ function canonicalHash(value) {
 }
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function waitForExactIdentityExit(identity, timeoutMs = 15_000) {
+  const started = Date.now();
+  while (Date.now() - started <= timeoutMs) {
+    const live = captureWorkerIdentity(identity.processId);
+    if (!live || live.processName !== identity.processName || live.processStartTime !== identity.processStartTime) {
+      return { valid: true, waitedMs: Date.now() - started, exactIdentityAbsent: true };
+    }
+    await delay(100);
+  }
+  return { valid: false, waitedMs: Date.now() - started, exactIdentityAbsent: false };
+}
 
 async function waitForPowerPointQuiescence(timeoutMs = 120_000) {
   if (process.platform !== "win32") return { valid: true, waitedMs: 0, polls: 0, reason: "non-windows" };
@@ -291,7 +399,7 @@ async function resolvePublishedBaseline(mutationContract, slidesTest) {
     || computedScorecardHash !== current.scorecardHash) {
     throw new Error("C08 current pointer does not resolve to a valid, hash-authenticated scorecard.");
   }
-  await verifySemanticSurfaceEvidence({ root, runDirectory, python, slidesTest });
+  await verifySemanticSurfaceEvidence({ root, runDirectory, python, slidesTest, requireCurrentGit: false });
   const sourceBaseline = path.join(runDirectory, "powerpoint-roundtrip.pptx");
   const sourceBaselineSha256 = await sha256(sourceBaseline);
   if (sourceScorecard.powerpoint?.roundtripPptxSha256 !== sourceBaselineSha256) {
@@ -322,6 +430,8 @@ if (!Array.isArray(mutationContract.negativeControls) || mutationContract.negati
   throw new Error("C18 contract must declare exactly nine destructive controls.");
 }
 
+const gitBefore = captureCleanGit(root);
+const implementationBefore = await captureSemanticMutationImplementation(root);
 const slidesTest = await findPresentationTool("slides_test.py");
 const sourceBinding = await resolvePublishedBaseline(mutationContract, slidesTest);
 await fs.mkdir(publishedRuns, { recursive: true });
@@ -351,6 +461,10 @@ const runnerWatchdog = await startRunnerWatchdog({
   recoveryReport: watchdogRecoveryReport,
   diagnosticLog: watchdogDiagnosticLog,
 });
+const normalWatchdogDir = path.join(output, "watchdog", "normal");
+await fs.mkdir(normalWatchdogDir, { recursive: true });
+await fs.copyFile(`${watchdogDiagnosticLog}.identity.json`, path.join(normalWatchdogDir, "identity-receipt.json"));
+await fs.copyFile(watchdogReadyMarker, path.join(normalWatchdogDir, "ready.marker"));
 const initialQuiescence = await waitForPowerPointQuiescence();
 await writeJson(path.join(output, "powerpoint-quiescence.json"), initialQuiescence);
 if (!initialQuiescence.valid) {
@@ -378,6 +492,8 @@ try {
     timeoutStartMarkerPath: timeoutProbeReadyPath,
     timeoutStartDeadlineMs: 120_000,
     ownershipRecordPath: timeoutProbeRecordPath,
+    powerPointRuntimeReceiptPath: path.join(output, "powerpoint-runtime", "timeout-probe.json"),
+    expectedPowerPointRuntimeProcessCount: 1,
   });
 } catch (error) {
   timeoutProbeError = error.message;
@@ -421,7 +537,7 @@ const mutationRun = await runChecked("powershell", [
   "-ReportJson", mutationReportPath,
   "-OwnershipRecordJson", mutationOwnershipPath,
   "-WorkerIntentJson", mutationIntentPath,
-], { timeoutMs: 600_000, ownershipRecordPath: mutationOwnershipPath });
+], { timeoutMs: 600_000, ownershipRecordPath: mutationOwnershipPath, powerPointRuntimeReceiptPath: path.join(output, "powerpoint-runtime", "native-mutation.json"), expectedPowerPointRuntimeProcessCount: 1 });
 workerIntents.push({ stage: "native-mutation", ...await validateWorkerIntent(mutationIntentPath, "semantic-native-object-mutation", mutationOwnershipPath, mutationRun.workerIdentity) });
 
 const interStagePowerPointQuiescence = [];
@@ -474,7 +590,7 @@ for (const deck of decks) {
     "-ReportJson", renderReportPath,
     "-OwnershipRecordJson", renderOwnershipPath,
     "-WorkerIntentJson", renderIntentPath,
-  ], { timeoutMs: 600_000, ownershipRecordPath: renderOwnershipPath });
+  ], { timeoutMs: 600_000, ownershipRecordPath: renderOwnershipPath, powerPointRuntimeReceiptPath: path.join(output, "powerpoint-runtime", `render-${deck.id}.json`), expectedPowerPointRuntimeProcessCount: 5 });
   workerIntents.push({ stage: `render-${deck.id}`, ...await validateWorkerIntent(renderIntentPath, "isolated-powerpoint-render", renderOwnershipPath, renderRun.workerIdentity) });
   const quiescence = await waitForPowerPointQuiescence();
   interStagePowerPointQuiescence.push({ stage: `after-render-${deck.id}`, ...quiescence });
@@ -625,6 +741,99 @@ for (const deck of decks) {
   overflowChecks.push({ target: deck.id, valid: report.valid, inputSha256: report.inputSha256, reportSha256: await sha256(reportPath) });
 }
 
+await writeJson(path.join(output, "powerpoint-interstage-quiescence.json"), {
+  schemaVersion: "slidewright-powerpoint-quiescence-checkpoints/v1",
+  valid: interStagePowerPointQuiescence.length === 7 && interStagePowerPointQuiescence.every((item) => item.valid),
+  checkpoints: interStagePowerPointQuiescence,
+});
+
+const finalPowerPointQuiescence = await waitForPowerPointQuiescence();
+if (!finalPowerPointQuiescence.valid || activeWorkers.size !== 0) throw new Error("C18 final process quiescence failed before watchdog completion.");
+const finalWatchdogIdentity = captureWorkerIdentity(runnerWatchdog.processId);
+const exactWatchdogIdentityPreserved = Boolean(finalWatchdogIdentity
+  && finalWatchdogIdentity.processId === runnerWatchdog.processId
+  && finalWatchdogIdentity.processName === runnerWatchdog.processName
+  && finalWatchdogIdentity.processStartTime === runnerWatchdog.processStartTime);
+let normalRecoveryReportAbsent = false;
+try { await fs.access(watchdogRecoveryReport); } catch (error) { if (error?.code === "ENOENT") normalRecoveryReportAbsent = true; else throw error; }
+if (!exactWatchdogIdentityPreserved || !normalRecoveryReportAbsent) throw new Error("C18 normal watchdog identity or recovery state drifted before completion.");
+await fs.writeFile(watchdogCompletionMarker, "complete\n", "utf8");
+await fs.copyFile(watchdogCompletionMarker, path.join(normalWatchdogDir, "completion.marker"));
+const watchdogExit = await waitForExactIdentityExit(runnerWatchdog, 15_000);
+let recoveryReportAbsentAfterExit = false;
+try { await fs.access(watchdogRecoveryReport); } catch (error) { if (error?.code === "ENOENT") recoveryReportAbsentAfterExit = true; else throw error; }
+if (!watchdogExit.valid || !recoveryReportAbsentAfterExit) throw new Error("C18 normal watchdog did not exit cleanly without a recovery report.");
+try { await fs.copyFile(watchdogDiagnosticLog, path.join(normalWatchdogDir, "diagnostic.log")); }
+catch (error) { if (error?.code === "ENOENT") await fs.writeFile(path.join(normalWatchdogDir, "diagnostic.log"), "", "utf8"); else throw error; }
+const normalIdentityReceipt = await readJson(path.join(normalWatchdogDir, "identity-receipt.json"));
+const normalReadyText = (await fs.readFile(path.join(normalWatchdogDir, "ready.marker"), "utf8")).replace(/^\uFEFF/u, "").trim();
+const normalCompletionText = await fs.readFile(path.join(normalWatchdogDir, "completion.marker"), "utf8");
+const normalWatchdog = {
+  schemaVersion: "slidewright-watchdog-normal-run/v1",
+  valid: runnerWatchdog.enabled === true
+    && exactWatchdogIdentityPreserved
+    && normalRecoveryReportAbsent
+    && watchdogExit.valid
+    && recoveryReportAbsentAfterExit
+    && finalPowerPointQuiescence.valid
+    && activeWorkers.size === 0
+    && normalIdentityReceipt.schemaVersion === "slidewright-runner-watchdog-identity/v1"
+    && normalIdentityReceipt.processId === runnerWatchdog.processId
+    && normalIdentityReceipt.processName === runnerWatchdog.processName
+    && normalIdentityReceipt.processStartTime === runnerWatchdog.processStartTime
+    && await sha256File(path.join(normalWatchdogDir, "identity-receipt.json")) === runnerWatchdog.identityReceiptSha256
+    && await sha256File(path.join(normalWatchdogDir, "ready.marker")) === runnerWatchdog.readyMarkerSha256
+    && normalReadyText === "ready"
+    && normalCompletionText === "complete\n",
+  startup: runnerWatchdog,
+  finalIdentity: finalWatchdogIdentity,
+  exactIdentityPreservedAtFinalization: exactWatchdogIdentityPreserved,
+  watchdogExit,
+  watchdogProcessAbsentAfterCompletion: watchdogExit.exactIdentityAbsent,
+  finalPowerPointQuiescence,
+  activeWorkerCount: activeWorkers.size,
+  recoveryReportAbsent: normalRecoveryReportAbsent,
+  recoveryReportAbsentAfterExit,
+  identityReceiptExact: normalIdentityReceipt.schemaVersion === "slidewright-runner-watchdog-identity/v1"
+    && normalIdentityReceipt.processId === runnerWatchdog.processId
+    && normalIdentityReceipt.processName === runnerWatchdog.processName
+    && normalIdentityReceipt.processStartTime === runnerWatchdog.processStartTime,
+  readyMarkerExact: normalReadyText === "ready",
+  completionMarkerExact: normalCompletionText === "complete\n",
+  identityReceiptSha256: await sha256File(path.join(normalWatchdogDir, "identity-receipt.json")),
+  readyMarkerSha256: await sha256File(path.join(normalWatchdogDir, "ready.marker")),
+  completionMarkerSha256: await sha256File(path.join(normalWatchdogDir, "completion.marker")),
+  diagnosticLogSha256: await sha256File(path.join(normalWatchdogDir, "diagnostic.log")),
+};
+await writeJson(path.join(normalWatchdogDir, "summary.json"), normalWatchdog);
+validateNormalWatchdogEvidence({
+  summary: normalWatchdog,
+  identityReceipt: normalIdentityReceipt,
+  readyText: await fs.readFile(path.join(normalWatchdogDir, "ready.marker"), "utf8"),
+  completionText: normalCompletionText,
+  diagnosticSha256: normalWatchdog.diagnosticLogSha256,
+});
+if (!normalWatchdog.valid) throw new Error("C18 normal watchdog completion proof is invalid.");
+
+await writeJson(path.join(output, "command-log.json"), {
+  schemaVersion: "slidewright-command-receipts/v1",
+  logicalCommand: "npm run semantic-mutation",
+  commands: commandReceipts,
+});
+const gitAfter = captureCleanGit(root);
+const implementationAfter = await captureSemanticMutationImplementation(root);
+if (gitAfter.commit !== gitBefore.commit || canonicalHash(implementationAfter) !== canonicalHash(implementationBefore)) {
+  throw new Error("C18 Git commit or implementation closure changed during the run.");
+}
+const runtimeBindings = await captureSemanticMutationRuntime({ root, python, slidesTest });
+const receipts = await collectReceiptTree(output);
+const powerPointRuntimeReceipts = [
+  { stage: "timeout-probe", path: "powerpoint-runtime/timeout-probe.json" },
+  { stage: "native-mutation", path: "powerpoint-runtime/native-mutation.json" },
+  ...decks.map((deck) => ({ stage: `render-${deck.id}`, path: `powerpoint-runtime/render-${deck.id}.json` })),
+];
+for (const item of powerPointRuntimeReceipts) item.sha256 = await sha256(path.join(output, ...item.path.split("/")));
+
 const sourceBindingReport = await readJson(path.join(output, "source-binding.json"));
 const currentAtFinalize = await readJson(path.join(semanticSurfaceOutput, "current.json"));
 if (currentAtFinalize.scorecardHash !== sourceBinding.current.scorecardHash
@@ -632,17 +841,26 @@ if (currentAtFinalize.scorecardHash !== sourceBinding.current.scorecardHash
   throw new Error("C08 current pointer changed during C18; refusing to publish evidence against a superseded baseline.");
 }
 const scorecard = {
-  schemaVersion: "slidewright-semantic-mutation-scorecard/v1",
+  schemaVersion: "slidewright-semantic-mutation-scorecard/v2",
   valid: false,
+  provenance: {
+    git: { commit: gitBefore.commit, cleanBefore: gitBefore.clean, cleanAfter: gitAfter.clean, sameCommit: gitBefore.commit === gitAfter.commit },
+    logicalCommand: "npm run semantic-mutation",
+    implementation: implementationBefore,
+    runtime: runtimeBindings,
+  },
+  receipts,
   scope: mutationContract.scope,
   sourceBinding: sourceBindingReport,
   mutationContractSha256: await sha256(mutationContractPath),
   baselineContractSha256: sourceBinding.baselineContractSha256,
   baselinePptxSha256: copiedBaselineSha256,
-  runnerWatchdog,
+  watchdog: { normal: normalWatchdog },
   initialPowerPointQuiescence: initialQuiescence,
   interStagePowerPointQuiescence,
   timeoutCleanupControl,
+  powerPointRuntimeReceipts,
+  powerPointRuntimeReceiptsValid: powerPointRuntimeReceipts.length === 8 && powerPointRuntimeReceipts.every((item) => /^[a-f0-9]{64}$/u.test(item.sha256)),
   workerIntents,
   workerIntentsValid: workerIntents.length === 8 && workerIntents.every((item) => /^[a-f0-9]{64}$/u.test(item.sha256)),
   nativePowerPointMutation: {
@@ -698,11 +916,18 @@ const scorecard = {
 scorecard.valid = scorecard.sourceBinding.valid
   && scorecard.sourceBinding.semanticSurfaceScorecardHash === sourceBinding.current.scorecardHash
   && scorecard.sourceBinding.baselineSourcePptxSha256 === scorecard.baselinePptxSha256
-  && (process.platform !== "win32" || scorecard.runnerWatchdog.enabled)
+  && scorecard.provenance.git.cleanBefore
+  && scorecard.provenance.git.cleanAfter
+  && scorecard.provenance.git.sameCommit
+  && scorecard.provenance.implementation.sha256 === implementationAfter.sha256
+  && scorecard.receipts.files.length > 0
+  && /^[a-f0-9]{64}$/u.test(scorecard.receipts.treeSha256)
+  && (process.platform !== "win32" || scorecard.watchdog.normal.valid)
   && scorecard.initialPowerPointQuiescence.valid
   && scorecard.interStagePowerPointQuiescence.length === 7
   && scorecard.interStagePowerPointQuiescence.every((item) => item.valid)
   && scorecard.timeoutCleanupControl.valid
+  && scorecard.powerPointRuntimeReceiptsValid
   && scorecard.workerIntentsValid
   && scorecard.nativePowerPointMutation.valid
   && scorecard.nativePowerPointMutation.automationProcessOwned
@@ -728,6 +953,11 @@ scorecard.valid = scorecard.sourceBinding.valid
 scorecard.scorecardHash = canonicalHash(scorecard);
 await writeJson(path.join(output, "scorecard.json"), scorecard);
 if (!scorecard.valid) throw new Error("C18 semantic-mutation scorecard is incomplete.");
-await publishVersionedEvidence(output, publishedOutput, scorecard.scorecardHash);
-await fs.writeFile(watchdogCompletionMarker, "complete\n", "utf8");
+await verifySemanticMutationEvidence({ root, runDirectory: output, python, slidesTest, requireSourceCurrent: true });
+await publishSemanticMutationEvidence({
+  staging: output,
+  published: publishedOutput,
+  scorecardHash: scorecard.scorecardHash,
+  verify: (candidate) => verifySemanticMutationEvidence({ root, runDirectory: candidate, python, slidesTest, requireSourceCurrent: true }),
+});
 process.stdout.write(`C18 semantic-mutation benchmark passed with scorecard ${scorecard.scorecardHash}\n`);

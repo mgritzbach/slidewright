@@ -1,8 +1,28 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { exactPathInventoryMatches } from "../scripts/lib/semantic-surface-evidence.mjs";
+import {
+  SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS,
+  allTrue,
+  allTrueExact,
+  expectedMutationCommandPlan,
+  expectedSemanticMutationReceiptPaths,
+  validateMutationCaseState,
+  validateNativeReadability,
+  validateCommandReceiptBytes,
+  validateRenderMeasurementChart,
+  publishSemanticMutationEvidence,
+  readRasterDimensions,
+  validateNegativeSummaryHeader,
+  validateOwnedPowerPointRuntimeReceipt,
+  validateSemanticMutationCommandReceipts,
+  validateSemanticMutationQuiescenceEvidence,
+} from "../scripts/lib/semantic-mutation-evidence.mjs";
 
 const contractPath = new URL("../fixtures/semantic-surface/v1/mutation-contract.json", import.meta.url);
 const mutationWorkerPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_semantic_mutation.ps1", import.meta.url);
@@ -10,6 +30,9 @@ const mutationAuditPath = new URL("../plugins/slidewright/skills/slidewright/scr
 const negativeControlsPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/semantic_mutation_negative_controls.py", import.meta.url);
 const runnerPath = new URL("../scripts/run-semantic-mutation-benchmark.mjs", import.meta.url);
 const reviewFinalizerPath = new URL("../scripts/finalize-semantic-mutation-review.mjs", import.meta.url);
+const evidencePath = new URL("../scripts/lib/semantic-mutation-evidence.mjs", import.meta.url);
+const verifierPath = new URL("../scripts/verify-semantic-mutation-evidence.mjs", import.meta.url);
+const reviewVerifierPath = new URL("../scripts/verify-semantic-mutation-review.mjs", import.meta.url);
 
 async function readContract() {
   return JSON.parse(await fs.readFile(contractPath, "utf8"));
@@ -230,12 +253,295 @@ test("C18 runner renders before measuring, auditing, and destructive controls", 
   assert.match(source, /verifySemanticSurfaceEvidence/);
 });
 
+test("C18 receipt inventory is exact and rejects additions or removals", async () => {
+  const contract = await readContract();
+  const paths = expectedSemanticMutationReceiptPaths(contract);
+  assert.equal(paths.length, new Set(paths).size);
+  for (const required of [
+    "command-log.json",
+    "powerpoint-interstage-quiescence.json",
+    "powerpoint-runtime/native-mutation.json",
+    "watchdog/normal/identity-receipt.json",
+    "watchdog/normal/ready.marker",
+    "watchdog/normal/completion.marker",
+    "watchdog/normal/diagnostic.log",
+    "watchdog/normal/summary.json",
+    "mutations/horizontal-chart-data.pptx",
+    "renders/connector-style-geometry/slide-04.png",
+    "negative-controls/table-cell-overflow/audit.json",
+  ]) assert.ok(paths.includes(required), required);
+  assert.equal(exactPathInventoryMatches(paths, paths), true);
+  assert.equal(exactPathInventoryMatches(paths.slice(1), paths), false);
+  assert.equal(exactPathInventoryMatches([...paths, "undeclared.txt"], paths), false);
+});
+
+test("C18 independently derives PNG and JPEG pixel dimensions", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c18-images-"));
+  try {
+    const png = Buffer.alloc(24);
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(png, 0);
+    png.writeUInt32BE(1600, 16); png.writeUInt32BE(900, 20);
+    const jpeg = Buffer.alloc(21);
+    jpeg[0] = 0xff; jpeg[1] = 0xd8; jpeg[2] = 0xff; jpeg[3] = 0xc0; jpeg.writeUInt16BE(17, 4); jpeg[6] = 8; jpeg.writeUInt16BE(900, 7); jpeg.writeUInt16BE(1600, 9);
+    const pngPath = path.join(temporary, "slide.png");
+    const jpegPath = path.join(temporary, "slide.jpg");
+    await Promise.all([fs.writeFile(pngPath, png), fs.writeFile(jpegPath, jpeg)]);
+    assert.deepEqual(await readRasterDimensions(pngPath), { format: "png", width: 1600, height: 900 });
+    assert.deepEqual(await readRasterDimensions(jpegPath), { format: "jpeg", width: 1600, height: 900 });
+    png.writeUInt32BE(899, 20); await fs.writeFile(pngPath, png);
+    assert.deepEqual(await readRasterDimensions(pngPath), { format: "png", width: 1600, height: 899 });
+  } finally {
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
+});
+
+function receipt(command, args, { timedOut = false, exitCode = 0 } = {}) {
+  return { command, args, exitCode, signal: null, timedOut, stdoutSha256: "a".repeat(64), stderrSha256: "b".repeat(64) };
+}
+
+function pollReceipt() {
+  return receipt("powershell", ["-NoProfile", "-Command", "$p=Get-Process POWERPNT -ErrorAction SilentlyContinue; if($p){$p.Id -join ','}; exit 0"]);
+}
+
+test("C18 command receipts bind exact argv, staging path, and nine quiescence gates", async () => {
+  const contract = await readContract();
+  const output = "<repo>/outputs/semantic-mutation/runs/.staging-123-456";
+  const plan = expectedMutationCommandPlan(output, "<external>/python.exe", contract);
+  const commands = [pollReceipt(), pollReceipt()];
+  commands.push(receipt(plan[0].command, plan[0].args, { timedOut: true, exitCode: null }));
+  commands.push(receipt(plan[1].command, plan[1].args));
+  commands.push(pollReceipt(), pollReceipt());
+  for (const descriptor of plan.slice(2, 8)) {
+    commands.push(receipt(descriptor.command, descriptor.args), pollReceipt(), pollReceipt());
+  }
+  for (const descriptor of plan.slice(8)) commands.push(receipt(descriptor.command, descriptor.args));
+  commands.push(pollReceipt(), pollReceipt());
+  const log = { schemaVersion: "slidewright-command-receipts/v1", logicalCommand: "npm run semantic-mutation", commands };
+  assert.equal(validateSemanticMutationCommandReceipts(log, contract), true);
+  const extraFlag = structuredClone(log);
+  const mutation = extraFlag.commands.find((item) => item.args.some((arg) => arg.endsWith("/powerpoint_semantic_mutation.ps1")));
+  mutation.args.push("--evil-unexpected");
+  assert.throws(() => validateSemanticMutationCommandReceipts(extraFlag, contract), /unexpected command or argv sequence/u);
+  const missingPoll = structuredClone(log);
+  missingPoll.commands.splice(0, 1);
+  assert.throws(() => validateSemanticMutationCommandReceipts(missingPoll, contract), /nine two-poll|sequence drifted/u);
+  const wrongPath = structuredClone(log);
+  const timeout = wrongPath.commands.find((item) => item.args.some((arg) => arg.endsWith("/powerpoint_timeout_probe.ps1")));
+  timeout.args[timeout.args.indexOf("-OwnershipRecordJson") + 1] = `${output}/wrong.json`;
+  assert.throws(() => validateSemanticMutationCommandReceipts(wrongPath, contract), /exact staging output path/u);
+});
+
+test("C18 receipt inventory binds raw output bytes for every command", async () => {
+  const contract = await readContract();
+  const paths = expectedSemanticMutationReceiptPaths(contract, 3);
+  for (let index = 1; index <= 3; index += 1) {
+    const sequence = String(index).padStart(4, "0");
+    assert.ok(paths.includes(`command-receipts/${sequence}.stdout.txt`));
+    assert.ok(paths.includes(`command-receipts/${sequence}.stderr.txt`));
+  }
+  assert.equal(paths.filter((item) => item.startsWith("command-receipts/")).length, 6);
+});
+
+test("C18 raw command receipts and rendered mark measurements fail closed", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c18-receipts-"));
+  try {
+    const stdoutPath = "command-receipts/0001.stdout.txt";
+    const stderrPath = "command-receipts/0001.stderr.txt";
+    await fs.mkdir(path.join(temporary, "command-receipts"));
+    await Promise.all([fs.writeFile(path.join(temporary, ...stdoutPath.split("/")), "clear\n"), fs.writeFile(path.join(temporary, ...stderrPath.split("/")), "")]);
+    const hash = (value) => crypto.createHash("sha256").update(value).digest("hex");
+    const log = { commands: [{ command: "python", args: ["tool.py"], stdoutPath, stderrPath, stdoutSha256: hash("clear\n"), stderrSha256: hash("") }] };
+    const raw = await validateCommandReceiptBytes((relative) => path.join(temporary, ...relative.split("/")), log);
+    assert.equal(raw[0].stdout, "clear\n");
+    const pollArgs = ["-NoProfile", "-Command", "$p=Get-Process POWERPNT -ErrorAction SilentlyContinue; if($p){$p.Id -join ','}; exit 0"];
+    for (let index = 2; index <= 4; index += 1) {
+      const sequence = String(index).padStart(4, "0");
+      const pollStdout = index === 2 ? "1234\n" : "";
+      const pollStdoutPath = `command-receipts/${sequence}.stdout.txt`;
+      const pollStderrPath = `command-receipts/${sequence}.stderr.txt`;
+      await Promise.all([fs.writeFile(path.join(temporary, ...pollStdoutPath.split("/")), pollStdout), fs.writeFile(path.join(temporary, ...pollStderrPath.split("/")), "")]);
+      log.commands.push({ command: "powershell", args: pollArgs, stdoutPath: pollStdoutPath, stderrPath: pollStderrPath, stdoutSha256: hash(pollStdout), stderrSha256: hash("") });
+    }
+    await validateCommandReceiptBytes((relative) => path.join(temporary, ...relative.split("/")), log);
+    await fs.writeFile(path.join(temporary, ...stdoutPath.split("/")), "tampered\n");
+    await assert.rejects(() => validateCommandReceiptBytes((relative) => path.join(temporary, ...relative.split("/")), log), /raw-output bytes drifted/u);
+  } finally {
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
+  const rules = { minimumMarkThicknessPixels: 8 };
+  const valid = { framePixels: { left: 0, top: 0, right: 200, bottom: 100 }, expectedMarkCount: 2, detectedMarkCount: 2, minimumMarkThicknessPixels: 8, labelsDetected: true, labelPresenceProbeRegions: [{ left: 10, top: 10, right: 30, bottom: 30 }, { left: 40, top: 10, right: 60, bottom: 30 }], labelDarkPixelCounts: [1, 2] };
+  assert.equal(validateRenderMeasurementChart(valid, rules, "case"), true);
+  assert.throws(() => validateRenderMeasurementChart({ ...valid, expectedMarkCount: 0, detectedMarkCount: 0, labelPresenceProbeRegions: [], labelDarkPixelCounts: [] }, rules, "case"), /measurement is incomplete/u);
+  assert.throws(() => validateRenderMeasurementChart({ ...valid, minimumMarkThicknessPixels: 7 }, rules, "case"), /measurement is incomplete/u);
+  const outside = structuredClone(valid); outside.labelPresenceProbeRegions[1].right = 220;
+  assert.throws(() => validateRenderMeasurementChart(outside, rules, "case", { width: 200, height: 100, expectedMarkCount: 2 }), /escaped its frame/u);
+  const overlap = structuredClone(valid); overlap.labelPresenceProbeRegions[1] = { left: 20, top: 20, right: 50, bottom: 40 };
+  assert.throws(() => validateRenderMeasurementChart(overlap, rules, "case"), /probes overlap/u);
+});
+
+test("C18 verifier rejects empty check maps and binds exact operation states", () => {
+  assert.equal(allTrue({}), false);
+  assert.equal(allTrue({ a: true, b: true }), true);
+  assert.equal(allTrue({ a: true, b: false }), false);
+  assert.equal(allTrueExact({ a: true }, ["a"]), true);
+  assert.equal(allTrueExact({ madeUp: true }, ["a"]), false);
+  const cases = [
+    [{ id: "chart", operation: "replace-chart-data", expected: { categories: ["A"], series: [{ name: "S", values: [2] }] } }, { id: "chart", afterMutation: { name: "S", categories: ["A"], values: [2] }, afterSaveReopen: { name: "S", categories: ["A"], values: [2] } }],
+    [{ id: "table", operation: "replace-table-cell", cell: { before: "Exact", after: "Verified" } }, { id: "table", before: "Exact", afterMutation: "Verified", afterSaveReopen: "Verified" }],
+    [{ id: "diagram", operation: "move-diagram-node", deltaPoints: { x: 0, y: 24 } }, { id: "diagram", before: { left: 10, top: 20 }, afterMutation: { left: 10, top: 44 }, afterSaveReopen: { left: 10, top: 44 } }],
+    [{ id: "connector", operation: "edit-connector-style", expected: { weightPoints: 3, dashStyle: 4 }, attachedEndpoints: { from: "A", to: "B" } }, { id: "connector", afterMutation: { weightPoints: 3, dashStyle: 4, from: "A", to: "B" }, afterSaveReopen: { weightPoints: 3, dashStyle: 4, from: "A", to: "B" } }],
+  ];
+  for (const [mutationCase, result] of cases) {
+    assert.equal(validateMutationCaseState(result, mutationCase), true);
+    const broken = structuredClone(result);
+    broken.afterSaveReopen = null;
+    assert.throws(() => validateMutationCaseState(broken, mutationCase), /mutation state drifted/u);
+  }
+});
+
+test("C18 publisher restores prior pointers when post-publication verification fails", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c18-publish-"));
+  try {
+    const published = path.join(temporary, "published");
+    const staging = path.join(temporary, "staging");
+    await fs.mkdir(published, { recursive: true });
+    await fs.mkdir(staging, { recursive: true });
+    const priorCurrent = "prior-current\n";
+    const priorScorecard = "prior-scorecard\n";
+    await Promise.all([fs.writeFile(path.join(published, "current.json"), priorCurrent), fs.writeFile(path.join(published, "scorecard.json"), priorScorecard)]);
+    await fs.writeFile(path.join(staging, "scorecard.json"), JSON.stringify({ scorecardHash: "new-run" }));
+    let calls = 0;
+    await assert.rejects(() => publishSemanticMutationEvidence({ staging, published, scorecardHash: "new-run", verify: async () => { calls += 1; if (calls === 3) throw new Error("post-pointer failure"); } }), /post-pointer failure/u);
+    assert.equal(await fs.readFile(path.join(published, "current.json"), "utf8"), priorCurrent);
+    assert.equal(await fs.readFile(path.join(published, "scorecard.json"), "utf8"), priorScorecard);
+  } finally {
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test("C18 verifier rederives native chart labels and table cells from the contracts", () => {
+  const baseline = { slides: [
+    { index: 2, charts: [
+      { name: "bar", categories: ["A"], series: [{ name: "S", values: [1] }] },
+      { name: "column", categories: ["B"], series: [{ name: "T", values: [3] }] },
+    ] },
+    { index: 3, table: { name: "table", rows: 1, columns: 1, values: [["Exact"]] } },
+  ] };
+  const rules = {
+    charts: { minimumFramePoints: { width: 240, height: 160 }, maximumCategories: 12, maximumSeries: 6, minimumLabelFontPoints: 12 },
+    tables: { minimumCellFontPoints: 14 },
+  };
+  const mutationCase = { id: "chart", operation: "replace-chart-data", target: "bar", expected: { series: [{ values: [2] }] } };
+  const chart = (name, text) => ({ name, widthPoints: 300, heightPoints: 200, categoryCount: 1, seriesCount: 1, categoryAxisFontPoints: 12, valueAxisFontPoints: 12, dataLabelFontPoints: 12, dataLabels: [{ index: 1, text, leftPoints: 10, topPoints: 10, widthPoints: 20, heightPoints: 10 }] });
+  const result = { readability: {
+    charts: [chart("bar", "2"), chart("column", "3")],
+    table: { name: "table", rows: 1, columns: 1, cells: [{ row: 1, column: 1, text: "Exact", fontPoints: 14, marginLeftPoints: 5, marginRightPoints: 5, marginTopPoints: 4, marginBottomPoints: 4, fits: true }] },
+  } };
+  assert.equal(validateNativeReadability(result, mutationCase, baseline, rules), true);
+  const wrongLabel = structuredClone(result); wrongLabel.readability.charts[0].dataLabels[0].text = "999";
+  assert.throws(() => validateNativeReadability(wrongLabel, mutationCase, baseline, rules), /label bounds or text drifted/u);
+  const wrongMargin = structuredClone(result); wrongMargin.readability.table.cells[0].marginRightPoints = 6;
+  assert.throws(() => validateNativeReadability(wrongMargin, mutationCase, baseline, rules), /table cell readability drifted/u);
+});
+
+test("C18 negative controls have exact case and intended-code mappings", async () => {
+  const contract = await readContract();
+  assert.deepEqual(Object.keys(SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS), contract.negativeControls);
+  assert.deepEqual(SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS["stale-baseline-hash"], { caseId: "horizontal-chart-data", code: "SM001" });
+  assert.deepEqual(SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS["table-cell-overflow"], { caseId: "table-cell-edit", code: "SM008" });
+  assert.deepEqual(SEMANTIC_MUTATION_NEGATIVE_EXPECTATIONS["connector-detach"], { caseId: "connector-style-geometry", code: "SM006" });
+});
+
+test("C18 negative summary rejects version drift and invalid positive audits", () => {
+  const contract = { cases: [{ id: "case" }], negativeControls: ["control"] };
+  const valid = {
+    schemaVersion: "slidewright-semantic-mutation-negative-controls/v1",
+    version: "semantic-mutation-negative-controls-v1",
+    valid: true,
+    baselineValid: true,
+    positiveAudits: [{ caseId: "case", valid: true }],
+    controls: [{ id: "control" }],
+  };
+  assert.equal(validateNegativeSummaryHeader(valid, contract), true);
+  assert.throws(() => validateNegativeSummaryHeader({ ...valid, version: "forged" }, contract), /inventory drifted/u);
+  const invalidPositive = structuredClone(valid); invalidPositive.positiveAudits[0].valid = false;
+  assert.throws(() => validateNegativeSummaryHeader(invalidPositive, contract), /inventory drifted/u);
+});
+
+test("C18 runtime receipts bind every changing render-session identity in order", () => {
+  const centralRuntime = { path: path.resolve("powerpoint.exe"), sha256: "f".repeat(64) };
+  const processes = Array.from({ length: 5 }, (_, index) => ({
+    processId: 100 + index,
+    processName: "POWERPNT",
+    processStartTime: `2026-07-17T00:00:0${index}.0000000Z`,
+    executablePath: centralRuntime.path,
+    executableSha256: centralRuntime.sha256,
+  }));
+  const receipt = { schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes };
+  const ownership = { processId: 104, processName: "POWERPNT", processStartTime: processes[4].processStartTime };
+  const sessions = processes.map((item) => ({ processId: item.processId, processStartTime: item.processStartTime }));
+  assert.equal(validateOwnedPowerPointRuntimeReceipt({ receipt, ownership, centralRuntime, expectedProcessCount: 5, sessions, stage: "render" }), true);
+  assert.throws(() => validateOwnedPowerPointRuntimeReceipt({ receipt: { ...receipt, processes: processes.slice(1) }, ownership, centralRuntime, expectedProcessCount: 5, sessions, stage: "render" }), /runtime receipt drifted/u);
+  const reordered = [...sessions]; [reordered[0], reordered[1]] = [reordered[1], reordered[0]];
+  assert.throws(() => validateOwnedPowerPointRuntimeReceipt({ receipt, ownership, centralRuntime, expectedProcessCount: 5, sessions: reordered, stage: "render" }), /sequence drifted/u);
+});
+
+test("C18 quiescence validator binds seven ordered stages independently of C08", async () => {
+  const contract = await readContract();
+  const clear = { valid: true, waitedMs: 0, polls: 2, reason: "two-consecutive-clear-polls" };
+  const stages = ["after-native-mutation", ...contract.visualReview.requiredDecks.map((deck) => `after-render-${deck}`)];
+  const checkpoints = stages.map((stage) => ({ stage, ...clear }));
+  const valid = { initial: clear, interStage: { schemaVersion: "slidewright-powerpoint-quiescence-checkpoints/v1", valid: true, checkpoints }, scorecardInitial: clear, scorecardInterStage: checkpoints, contract, platform: "win32" };
+  assert.equal(validateSemanticMutationQuiescenceEvidence(valid), true);
+  assert.throws(() => validateSemanticMutationQuiescenceEvidence({ ...valid, interStage: { ...valid.interStage, checkpoints: checkpoints.slice(1) } }), /receipt is invalid/u);
+  const reordered = checkpoints.map((item, index) => index === 1 ? { ...item, stage: "forged" } : item);
+  assert.throws(() => validateSemanticMutationQuiescenceEvidence({ ...valid, interStage: { ...valid.interStage, checkpoints: reordered }, scorecardInterStage: reordered }), /sequence drifted/u);
+});
+
+test("C18 runner verifies immutable evidence before advancing current", async () => {
+  const [runner, evidence, verifier] = await Promise.all([fs.readFile(runnerPath, "utf8"), fs.readFile(evidencePath, "utf8"), fs.readFile(verifierPath, "utf8")]);
+  assert.match(runner, /slidewright-semantic-mutation-scorecard\/v2/);
+  assert.match(runner, /captureCleanGit/);
+  assert.match(runner, /captureSemanticMutationImplementation/);
+  assert.match(runner, /captureSemanticMutationRuntime/);
+  assert.match(runner, /collectReceiptTree/);
+  assert.equal((runner.match(/verifySemanticMutationEvidence\(/gu) ?? []).length, 2);
+  assert.match(runner, /publishSemanticMutationEvidence/);
+  assert.doesNotMatch(runner, /publishVersionedEvidence/);
+  const completion = runner.indexOf('fs.writeFile(watchdogCompletionMarker, "complete\\n"');
+  const receipts = runner.indexOf("collectReceiptTree(output)");
+  const scorecard = runner.indexOf('schemaVersion: "slidewright-semantic-mutation-scorecard/v2"');
+  const publish = runner.indexOf("publishSemanticMutationEvidence({");
+  assert.ok(completion >= 0 && completion < receipts && receipts < scorecard && scorecard < publish);
+  for (const proof of ["implementation closure drifted", "Git provenance drifted", "receipt inventory drifted", "command receipt sequence drifted", "watchdog marker hashes drifted", "negative-control scorecard derivation drifted"]) {
+    assert.match(evidence, new RegExp(proof));
+  }
+  assert.match(runner, /requireSourceCurrent: true/);
+  assert.match(evidence, /validateCommandReceiptBytes/);
+  assert.match(evidence, /watchdogProcessAbsentAfterCompletion/);
+  assert.match(evidence, /timeout: 120_000/);
+  assert.match(evidence, /slidewright-owned-powerpoint-runtime\/v1/);
+  assert.match(verifier, /verifySemanticMutationEvidence/);
+  assert.match(verifier, /current\.json/);
+  assert.match(verifier, /escaped its immutable run directory/);
+  assert.match(verifier, /requireCurrentGit: false, requireSourceCurrent: false/);
+});
+
 test("C18 review finalizer binds all 24 full-size decisions to immutable render hashes", async () => {
-  const source = await fs.readFile(reviewFinalizerPath, "utf8");
+  const [source, verifier] = await Promise.all([fs.readFile(reviewFinalizerPath, "utf8"), fs.readFile(reviewVerifierPath, "utf8")]);
+  assert.match(source, /verifySemanticMutationEvidence/);
+  assert.match(source, /machineVerification/);
   assert.match(source, /expected\.length !== 24/);
   assert.match(source, /pngHash !== render\.sha256/);
   assert.match(source, /reviewHash !== render\.reviewSha256/);
   assert.match(source, /decision\.verdict/);
   assert.match(source, /current-review\.json/);
+  assert.ok((source.match(/verifySemanticMutationEvidence\(/gu) ?? []).length >= 2);
+  assert.ok((source.match(/requireCurrentGit: false, requireSourceCurrent: false/gu) ?? []).length >= 2);
+  assert.match(source, /verifySemanticMutationReview/);
+  assert.match(source, /current pointer changed before review publication/);
+  assert.match(source, /fs\.rm\(pointerPath/);
+  assert.match(source, /priorPointer/);
+  assert.match(verifier, /verifySemanticMutationReview/);
   assert.match(source, /Every persisted 1600x900 review image inspected individually at full size/);
 });

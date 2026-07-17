@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { verifySemanticMutationEvidence, verifySemanticMutationReview } from "./lib/semantic-mutation-evidence.mjs";
 
 const root = process.cwd();
 
@@ -46,6 +48,19 @@ async function writeAtomically(file, contents) {
   try { await fs.rename(temporary, file); } finally { await fs.rm(temporary, { force: true }); }
 }
 
+async function findPresentationTool(name) {
+  const cacheRoot = path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "plugins", "cache", "openai-primary-runtime", "presentations");
+  const versions = (await fs.readdir(cacheRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
+  for (const version of versions) {
+    const candidate = path.join(cacheRoot, version, "skills", "presentations", "container_tools", name);
+    try { await fs.access(candidate); return candidate; } catch { /* next */ }
+  }
+  throw new Error(`Could not locate presentation tool ${name}.`);
+}
+
 const options = parseArgs(process.argv.slice(2));
 const published = path.resolve(options.output ?? path.join(root, "outputs", "semantic-mutation"));
 const inputPath = path.resolve(options.input);
@@ -61,13 +76,17 @@ const scorecardPath = path.join(runDirectory, "scorecard.json");
 const scorecard = await readJson(scorecardPath);
 const scorecardForHash = { ...scorecard };
 delete scorecardForHash.scorecardHash;
-if (scorecard.schemaVersion !== "slidewright-semantic-mutation-scorecard/v1"
+if (scorecard.schemaVersion !== "slidewright-semantic-mutation-scorecard/v2"
   || scorecard.valid !== true
   || scorecard.reviewArtifactsReady !== true
   || scorecard.scorecardHash !== current.scorecardHash
   || canonicalHash(scorecardForHash) !== current.scorecardHash) {
   throw new Error("Semantic-mutation scorecard is not a valid hash-authenticated review source.");
 }
+const bundledPython = path.join(os.homedir(), ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", process.platform === "win32" ? "python.exe" : "bin/python");
+let python = process.env.SLIDEWRIGHT_PYTHON || "python";
+try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
+const machineVerification = await verifySemanticMutationEvidence({ root, runDirectory, python, slidesTest: await findPresentationTool("slides_test.py"), requireCurrentGit: false, requireSourceCurrent: false });
 
 const input = await readJson(inputPath);
 if (input.schemaVersion !== "slidewright-semantic-mutation-review-input/v1"
@@ -116,6 +135,7 @@ const review = {
   valid: slides.every((item) => item.verdict === "pass" && item.findings.length === 0),
   scorecardHash: current.scorecardHash,
   scorecardSha256: await sha256(scorecardPath),
+  machineVerification,
   reviewer: input.reviewer,
   inspectionMethod: "Every persisted 1600x900 review image inspected individually at full size; montage review does not qualify.",
   slides,
@@ -132,12 +152,27 @@ try {
   await writeAtomically(reviewPath, contents);
 }
 if (review.valid) {
-  await writeAtomically(path.join(published, "current-review.json"), `${JSON.stringify({
+  const pointerPath = path.join(published, "current-review.json");
+  let priorPointer = null;
+  try { priorPointer = await fs.readFile(pointerPath); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+  const currentAtPublish = await readJson(path.join(published, "current.json"));
+  if (canonicalHash(currentAtPublish) !== canonicalHash(current)) throw new Error("Semantic-mutation current pointer changed before review publication.");
+  await verifySemanticMutationEvidence({ root, runDirectory, python, slidesTest: await findPresentationTool("slides_test.py"), requireCurrentGit: false, requireSourceCurrent: false });
+  await writeAtomically(pointerPath, `${JSON.stringify({
     schemaVersion: "slidewright-semantic-mutation-current-review/v1",
     scorecardHash: current.scorecardHash,
     reviewHash: review.reviewHash,
     review: `reviews/${current.scorecardHash}/${review.reviewHash}.json`,
   }, null, 2)}\n`);
+  try {
+    const currentAfterPublish = await readJson(path.join(published, "current.json"));
+    if (canonicalHash(currentAfterPublish) !== canonicalHash(current)) throw new Error("Semantic-mutation current pointer changed during review publication.");
+    await verifySemanticMutationReview({ root, published, python, slidesTest: await findPresentationTool("slides_test.py") });
+  } catch (error) {
+    if (priorPointer === null) await fs.rm(pointerPath, { force: true });
+    else await writeAtomically(pointerPath, priorPointer);
+    throw error;
+  }
 }
 process.stdout.write(`${review.valid ? "C18 review passed" : "C18 review recorded failures"}: ${reviewPath}\n`);
 if (!review.valid) process.exitCode = 1;
