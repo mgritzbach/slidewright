@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "slidewright-repair-free-contract/v1",
+  "minimumFixtureCount": 26,
+  "categoryQuotas": {
+    "controlled-design": 6,
+    "copy-stress": 5,
+    "native-semantic": 5,
+    "source-bound-edit": 4,
+    "workflow-independent": 4,
+    "broad-baseline": 2
+  },
+  "openXml": {
+    "package": "DocumentFormat.OpenXml",
+    "version": "2.20.0",
+    "targetFramework": "net46",
+    "url": "https://api.nuget.org/v3-flatcontainer/documentformat.openxml/2.20.0/documentformat.openxml.2.20.0.nupkg",
+    "sha256": "053312e1a2a606dcc5bcfcff6cc9f37235a1f43b3745ac907283d3122ce9f768",
+    "assemblySha256": "379dfb830452b1b7476f1cd3f21423d9f99cf0c84bbf70b1611ba5e53d320f4b"
+  },
+  "fixtures": [
+    { "id": "invite-horizontal", "category": "controlled-design", "resolver": "generated-fidelity", "value": "invite-landscape" },
+    { "id": "invite-vertical", "category": "controlled-design", "resolver": "generated-fidelity", "value": "invite-portrait-graphic" },
+    { "id": "brochure-horizontal", "category": "controlled-design", "resolver": "generated-fidelity", "value": "brochure-landscape" },
+    { "id": "brochure-vertical", "category": "controlled-design", "resolver": "generated-fidelity", "value": "brochure-portrait-graphic" },
+    { "id": "website-desktop", "category": "controlled-design", "resolver": "generated-fidelity", "value": "website-landscape" },
+    { "id": "website-mobile", "category": "controlled-design", "resolver": "generated-fidelity", "value": "website-mobile-graphic" },
+
+    { "id": "copy-minus-25", "category": "copy-stress", "resolver": "current-run", "pointer": "outputs/copy-resilience/current.json", "value": "cases/minus-25/deck.pptx" },
+    { "id": "copy-plus-25", "category": "copy-stress", "resolver": "current-run", "pointer": "outputs/copy-resilience/current.json", "value": "cases/plus-25/deck.pptx" },
+    { "id": "copy-translation-de", "category": "copy-stress", "resolver": "current-run", "pointer": "outputs/copy-resilience/current.json", "value": "cases/translation-de/deck.pptx" },
+    { "id": "copy-dense-200", "category": "copy-stress", "resolver": "current-run", "pointer": "outputs/copy-resilience/current.json", "value": "cases/dense-200/deck.pptx" },
+    { "id": "copy-dense-400", "category": "copy-stress", "resolver": "current-run", "pointer": "outputs/copy-resilience/current.json", "value": "cases/dense-400/deck.pptx" },
+
+    { "id": "horizontal-chart-data", "category": "native-semantic", "resolver": "current-run", "pointer": "outputs/semantic-mutation/current.json", "value": "mutations/horizontal-chart-data.pptx" },
+    { "id": "vertical-chart-data", "category": "native-semantic", "resolver": "current-run", "pointer": "outputs/semantic-mutation/current.json", "value": "mutations/vertical-chart-data.pptx" },
+    { "id": "table-cell-edit", "category": "native-semantic", "resolver": "current-run", "pointer": "outputs/semantic-mutation/current.json", "value": "mutations/table-cell-edit.pptx" },
+    { "id": "diagram-node-move", "category": "native-semantic", "resolver": "current-run", "pointer": "outputs/semantic-mutation/current.json", "value": "mutations/diagram-node-move.pptx" },
+    { "id": "connector-style-geometry", "category": "native-semantic", "resolver": "current-run", "pointer": "outputs/semantic-mutation/current.json", "value": "mutations/connector-style-geometry.pptx" },
+
+    { "id": "template-edited", "category": "source-bound-edit", "resolver": "direct", "value": "outputs/template/slidewright-mit-template-edited.pptx" },
+    { "id": "design-profile-derived", "category": "source-bound-edit", "resolver": "direct", "value": "outputs/design-profile/derived.pptx" },
+    { "id": "feedback-contract-generated", "category": "source-bound-edit", "resolver": "direct", "value": "outputs/feedback-contract/slidewright-locate-event-feedback.pptx" },
+    { "id": "inherited-bullets-sanitized", "category": "source-bound-edit", "resolver": "direct", "value": "outputs/feedback-contract/inherited-bullets-sanitized.pptx" },
+
+    { "id": "ingestion-reconstruction", "category": "workflow-independent", "resolver": "direct", "value": "outputs/ingestion/reconstruction.pptx" },
+    { "id": "prompt-minimal-demo", "category": "workflow-independent", "resolver": "current-run", "pointer": "outputs/prompt-robustness/current.json", "value": "matrix/minimal-demo/repeat-1/deck.pptx" },
+    { "id": "prompt-minimal-decision", "category": "workflow-independent", "resolver": "current-run", "pointer": "outputs/prompt-robustness/current.json", "value": "matrix/minimal-decision/repeat-1/deck.pptx" },
+    { "id": "prompt-adversarial-literal-copy", "category": "workflow-independent", "resolver": "current-run", "pointer": "outputs/prompt-robustness/current.json", "value": "matrix/adversarial-literal-copy/repeat-1/deck.pptx" },
+
+    { "id": "fidelity-six-design-baseline", "category": "broad-baseline", "resolver": "direct", "value": "outputs/fidelity/slidewright-fidelity-benchmark.pptx" },
+    { "id": "semantic-surface-full", "category": "broad-baseline", "resolver": "current-run", "pointer": "outputs/semantic-surface/current.json", "value": "semantic-surface.pptx" }
+  ]
+}

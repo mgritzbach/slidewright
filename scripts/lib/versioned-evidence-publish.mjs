@@ -44,7 +44,7 @@ async function replaceFileAtomically(target, contents) {
   }
 }
 
-export async function publishVersionedEvidence(staging, published, scorecardHash, { currentSchemaVersion = "slidewright-semantic-current/v1" } = {}) {
+export async function publishVersionedEvidence(staging, published, scorecardHash, { currentSchemaVersion = "slidewright-semantic-current/v1", verifyFinal = null, currentExtra = null } = {}) {
   const runs = path.join(published, "runs");
   const finalRun = path.join(runs, scorecardHash);
   await fs.mkdir(runs, { recursive: true });
@@ -58,15 +58,25 @@ export async function publishVersionedEvidence(staging, published, scorecardHash
     await assertIdenticalTrees(staging, finalRun);
     await fs.rm(staging, { recursive: true, force: true });
   }
+  if (verifyFinal) await verifyFinal(finalRun);
   const current = {
     schemaVersion: currentSchemaVersion,
     scorecardHash,
     run: `runs/${scorecardHash}`,
+    ...(currentExtra ?? {}),
   };
-  await replaceFileAtomically(path.join(published, "current.json"), `${JSON.stringify(current, null, 2)}\n`);
-  await replaceFileAtomically(
-    path.join(published, "scorecard.json"),
-    await fs.readFile(path.join(finalRun, "scorecard.json"), "utf8"),
-  );
+  const scorecardTarget = path.join(published, "scorecard.json");
+  const priorScorecard = await fs.readFile(scorecardTarget, "utf8").catch((error) => error.code === "ENOENT" ? null : Promise.reject(error));
+  try {
+    await replaceFileAtomically(scorecardTarget, await fs.readFile(path.join(finalRun, "scorecard.json"), "utf8"));
+    // current.json is authoritative and advances last. A crash before this
+    // atomic rename leaves the prior run selected; a completed rename selects
+    // a run that has already passed verifyFinal.
+    await replaceFileAtomically(path.join(published, "current.json"), `${JSON.stringify(current, null, 2)}\n`);
+  } catch (error) {
+    if (priorScorecard === null) await fs.rm(scorecardTarget, { force: true });
+    else await replaceFileAtomically(scorecardTarget, priorScorecard);
+    throw error;
+  }
   return finalRun;
 }

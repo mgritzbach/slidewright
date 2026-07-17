@@ -100,6 +100,17 @@ npm run repair
 
 The command proves that missing fonts and content outside the bounded adaptive layouts or configured slide ceiling block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
 
+For the release-level repair-free gate on Windows with Microsoft PowerPoint installed, run:
+
+```powershell
+npm run repair-free
+npm run repair-free:verify
+```
+
+This deletes and regenerates the producer outputs for 26 byte-unique decks across standalone invite, brochure, website, copy-stress, native chart/table/diagram, template/edit, ingestion, prompt, and broad semantic families. Every snapshotted source and PowerPoint `SaveAs`/reopen output must independently pass ZIP CRC and OPC relationship/content-type closure, pinned `DocumentFormat.OpenXml` 2.20.0 schema validation, an isolated hidden PowerPoint process with alerts enabled, exact native text/run/paragraph/frame/shape/chart/table/group state, an exact-PID armed out-of-process visible-window/repair-signal watcher, global PowerPoint quiescence, and a content-loss-sensitive semantic inventory. The standalone verifier rehashes the complete evidence tree and implementation closure and reruns the package, SDK, and semantic audits. Thirteen destructive controls—including a real PowerPoint repair-dialog mutant, chart-label, hyperlink-target, and native-diagram content-loss mutants, plus a 13-case watcher/worker forgery matrix—must be rejected. Publication is content addressed and advances `current.json` only after final verification. The SDK package is downloaded only by this explicit command, pinned by both package and assembly SHA-256, disclosed in the scorecard, and never changes the renderer.
+
+`npm run repair-free:reuse` is a development-only diagnostic. It publishes under `outputs/repair-free/development/`, forces `releaseEvidence: false`, and cannot replace the release pointer or qualify C04.
+
 To run the two-phase geometric and readability defect matrix, including a real Microsoft PowerPoint text-bound check on Windows, run:
 
 ```powershell
