@@ -13,6 +13,7 @@ import {
   findAppServerPlugin,
   findCliPlugin,
   findSkill,
+  isPathInside,
 } from "../scripts/lib/install-evidence.mjs";
 import { sha256, stable } from "../scripts/public-evidence-lib.mjs";
 
@@ -91,6 +92,14 @@ test("C02 parsers find the exact plugin and skill across CLI, desktop, and IDE p
   assert.equal(findCliPlugin({ installed: [{ pluginId: contract.pluginId }] }, contract.pluginId)?.pluginId, contract.pluginId);
   assert.equal(findAppServerPlugin({ marketplaces: [{ name: "slidewright", plugins: [{ id: contract.pluginId }] }] }, contract.pluginId)?.plugin.id, contract.pluginId);
   assert.equal(findSkill({ data: [{ cwd: "/tmp", errors: [], skills: [{ name: contract.skillName }] }] }, contract.skillName)?.skill.name, contract.skillName);
+});
+
+test("C02 path confinement accepts a true descendant and rejects equality, siblings, and prefix collisions", () => {
+  const parent = path.resolve(os.tmpdir(), "slidewright-codex-home");
+  assert.equal(isPathInside(parent, path.join(parent, "plugins", "slidewright")), true);
+  assert.equal(isPathInside(parent, parent), false);
+  assert.equal(isPathInside(parent, path.resolve(parent, "..", "other-home")), false);
+  assert.equal(isPathInside(parent, `${parent}-escape`), false);
 });
 
 test("C02 installation scorecard requires real CLI install and both declared app-server backends", () => {

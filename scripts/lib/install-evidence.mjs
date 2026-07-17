@@ -21,6 +21,11 @@ export async function exists(candidate) {
   try { await fs.access(candidate); return true; } catch { return false; }
 }
 
+export function isPathInside(parent, candidate) {
+  const relative = path.relative(path.resolve(parent), path.resolve(candidate));
+  return relative.length > 0 && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
 export async function listRegularFiles(root, directory = root) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   const files = [];

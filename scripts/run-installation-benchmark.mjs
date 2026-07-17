@@ -14,6 +14,7 @@ import {
   findCliPlugin,
   findSkill,
   hashTree,
+  isPathInside,
   listRegularFiles,
 } from "./lib/install-evidence.mjs";
 import { sha256, stable } from "./public-evidence-lib.mjs";
@@ -155,7 +156,9 @@ try {
   const ideSkill = findSkill(ideSkills, contract.skillName);
 
   const sourceTree = await hashTree(sourcePackageRoot);
-  const installedPath = path.resolve(install.json.installedPath);
+  const installedPath = await fs.realpath(path.resolve(install.json.installedPath));
+  const canonicalCodexHome = await fs.realpath(codexHome);
+  const installedPathInsideCodexHome = isPathInside(canonicalCodexHome, installedPath);
   const installedTree = await hashTree(installedPath);
   const requiredFiles = contract.requiredPluginFiles.map((relative) => ({
     relative,
@@ -210,7 +213,7 @@ try {
       installed: installedPlugin?.installed === true,
       enabled: installedPlugin?.enabled === true,
       version: installedPlugin?.version ?? null,
-      installPathInsideCodexHome: installedPath.startsWith(`${path.resolve(codexHome)}${path.sep}`),
+      installPathInsideCodexHome: installedPathInsideCodexHome,
     },
     desktop: {
       protocolClient: "desktop-app",
@@ -251,7 +254,7 @@ try {
       { id: "empty-home-has-no-plugins", passed: pristine.json.installed?.length === 0 && pristine.json.available?.length === 0 },
       { id: "install-before-marketplace-rejected", passed: missingBeforeMarketplace.status !== 0 },
       { id: "unknown-plugin-rejected", passed: wrongPlugin.status !== 0 },
-      { id: "installed-path-confined-to-codex-home", passed: installedPath.startsWith(`${path.resolve(codexHome)}${path.sep}`) },
+      { id: "installed-path-confined-to-codex-home", passed: installedPathInsideCodexHome },
       { id: "marketplace-ui-not-used", passed: true },
     ],
     commands,
