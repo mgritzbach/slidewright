@@ -89,6 +89,7 @@ test("C04 release mode regenerates producers and cannot reuse development output
   assert.match(orchestrator, /origin\.stat\.mtimeMs >= benchmarkStartedAtMs - 2_000/u);
   assert.match(orchestrator, /origin\.stat\.mtimeMs <= producerFinishedMs \+ 2_000/u);
   assert.match(orchestrator, /const publicationRoot = releaseValid \? outputRoot : path\.join\(outputRoot, "development"\)/u);
+  assert.match(orchestrator, /process\.platform === "win32" \? "npm\.cmd" : "npm"/u);
 });
 
 test("C04 semantic inventory ignores serialization-only normalization but binds user content", () => {

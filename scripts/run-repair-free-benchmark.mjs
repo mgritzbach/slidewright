@@ -32,6 +32,7 @@ const scripts = path.join(root, "plugins", "slidewright", "skills", "slidewright
 const bundledPython = path.join(os.homedir(), ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "python", process.platform === "win32" ? "python.exe" : "bin/python");
 let python = process.env.SLIDEWRIGHT_PYTHON || "python";
 try { await fs.access(bundledPython); if (!process.env.SLIDEWRIGHT_PYTHON) python = bundledPython; } catch { /* PATH fallback */ }
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function logical(file) { return path.relative(root, file).split(path.sep).join("/"); }
@@ -166,7 +167,7 @@ async function ensureReleaseOutputs() {
   ];
   for (const name of commands) {
     process.stdout.write(`C04 producer: npm run ${name}\n`);
-    run("npm", ["run", name], { id: `producer-${name}` });
+    run(npmCommand, ["run", name], { id: `producer-${name}` });
   }
 }
 
