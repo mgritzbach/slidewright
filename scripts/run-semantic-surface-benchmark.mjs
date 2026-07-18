@@ -4,7 +4,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cleanupOwnedPowerPoint } from "./lib/owned-process-cleanup.mjs";
 import { captureWorkerIdentity, terminateExactWorker } from "./lib/exact-worker-process.mjs";
 import { startRunnerWatchdog } from "./lib/runner-watchdog.mjs";
@@ -54,6 +54,42 @@ function terminateWorkerOnly(workerPid, expectedIdentity) {
   return terminateExactWorker(workerPid, expectedIdentity);
 }
 
+async function captureOwnedPowerPointRuntime(ownershipRecordPath, receiptPath, processes = []) {
+  let ownership;
+  try { ownership = await readJson(ownershipRecordPath); } catch { return null; }
+  const expected = { processId: ownership.processId, processName: ownership.processName, processStartTime: ownership.processStartTime };
+  const acknowledge = async (receipt) => {
+    await writeJson(`${ownershipRecordPath}.runtime-captured`, {
+      schemaVersion: "slidewright-runtime-capture-ack/v1",
+      ...expected,
+      runtimeReceiptSha256: await sha256File(receiptPath),
+    });
+    return receipt;
+  };
+  if (processes.some((item) => item.processId === expected.processId && item.processName === expected.processName && item.processStartTime === expected.processStartTime)) {
+    return acknowledge({ schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes });
+  }
+  const liveBefore = captureWorkerIdentity(expected.processId);
+  if (!liveBefore || liveBefore.processName !== expected.processName || liveBefore.processStartTime !== expected.processStartTime) return null;
+  const query = spawnSync("powershell.exe", ["-NoProfile", "-Command", `(Get-Process -Id ${expected.processId} -ErrorAction Stop).Path`], { cwd: root, encoding: "utf8", windowsHide: true, timeout: 10_000 });
+  if (query.error || query.status !== 0 || !query.stdout.trim()) return null;
+  const executablePath = await fs.realpath(query.stdout.trim());
+  const liveAfter = captureWorkerIdentity(expected.processId);
+  if (!liveAfter || liveAfter.processName !== expected.processName || liveAfter.processStartTime !== expected.processStartTime) return null;
+  const receipt = {
+    schemaVersion: "slidewright-owned-powerpoint-runtime/v1",
+    processes: [...processes, {
+      processId: expected.processId,
+      processName: expected.processName,
+      processStartTime: expected.processStartTime,
+      executablePath,
+      executableSha256: await sha256File(executablePath),
+    }],
+  };
+  await writeJson(receiptPath, receipt);
+  return acknowledge(receipt);
+}
+
 function cleanupForSignal(signal) {
   if (signalCleanupStarted) return;
   signalCleanupStarted = true;
@@ -71,6 +107,8 @@ function run(command, args, {
   capture = false,
   timeoutMs = 120_000,
   ownershipRecordPath = null,
+  powerPointRuntimeReceiptPath = null,
+  expectedPowerPointRuntimeProcessCount = 0,
   timeoutStartMarkerPath = null,
   timeoutStartDeadlineMs = 120_000,
 } = {}) {
@@ -90,6 +128,21 @@ function run(command, args, {
     let settled = false;
     let timeoutPhase = null;
     let timeoutLimitMs = timeoutMs;
+    let powerPointRuntimeReceipt = null;
+    let powerPointRuntimeProcesses = [];
+    let runtimeCaptureInFlight = null;
+    const attemptRuntimeCapture = async () => {
+      if (!ownershipRecordPath || !powerPointRuntimeReceiptPath || runtimeCaptureInFlight) return powerPointRuntimeReceipt;
+      runtimeCaptureInFlight = captureOwnedPowerPointRuntime(ownershipRecordPath, powerPointRuntimeReceiptPath, powerPointRuntimeProcesses)
+        .catch(() => null)
+        .then((value) => {
+          if (value) { powerPointRuntimeReceipt = value; powerPointRuntimeProcesses = value.processes; }
+          return value;
+        })
+        .finally(() => { runtimeCaptureInFlight = null; });
+      return runtimeCaptureInFlight;
+    };
+    const runtimeCapturePoll = powerPointRuntimeReceiptPath ? setInterval(() => { void attemptRuntimeCapture(); }, 100) : null;
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk) => { stdout += chunk; if (!capture) process.stdout.write(chunk); });
@@ -126,20 +179,40 @@ function run(command, args, {
       if (timer) clearTimeout(timer);
       if (readinessTimer) clearTimeout(readinessTimer);
       if (readinessPoll) clearInterval(readinessPoll);
+      if (runtimeCapturePoll) clearInterval(runtimeCapturePoll);
     };
-    child.once("error", (error) => {
+    child.once("error", async (error) => {
       if (settled) return;
       settled = true;
       clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      if (ownershipRecordPath && powerPointRuntimeReceiptPath) await Promise.all([
+        fs.rm(`${ownershipRecordPath}.runtime-captured`, { force: true }),
+        fs.rm(powerPointRuntimeReceiptPath, { force: true }),
+      ]).catch(() => {});
       commandReceipts.push({ command: logicalArgument(command), args: args.map(logicalArgument), exitCode: null, signal: null, error: error.message, stdoutSha256: crypto.createHash("sha256").update(stdout).digest("hex"), stderrSha256: crypto.createHash("sha256").update(stderr).digest("hex") });
       reject(error);
     });
-    child.once("close", (status, signal) => {
+    child.once("close", async (status, signal) => {
       if (settled) return;
       settled = true;
       clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      if (runtimeCaptureInFlight) await runtimeCaptureInFlight;
+      if (powerPointRuntimeReceiptPath) await attemptRuntimeCapture();
+      let finalOwnership = null;
+      try { if (ownershipRecordPath) finalOwnership = await readJson(ownershipRecordPath); } catch { /* fail below */ }
+      const finalIdentityCaptured = finalOwnership && powerPointRuntimeProcesses.some((item) => item.processId === finalOwnership.processId
+        && item.processName === finalOwnership.processName && item.processStartTime === finalOwnership.processStartTime);
+      if (ownershipRecordPath && powerPointRuntimeReceiptPath) await Promise.all([
+        fs.rm(`${ownershipRecordPath}.runtime-captured`, { force: true }),
+        fs.rm(powerPointRuntimeReceiptPath, { force: true }),
+      ]).catch(() => {});
+      if (powerPointRuntimeReceiptPath && (!powerPointRuntimeReceipt || !finalIdentityCaptured
+        || powerPointRuntimeProcesses.length !== expectedPowerPointRuntimeProcessCount)) {
+        reject(new Error(`Could not bind every live owned PowerPoint executable for ${ownershipRecordPath}.`));
+        return;
+      }
       commandReceipts.push({ command: logicalArgument(command), args: args.map(logicalArgument), exitCode: status, signal: signal ?? null, timedOut, stdoutSha256: crypto.createHash("sha256").update(stdout).digest("hex"), stderrSha256: crypto.createHash("sha256").update(stderr).digest("hex") });
       if (timedOut) {
         const error = new Error(`${command} ${args.join(" ")} exceeded ${timeoutLimitMs} ms during ${timeoutPhase}; exact worker termination: ${JSON.stringify(workerTermination)}; owned-process cleanup: ${JSON.stringify(timeoutCleanup)}.`);
@@ -394,13 +467,25 @@ const roundtripRenderReportPath = path.join(output, "powerpoint-roundtrip-render
 const sourceRenderOwnershipPath = path.join(output, "powerpoint-source-render-ownership.json");
 const roundtripRenderOwnershipPath = path.join(output, "powerpoint-roundtrip-render-ownership.json");
 const sourceRenderIntentPath = workerIntentPath("powerpoint-source-render");
-const sourceRenderRun = await run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", isolatedRenderScript, "-InputPptx", sourcePptx, "-OutputDir", path.join(output, "powerpoint-source-render"), "-ReportJson", sourceRenderReportPath, "-OwnershipRecordJson", sourceRenderOwnershipPath, "-WorkerIntentJson", sourceRenderIntentPath], { capture: true, timeoutMs: 300_000, ownershipRecordPath: sourceRenderOwnershipPath });
+const sourceRenderRun = await run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", isolatedRenderScript, "-InputPptx", sourcePptx, "-OutputDir", path.join(output, "powerpoint-source-render"), "-ReportJson", sourceRenderReportPath, "-OwnershipRecordJson", sourceRenderOwnershipPath, "-WorkerIntentJson", sourceRenderIntentPath], {
+  capture: true,
+  timeoutMs: 300_000,
+  ownershipRecordPath: sourceRenderOwnershipPath,
+  powerPointRuntimeReceiptPath: `${sourceRenderOwnershipPath}.runtime-capture.json`,
+  expectedPowerPointRuntimeProcessCount: 5,
+});
 workerIntents.push({ stage: "source-render", ...await validateWorkerIntent(sourceRenderIntentPath, "isolated-powerpoint-render", sourceRenderOwnershipPath, sourceRenderRun.workerIdentity) });
 const betweenRenderQuiescence = await waitForPowerPointQuiescence();
 interStagePowerPointQuiescence.push({ stage: "between-source-and-roundtrip-render", ...betweenRenderQuiescence });
 if (!betweenRenderQuiescence.valid) throw new Error("PowerPoint did not exit cleanly after source rendering.");
 const roundtripRenderIntentPath = workerIntentPath("powerpoint-roundtrip-render");
-const roundtripRenderRun = await run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", isolatedRenderScript, "-InputPptx", roundtripPptx, "-OutputDir", path.join(output, "powerpoint-roundtrip-render"), "-ReportJson", roundtripRenderReportPath, "-OwnershipRecordJson", roundtripRenderOwnershipPath, "-WorkerIntentJson", roundtripRenderIntentPath], { capture: true, timeoutMs: 300_000, ownershipRecordPath: roundtripRenderOwnershipPath });
+const roundtripRenderRun = await run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", isolatedRenderScript, "-InputPptx", roundtripPptx, "-OutputDir", path.join(output, "powerpoint-roundtrip-render"), "-ReportJson", roundtripRenderReportPath, "-OwnershipRecordJson", roundtripRenderOwnershipPath, "-WorkerIntentJson", roundtripRenderIntentPath], {
+  capture: true,
+  timeoutMs: 300_000,
+  ownershipRecordPath: roundtripRenderOwnershipPath,
+  powerPointRuntimeReceiptPath: `${roundtripRenderOwnershipPath}.runtime-capture.json`,
+  expectedPowerPointRuntimeProcessCount: 5,
+});
 workerIntents.push({ stage: "roundtrip-render", ...await validateWorkerIntent(roundtripRenderIntentPath, "isolated-powerpoint-render", roundtripRenderOwnershipPath, roundtripRenderRun.workerIdentity) });
 const afterRenderQuiescence = await waitForPowerPointQuiescence();
 interStagePowerPointQuiescence.push({ stage: "after-roundtrip-render", ...afterRenderQuiescence });

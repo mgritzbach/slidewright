@@ -113,6 +113,15 @@ test("semantic PowerPoint workers prove ownership before non-destructive cleanup
   }
 });
 
+test("semantic surface acknowledges every isolated render runtime before PowerPoint may exit", async () => {
+  const source = await fs.readFile(semanticRunnerPath, "utf8");
+  assert.match(source, /slidewright-runtime-capture-ack\/v1/u);
+  assert.match(source, /runtimeReceiptSha256/u);
+  assert.match(source, /expectedPowerPointRuntimeProcessCount: 5/u);
+  assert.match(source, /Could not bind every live owned PowerPoint executable/u);
+  assert.match(source, /fs\.rm\(`\$\{ownershipRecordPath\}\.runtime-captured`/u);
+});
+
 test("timeout cleanup refuses mismatched live processes without force-kill", async (context) => {
   if (process.platform !== "win32") return context.skip("PowerShell cleanup is Windows-only");
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-cleanup-mismatch-"));
