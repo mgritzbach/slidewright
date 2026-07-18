@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "slidewright-c13-contract/v1",
+  "goalId": "C13",
+  "title": "Professional visual quality",
+  "corpus": {
+    "minimumIndependentDesigns": 21,
+    "minimumLicensedSourceFamilies": 4,
+    "candidateState": "powerpoint-roundtrip-repeat",
+    "independenceDefinition": "Each candidate is a distinct licensed source-deck slide lineage with a unique final rendered SHA-256. The selected corpus is greedily maximized for 64-bit perceptual-hash distance after stratified inclusion of every source family.",
+    "minimumPairwisePerceptualDistance": 4
+  },
+  "blindExpert": {
+    "minimumIndependentHumanExperts": 1,
+    "minimumDesignsPerExpert": 21,
+    "minimumFirstOpenAcceptanceRate": 0.8,
+    "minimumMeanDimensionScore": 4,
+    "minimumIndividualDimensionScore": 3,
+    "dimensions": [
+      "hierarchy",
+      "spacing",
+      "readability",
+      "consistency",
+      "professionalPolish"
+    ],
+    "requiredBlindnessAttestations": [
+      "candidateOriginsHidden",
+      "conditionLabelsHidden",
+      "adminKeyUnavailableBeforeSubmission"
+    ]
+  },
+  "targetUsers": {
+    "minimumIndependentHumanUsers": 5,
+    "designsPerUser": 5,
+    "minimumDistinctDesignsCovered": 21,
+    "minimumOverallFirstOpenAcceptanceRate": 0.8,
+    "minimumPerUserFirstOpenAcceptanceRate": 0.6,
+    "maximumMedianCleanupSeconds": 300,
+    "maximumP90CleanupSeconds": 600,
+    "maximumMedianRepairActions": 2,
+    "cleanupDefinition": "Elapsed time from first open until the participant considers the assigned slide presentation-ready. Record zero only when the slide is accepted without edits.",
+    "targetUserDefinition": "A human who creates, edits, reviews, or presents professional slide decks at least monthly and is not an agent, model, bot, benchmark author, or member of the implementation team."
+  },
+  "nonSubstitutionRules": {
+    "agentsNeverCountAsExperts": true,
+    "agentsNeverCountAsTargetUsers": true,
+    "internalVisualReviewNeverCountsAsExternalEvidence": true,
+    "automatedScoresNeverReplaceHumanFirstOpenAcceptance": true,
+    "missingResponsesKeepGoalAtZero": true
+  },
+  "participantPrivacy": {
+    "storeOnlyPseudonymousParticipantIds": true,
+    "forbidNamesEmailsEmployersAndFreeFormPersonalData": true
+  },
+  "selectionSeed": "slidewright-c13-v1-blind-corpus-2026-07-18"
+}

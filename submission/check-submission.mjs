@@ -13,6 +13,9 @@ export function externalFailures(metadata) {
   if (!/^[A-Za-z0-9_-]{8,}$/.test(metadata.feedbackSessionId || "")) failures.push("primary /feedback session ID is missing");
   if (metadata.gpt56UsageVerified !== true || String(metadata.gpt56UsageStatement || "").trim().length < 20) failures.push("GPT-5.6 usage statement is not verified");
   if (metadata.joinedDevpost !== true) failures.push("Devpost participation is not confirmed");
+  if (!/^\d+$/.test(String(metadata.devpostSubmissionId || ""))) failures.push("Devpost submission ID is missing");
+  if (metadata.devpostSubmitted !== true) failures.push("Devpost project is not submitted");
+  if (!/^https:\/\/devpost\.com\/software\/[^/]+\/?$/.test(metadata.devpostProjectUrl || "")) failures.push("public Devpost project URL is missing");
   if (metadata.judgeAccessConfirmed !== true) failures.push("judge repository access is not confirmed");
   return failures;
 }
@@ -79,10 +82,13 @@ export function runSubmissionCheck({ root, localOnly }) {
   if (!localOnly) {
     failures.push(...externalFailures(metadata));
     const copy = fs.readFileSync(path.join(root, "submission", "SUBMISSION_COPY.md"), "utf8");
+    const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
     const statement = String(metadata.gpt56UsageStatement || "").trim();
     if (copy.includes("[[GPT56_USAGE_STATEMENT]]") || copy.includes("[[FEEDBACK_SESSION_ID]]")) failures.push("submission copy still contains unresolved verification tokens");
     if (statement && !copy.includes(statement)) failures.push("verified GPT-5.6 usage statement is not present in submission copy");
     if (metadata.feedbackSessionId && !copy.includes(metadata.feedbackSessionId)) failures.push("verified /feedback session ID is not present in submission copy");
+    if (statement && !readme.includes(statement)) failures.push("verified GPT-5.6 usage statement is not present in README");
+    if (metadata.feedbackSessionId && !readme.includes(metadata.feedbackSessionId)) failures.push("verified /feedback session ID is not present in README");
   }
   return { valid: failures.length === 0, mode: localOnly ? "local-only" : "full", failures };
 }

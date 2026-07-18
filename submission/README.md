@@ -13,7 +13,7 @@ Then complete the external fields in `metadata.json` and run:
 npm run submission:check
 ```
 
-The full check remains red until the repository is accessible to judges, the public YouTube demo is under three minutes with audio, the primary Codex `/feedback` session ID is recorded, and Devpost/judge access are confirmed. This is intentional: G09 cannot be marked complete from local drafts.
+The full check remains red until the corrected public YouTube demo is under three minutes with audio, its final URL is recorded, and the Devpost project has a numeric submission ID, a submitted state, and a public project URL. The primary Codex `/feedback` session, verified GPT-5.6 statement, Devpost participation, public repository, and judge access are already recorded. This is intentional: G09 cannot be marked complete from a draft or an unpublished video.
 
 Files:
 

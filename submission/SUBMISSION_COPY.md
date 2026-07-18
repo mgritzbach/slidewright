@@ -41,8 +41,8 @@ Codex was the engineering environment and implementation collaborator: it resear
 
 ## Verified model and build session
 
-GPT-5.6 usage: `[[GPT56_USAGE_STATEMENT]]`
+GPT-5.6 usage: `GPT-5.6 in Codex (model gpt-5.6-sol, high reasoning) was used in the primary Slidewright build and review session to implement and verify the compiler, auditors, benchmarks, and release evidence.`
 
-Primary Codex `/feedback` session ID: `[[FEEDBACK_SESSION_ID]]`
+Primary Codex `/feedback` session ID: `019f6485-a254-7b30-8da7-f26d254bfcb8`
 
-The full submission checker rejects these tokens. Replace them only with the verified values recorded in `metadata.json`.
+These values are mirrored in `metadata.json`; the submission checker rejects any mismatch.

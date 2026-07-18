@@ -16,6 +16,9 @@ test("submission checker keeps every external requirement red when metadata is e
     "primary /feedback session ID is missing",
     "GPT-5.6 usage statement is not verified",
     "Devpost participation is not confirmed",
+    "Devpost submission ID is missing",
+    "Devpost project is not submitted",
+    "public Devpost project URL is missing",
     "judge repository access is not confirmed",
   ]);
 });
@@ -28,6 +31,9 @@ test("submission checker accepts a fully verified external record", () => {
     gpt56UsageVerified: true,
     gpt56UsageStatement: "GPT-5.6 was verified in the primary Codex build session.",
     joinedDevpost: true,
+    devpostSubmissionId: "1087402",
+    devpostSubmitted: true,
+    devpostProjectUrl: "https://devpost.com/software/slidewright",
     judgeAccessConfirmed: true,
   });
   assert.deepEqual(failures, []);

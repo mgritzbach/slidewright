@@ -297,6 +297,7 @@ npm run design-profile
 - [Public Codex/PowerPoint complaint ledger](docs/COMPLAINT_LEDGER.md)
 - [Direct user feedback ledger](docs/USER_FEEDBACK_LEDGER.md)
 - [Platform and dependency contract](docs/PLATFORM_MATRIX.md)
+- [Professional-quality human study](docs/C13_PROFESSIONAL_QUALITY.md)
 
 ## Why this can win
 
@@ -304,9 +305,9 @@ Most AI presentation tools optimize for a screenshot that looks acceptable once.
 
 ## How Codex contributed
 
-Codex was used to research the current Build Week rules, scaffold the plugin and skill, translate the formatting problem into a deterministic architecture, implement the compiler/linter/renderer/auditor, generate tests, execute the PowerPoint pipeline, and inspect the rendered result. The human-provided product thesis and quality bar were decisive: editable PowerPoint over slide images, symmetric spacing, conventional type sizes, automatic text fit, and Course Explorer-level evidence before completion. The final submission will identify the primary `/feedback` session and document any additional GPT-5.6 sessions used before the release freeze.
+Codex was used to research the current Build Week rules, scaffold the plugin and skill, translate the formatting problem into a deterministic architecture, implement the compiler/linter/renderer/auditor, generate tests, execute the PowerPoint pipeline, and inspect the rendered result. GPT-5.6 in Codex (model gpt-5.6-sol, high reasoning) was used in the primary Slidewright build and review session to implement and verify the compiler, auditors, benchmarks, and release evidence. The primary `/feedback` session ID is `019f6485-a254-7b30-8da7-f26d254bfcb8`. The human-provided product thesis and quality bar were decisive: editable PowerPoint over slide images, symmetric spacing, conventional type sizes, automatic text fit, and Course Explorer-level evidence before completion.
 
-Key human decisions still required before submission are the final target-user evidence, the public/private repository choice, the release scope, and the final demo narrative.
+The remaining submission actions are publishing the corrected public demo, recording its final URL, and the submitter's final Devpost terms acceptance.
 
 ## License
 
