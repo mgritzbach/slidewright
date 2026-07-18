@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS } from "../scripts/verify-structural-ingestion-evidence.mjs";
+import { sha256NormalizedText, sha256NormalizedTextFile, STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS } from "../scripts/verify-structural-ingestion-evidence.mjs";
 
 const root = process.cwd();
 const contractPath = path.join(root, "fixtures", "structural-ingestion", "v1", "fixture-contract.json");
@@ -24,17 +24,24 @@ async function readJson(file) { return JSON.parse(await fs.readFile(file, "utf8"
 test("C17 contract pins licensed sources and every named semantic surface", async () => {
   const contract = await readJson(contractPath);
   assert.equal(contract.schemaVersion, "slidewright-structural-ingestion-contract/v1");
+  assert.equal(contract.licenseHashMode, "utf8-lf");
   assert.deepEqual(contract.requiredCoverage, ["slideMasterHierarchy", "textRuns", "tables", "nativeDiagrams", "charts", "notes", "semanticReadingOrder"]);
   assert.equal(contract.fixtures.length, 4);
   assert.deepEqual(contract.fixtures.map((item) => item.spdx), ["MIT", "MIT", "CC0-1.0", "MIT"]);
   for (const fixture of contract.fixtures) {
     assert.equal(await sha256(path.join(root, ...fixture.source.split("/"))), fixture.sourceSha256);
-    assert.equal(await sha256(path.join(root, ...fixture.license.split("/"))), fixture.licenseSha256);
+    assert.equal(await sha256NormalizedTextFile(path.join(root, ...fixture.license.split("/"))), fixture.licenseSha256);
   }
   assert.deepEqual(contract.controls.map((item) => item.expectedFailure), [
     "SI_HIERARCHY", "SI_HIERARCHY", "SI_TEXT_RUNS", "SI_TABLES", "SI_CHARTS", "SI_NOTES", "SI_READING_ORDER", "SI_DIAGRAMS",
   ]);
   assert.deepEqual(STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS, [...STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS].sort());
+});
+
+test("C17 license receipts are invariant to Git LF and Windows CRLF checkouts", () => {
+  const lf = "Permission is granted.\nCopyright retained.\n";
+  const crlf = lf.replaceAll("\n", "\r\n");
+  assert.equal(sha256NormalizedText(lf), sha256NormalizedText(crlf));
 });
 
 test("C17 lossless import independently retains all seven semantic surfaces and controls detect each one", async (t) => {

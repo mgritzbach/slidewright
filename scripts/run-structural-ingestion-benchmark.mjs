@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { canonicalHash, sha256File, STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS, verifyStructuralIngestionEvidence } from "./verify-structural-ingestion-evidence.mjs";
+import { canonicalHash, sha256File, sha256NormalizedTextFile, STRUCTURAL_INGESTION_IMPLEMENTATION_PATHS, verifyStructuralIngestionEvidence } from "./verify-structural-ingestion-evidence.mjs";
 
 const root = process.cwd();
 const contractPath = path.join(root, "fixtures", "structural-ingestion", "v1", "fixture-contract.json");
@@ -79,7 +79,7 @@ function gitState() {
   return { commit, clean: status.length === 0 };
 }
 
-if (contract.schemaVersion !== "slidewright-structural-ingestion-contract/v1" || contract.fixtures.length < 4 || contract.controls.length < 8) {
+if (contract.schemaVersion !== "slidewright-structural-ingestion-contract/v1" || contract.licenseHashMode !== "utf8-lf" || contract.fixtures.length < 4 || contract.controls.length < 8) {
   throw new Error("C17 fixture contract is incomplete.");
 }
 await fs.rm(staging, { recursive: true, force: true });
@@ -94,7 +94,7 @@ for (const fixture of contract.fixtures) {
   const workspaceSource = path.resolve(root, ...fixture.source.split("/"));
   const license = path.resolve(root, ...fixture.license.split("/"));
   if (!confined(root, workspaceSource) || !confined(root, license)) throw new Error(`C17 fixture ${fixture.id} escapes the repository.`);
-  if (await sha256File(workspaceSource) !== fixture.sourceSha256 || await sha256File(license) !== fixture.licenseSha256) throw new Error(`C17 fixture ${fixture.id} or its license drifted.`);
+  if (await sha256File(workspaceSource) !== fixture.sourceSha256 || await sha256NormalizedTextFile(license) !== fixture.licenseSha256) throw new Error(`C17 fixture ${fixture.id} or its license drifted.`);
   const source = path.join(directory, "source.pptx");
   if (fixture.derivation === "append-editable-native-shape-diagram") {
     run(`derive-${fixture.id}`, [core, "derive-diagram", workspaceSource, source]);

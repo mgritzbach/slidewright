@@ -1,13 +1,14 @@
 {
   "schemaVersion": "slidewright-structural-ingestion-contract/v1",
   "scope": "Lossless OPC structural import/export with a machine-readable semantic manifest. SmartArt authoring and arbitrary semantic reconstruction are outside this contract.",
+  "licenseHashMode": "utf8-lf",
   "fixtures": [
     {
       "id": "automizer-charts-mit",
       "source": "fixtures/template/c10-v1/automizer-charts/template.pptx",
       "sourceSha256": "7b4d6833c93229377c160359f6764811a29728c57446ea39b7734eca5189101c",
       "license": "fixtures/template/c10-v1/automizer-charts/LICENSE.txt",
-      "licenseSha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2",
+      "licenseSha256": "85bcdef6d2692b8dc4e0acc048abede91e667a68f3bd5e8933b1e55d23069d9e",
       "spdx": "MIT",
       "minimums": { "slides": 2, "masters": 1, "layouts": 11, "textRuns": 4, "charts": 2 }
     },
@@ -16,7 +17,7 @@
       "source": "fixtures/template/c10-v1/automizer-tables/template.pptx",
       "sourceSha256": "c23ed32ac8e7aed1e3b3f985f5d50ff396547bd7e3fe43d04805a13438a0272e",
       "license": "fixtures/template/c10-v1/automizer-tables/LICENSE.txt",
-      "licenseSha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2",
+      "licenseSha256": "85bcdef6d2692b8dc4e0acc048abede91e667a68f3bd5e8933b1e55d23069d9e",
       "spdx": "MIT",
       "minimums": { "slides": 3, "masters": 1, "layouts": 11, "textRuns": 40, "tables": 8 }
     },

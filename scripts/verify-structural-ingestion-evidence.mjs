@@ -26,6 +26,14 @@ export async function sha256File(file) {
   return crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
 }
 
+export function sha256NormalizedText(value) {
+  return crypto.createHash("sha256").update(String(value).replace(/\r\n?/gu, "\n"), "utf8").digest("hex");
+}
+
+export async function sha256NormalizedTextFile(file) {
+  return sha256NormalizedText(await fs.readFile(file, "utf8"));
+}
+
 async function readJson(file) {
   return JSON.parse((await fs.readFile(file, "utf8")).replace(/^\uFEFF/u, ""));
 }
