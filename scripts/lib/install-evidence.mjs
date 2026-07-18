@@ -23,7 +23,8 @@ export function assertInstallReleaseVersions(contract, { packageJson, packageLoc
   const versions = {
     contract: contract?.pluginVersion,
     package: packageJson?.version,
-    packageLock: packageLock?.packages?.[""]?.version ?? packageLock?.version,
+    packageLockTopLevel: packageLock?.version,
+    packageLockRoot: packageLock?.packages?.[""]?.version,
     plugin: pluginManifest?.version,
   };
   const expected = versions.contract;
@@ -33,6 +34,20 @@ export function assertInstallReleaseVersions(contract, { packageJson, packageLoc
     throw new Error(`Install release version drift: ${detail}.`);
   }
   return versions;
+}
+
+export function assertPluginInterfaceContract(pluginManifest) {
+  const prompts = pluginManifest?.interface?.defaultPrompt;
+  if (!Array.isArray(prompts) || prompts.length < 1 || prompts.length > 3) {
+    throw new Error("Plugin interface.defaultPrompt must contain between 1 and 3 prompts for Codex client compatibility.");
+  }
+  if (prompts.some((prompt) => typeof prompt !== "string" || prompt.trim().length === 0 || prompt.length > 128)) {
+    throw new Error("Plugin interface.defaultPrompt entries must be non-empty strings of at most 128 characters.");
+  }
+  if (new Set(prompts.map((prompt) => prompt.trim())).size !== prompts.length) {
+    throw new Error("Plugin interface.defaultPrompt entries must be unique.");
+  }
+  return prompts;
 }
 
 export function assertDeclaredCheckoutSha(checkoutHead, environment = process.env) {

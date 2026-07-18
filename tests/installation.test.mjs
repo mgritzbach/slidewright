@@ -11,6 +11,7 @@ import {
   aggregateInstallationScorecards,
   assertDeclaredCheckoutSha,
   assertInstallReleaseVersions,
+  assertPluginInterfaceContract,
   assertInstallScorecard,
   finalizeInstallScorecard,
   findAppServerPlugin,
@@ -93,12 +94,49 @@ test("C02 release version is identical across the contract, package, lockfile, a
   assert.deepEqual(assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest }), {
     contract: contract.pluginVersion,
     package: contract.pluginVersion,
-    packageLock: contract.pluginVersion,
+    packageLockTopLevel: contract.pluginVersion,
+    packageLockRoot: contract.pluginVersion,
     plugin: contract.pluginVersion,
   });
+  const mutations = [
+    ["contract", { contract: { ...contract, pluginVersion: "9.9.9" } }],
+    ["package", { packageJson: { ...packageJson, version: "9.9.9" } }],
+    ["packageLockTopLevel", { packageLock: { ...packageLock, version: "9.9.9" } }],
+    ["packageLockRoot", { packageLock: { ...packageLock, packages: { ...packageLock.packages, "": { ...packageLock.packages[""], version: "9.9.9" } } } }],
+    ["plugin", { pluginManifest: { ...pluginManifest, version: "9.9.9" } }],
+  ];
+  for (const [field, mutation] of mutations) {
+    assert.throws(
+      () => assertInstallReleaseVersions(
+        mutation.contract ?? contract,
+        {
+          packageJson: mutation.packageJson ?? packageJson,
+          packageLock: mutation.packageLock ?? packageLock,
+          pluginManifest: mutation.pluginManifest ?? pluginManifest,
+        },
+      ),
+      new RegExp(`Install release version drift:.*${field}=9\\.9\\.9`, "u"),
+    );
+  }
+});
+
+test("C02 plugin starter prompts stay within the actual Codex client limit", () => {
+  assert.equal(assertPluginInterfaceContract(pluginManifest).length, 3);
   assert.throws(
-    () => assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest: { ...pluginManifest, version: "9.9.9" } }),
-    /Install release version drift:.*plugin=9\.9\.9/u,
+    () => assertPluginInterfaceContract({ interface: { defaultPrompt: ["one", "two", "three", "four"] } }),
+    /between 1 and 3 prompts/u,
+  );
+  assert.throws(
+    () => assertPluginInterfaceContract({ interface: { defaultPrompt: ["one", " "] } }),
+    /non-empty strings of at most 128 characters/u,
+  );
+  assert.throws(
+    () => assertPluginInterfaceContract({ interface: { defaultPrompt: ["x".repeat(129)] } }),
+    /at most 128 characters/u,
+  );
+  assert.throws(
+    () => assertPluginInterfaceContract({ interface: { defaultPrompt: ["same", "same"] } }),
+    /must be unique/u,
   );
 });
 
