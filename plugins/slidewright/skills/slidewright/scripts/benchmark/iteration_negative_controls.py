@@ -28,7 +28,7 @@ def tamper_unrelated_shape(source: Path, target: Path):
                 root = ET.fromstring(data)
                 for shape in root.findall(".//p:sp", NS):
                     name = shape.find("p:nvSpPr/p:cNvPr", NS)
-                    if name is not None and name.attrib.get("name") == "s3-eyebrow":
+                    if name is not None and name.attrib.get("name") == "s4-eyebrow":
                         props = shape.find("p:spPr/a:solidFill/a:srgbClr", NS)
                         if props is not None:
                             props.attrib["val"] = "000000"
@@ -40,7 +40,7 @@ def tamper_unrelated_shape(source: Path, target: Path):
                 data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
             modified.writestr(item, data)
     if not changed:
-        raise ValueError("Could not tamper the unrelated s3-eyebrow object.")
+        raise ValueError("Could not tamper the unrelated s4-eyebrow object.")
 
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"

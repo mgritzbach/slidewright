@@ -9,6 +9,7 @@ function chartText(id, parentId, position, value) {
     id,
     type: "text",
     role: "chart-label",
+    typographyRole: "chart-label",
     parentId,
     position,
     text: { runs: [{ text: value, bold: false }] },
@@ -26,7 +27,7 @@ function chartText(id, parentId, position, value) {
   };
 }
 
-function chartMark(id, parentId, category, value) {
+function chartMark(id, parentId, category, value, position) {
   return {
     id,
     type: "shape",
@@ -36,14 +37,14 @@ function chartMark(id, parentId, category, value) {
     chartCategory: category,
     chartValue: value,
     geometry: "roundRect",
-    position: { left: 244, top: 138 + ["North", "South", "East", "West"].indexOf(category) * 68, width: value * 4, height: 20 },
+    position,
     fill: "#4F46E5",
     line: { color: "#4F46E5", width: 0 },
     editable: true,
   };
 }
 
-function chartSlide() {
+function chartSlide(template) {
   const categories = ["North", "South", "East", "West"];
   const values = [35, 52, 65, 80];
   const chartId = "horizontal-chart-component";
@@ -53,7 +54,7 @@ function chartSlide() {
     semanticType: "chart-component",
     role: "chart",
     geometry: "roundRect",
-    position: { left: 96, top: 96, width: 640, height: 360 },
+    position: { left: 600, top: 330, width: 560, height: 190 },
     fill: "#FFFFFF",
     line: { color: "#CBD5E1", width: 1 },
     padding: { top: 24, right: 24, bottom: 24, left: 24 },
@@ -61,27 +62,39 @@ function chartSlide() {
       orientation: "horizontal",
       categories,
       maximum: 100,
-      plotExtentPx: 400,
+      plotExtentPx: 300,
       series: [{ id: "series-1", values: [...values] }],
     },
     editable: true,
   }];
   categories.forEach((category, index) => {
-    const top = 136 + index * 68;
-    shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: 120, top, width: 100, height: 24 }, category));
-    shapes.push(chartMark(`${chartId}-mark-${index + 1}`, chartId, category, values[index]));
+    const top = 354 + index * 36;
+    shapes.push(chartText(`${chartId}-label-${index + 1}`, chartId, { left: 624, top, width: 88, height: 20 }, category));
+    shapes.push(chartMark(
+      `${chartId}-mark-${index + 1}`,
+      chartId,
+      category,
+      values[index],
+      { left: 730, top: top + 2, width: Math.round(values[index] * 3), height: 16 },
+    ));
   });
-  return {
-    id: "iteration-chart",
-    layout: "quality-fixture",
-    background: "#F8FAFC",
-    frame: { left: 64, top: 64, width: 1152, height: 592 },
-    shapes,
-  };
+  const slide = structuredClone(template);
+  slide.shapes.find((shape) => shape.role === "body").position.width = 480;
+  slide.shapes.push(...shapes);
+  return slide;
 }
 
 export function buildIterationPlan() {
-  const plan = compileDeck(demoSpec);
+  const spec = structuredClone(demoSpec);
+  spec.slides.splice(2, 0, {
+    id: "iteration-chart",
+    layout: "hero",
+    eyebrow: "ISOLATED EDIT",
+    title: "Edit one chart value. Preserve everything else.",
+    body: "Change data without rebuilding the deck.",
+    callout: "The package and rendered-slide audits prove the exact bounded change closure.",
+  });
+  const plan = compileDeck(spec);
   plan.slides[0].shapes.push({
     id: "s1-mutation-accent",
     type: "shape",
@@ -93,7 +106,7 @@ export function buildIterationPlan() {
     constraints: { allowOverlapWith: ["s1-title"] },
     editable: true,
   });
-  plan.slides = [plan.slides[0], plan.slides[1], chartSlide(), plan.slides[2]];
+  plan.slides[2] = chartSlide(plan.slides[2]);
   plan.source.title = "Slidewright C16 isolated named-iteration benchmark";
   plan.build = { deterministicHash: planContentHash(plan).slice(0, 16) };
   return plan;
