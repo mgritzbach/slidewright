@@ -76,6 +76,8 @@ These goals come from the public complaint inventory in `docs/COMPLAINT_LEDGER.m
 
 Append dated evidence here. Do not replace the goal definitions with looser substitutes.
 
+- 2026-07-17: C10 remains `0`. Independent review invalidated the earlier candidate because the PowerPoint round trip had only shallow native chart/table checks, ordinary edits did not require complete source-object identity, render comparators had vacuous inventory paths, negative-control summaries and the implementation closure were verifier-trusted, and published G22/G23 evidence had drifted. The branch now has complete source identity binding, exact render inventories and dimensions, a static edited-package-versus-PowerPoint semantic audit, chart/workbook/table/hyperlink/media/native-object destructive controls, reproducible hash-pinned sanitizers, and a verifier-derived closure. Credit stays at zero until a fresh matrix, complete hash-bound full-size review, public-evidence refresh, and all release gates pass on the final implementation.
+
 - 2026-07-14: Repository initialized; plugin and skill scaffolds created.
 - 2026-07-14: Plugin validator and skill validator passed.
 - 2026-07-14: Node test suite passed 8/8, including determinism, autosizing, rich text, symmetric geometry, and negative diagnostics.

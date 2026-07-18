@@ -1,0 +1,35 @@
+{
+  "mode": "clone-source-deck",
+  "sourceSha256": "4f278a0558f90a5db089235464af4f5746e738579754866acd704cab704a56e4",
+  "targetSlide": 1,
+  "edits": [
+    {
+      "shapeName": "Title 4",
+      "placeholderType": "title",
+      "placeholderIndex": 0,
+      "before": "",
+      "after": "Quarterly operating review",
+      "editMode": "populate-empty-placeholder",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/2::Title 4",
+      "sourceObjectSha256": "50fc4116598e23f68f61468fc028e70fe56d8b60df2dae4c2eab413cdf0f5b9b",
+      "sourceShapeId": "5",
+      "sourceCreationId": "{B5992BF2-46A2-1C46-85E4-A27A855604B8}",
+      "sourceParagraphSha256s": ["daa8fe60f32036c179bec9e0baf0b894ca8c0f31fe0f956205747a17c6fe0abb"]
+    },
+    {
+      "shapeName": "Content Placeholder 5",
+      "placeholderType": "body",
+      "placeholderIndex": 1,
+      "before": "",
+      "after": "Native editable text inherits the source design.",
+      "editMode": "populate-empty-placeholder",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/3::Content Placeholder 5",
+      "sourceObjectSha256": "bf9d39024577a426b1c79611a8949fcb5bea1a9069f2c7bdc06893bb62f02c05",
+      "sourceShapeId": "6",
+      "sourceCreationId": "{5146DE35-D242-8446-9885-35EC3CA9FB52}",
+      "sourceParagraphSha256s": ["daa8fe60f32036c179bec9e0baf0b894ca8c0f31fe0f956205747a17c6fe0abb"]
+    }
+  ],
+  "preserveOnlySlides": [],
+  "allowedDeviation": ["Insert one minimal native text run into each of the two empty source-bound placeholders."]
+}

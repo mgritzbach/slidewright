@@ -30,6 +30,9 @@ function compileEdits(archetype, requestedEdits) {
     if (!placeholder.allowedEdits.includes("text")) fail("placeholder '" + placeholder.id + "' does not allow text edits.");
     if (typeof request.after !== "string" || request.after.length === 0) fail("placeholder '" + placeholder.id + "' requires non-empty replacement text.");
     if (request.after === placeholder.sourceText) fail("placeholder '" + placeholder.id + "' edit is a no-op.");
+    if (placeholder.sourceText === "" && /\r?\n/u.test(request.after)) {
+      fail("empty placeholder '" + placeholder.id + "' currently accepts exactly one line.");
+    }
     if (placeholder.maxCharacters !== undefined && request.after.length > placeholder.maxCharacters) {
       fail("placeholder '" + placeholder.id + "' exceeds maxCharacters " + placeholder.maxCharacters + ".");
     }
@@ -37,13 +40,22 @@ function compileEdits(archetype, requestedEdits) {
       fail("placeholder '" + placeholder.id + "' exceeds maxLines " + placeholder.maxLines + ".");
     }
 
-    return {
+    const compiled = {
       shapeName: placeholder.shapeName,
       placeholderType: placeholder.placeholderType,
       placeholderIndex: placeholder.placeholderIndex,
       before: placeholder.sourceText,
       after: request.after,
+      sourceObjectKey: placeholder.sourceObjectKey,
+      sourceObjectSha256: placeholder.sourceObjectSha256,
+      sourceShapeId: placeholder.sourceShapeId,
+      sourceCreationId: placeholder.sourceCreationId,
+      sourceParagraphSha256s: [...placeholder.sourceParagraphSha256s],
     };
+    if (placeholder.sourceText === "") {
+      compiled.editMode = "populate-empty-placeholder";
+    }
+    return compiled;
   });
 }
 
@@ -67,7 +79,7 @@ export function compileProfileDerivation(profileInput, request = {}) {
     edits,
     preserveOnlySlides,
     allowedDeviation: [
-      "edited a:t values in " + editedShapeNames.length + " declared placeholder shape"
+      "edited native text in " + editedShapeNames.length + " declared placeholder shape"
         + (editedShapeNames.length === 1 ? "" : "s") + " on slide " + archetype.sourceSlide,
     ],
     designBinding: {

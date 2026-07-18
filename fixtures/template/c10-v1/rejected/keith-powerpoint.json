@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "slidewright-c10-rejected-source/v1",
+  "id": "keith-cc0-powerpoint-incompatible",
+  "status": "rejected",
+  "binaryVendored": true,
+  "file": "keith/template.pptx",
+  "editPlan": "keith/edit-plan.json",
+  "licenseFile": "keith/LICENSE.txt",
+  "sourceSha256": "56dffe7f7babd625f297dee0955e43f5f546ff6330bd3e8129915f2bce1cf0ed",
+  "license": "CC0-1.0",
+  "rejectionReason": "The OOXML package passes structural audits but this binary repeatedly terminates the tested Microsoft PowerPoint 16.0 process during both SaveAs and SaveCopyAs, including from a short local path.",
+  "diagnostics": [
+    "Source-bound editing and exact package-preservation audit passed.",
+    "PowerPoint SaveAs failed with RPC server unavailable after the owned automation process exited.",
+    "PowerPoint SaveCopyAs reproduced the same failure from a short local temp path.",
+    "No PowerPoint round-trip credit is assigned to this fixture."
+  ]
+}

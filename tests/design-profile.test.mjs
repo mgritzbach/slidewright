@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import {
   adaptExtractedProfile,
@@ -16,6 +17,9 @@ import {
   compileProfileDerivation,
   loadAndCompileProfileDerivation,
 } from "../plugins/slidewright/skills/slidewright/scripts/lib/compile_profile_derivation.mjs";
+
+const python = process.env.SLIDEWRIGHT_PYTHON || "python";
+const designProfilePython = path.resolve("plugins/slidewright/skills/slidewright/scripts/design_profile");
 
 function profileFixture() {
   return {
@@ -61,6 +65,11 @@ function profileFixture() {
             placeholderType: "title",
             placeholderIndex: 0,
             sourceText: "Quarterly operating review",
+            sourceObjectKey: "ppt/slides/slide1.xml::/0/0/2::MIT Fixture Title",
+            sourceObjectSha256: "c".repeat(64),
+            sourceShapeId: "2",
+            sourceCreationId: "{00000000-0000-0000-0000-000000000002}",
+            sourceParagraphSha256s: ["d".repeat(64)],
             allowedEdits: ["text"],
             required: true,
             maxCharacters: 40,
@@ -72,6 +81,11 @@ function profileFixture() {
             placeholderType: "body",
             placeholderIndex: 1,
             sourceText: "Three priorities\nOne accountable owner\nA decision by Friday",
+            sourceObjectKey: "ppt/slides/slide1.xml::/0/0/3::MIT Fixture Body",
+            sourceObjectSha256: "e".repeat(64),
+            sourceShapeId: "3",
+            sourceCreationId: "{00000000-0000-0000-0000-000000000003}",
+            sourceParagraphSha256s: ["1".repeat(64), "2".repeat(64), "3".repeat(64)],
             allowedEdits: ["text"],
             maxCharacters: 100,
             maxLines: 3,
@@ -102,6 +116,11 @@ function profileFixture() {
           placeholderType: "body",
           placeholderIndex: 1,
           sourceText: "Preserve me",
+          sourceObjectKey: "ppt/slides/slide2.xml::/0/0/2::Control body",
+          sourceObjectSha256: "4".repeat(64),
+          sourceShapeId: "2",
+          sourceCreationId: "",
+          sourceParagraphSha256s: ["5".repeat(64)],
           allowedEdits: ["text"],
         }],
         chrome: { preservedShapeNames: ["Brand logo"], rimPairs: [] },
@@ -109,6 +128,36 @@ function profileFixture() {
     ],
   };
 }
+
+test("captures standard DrawingML color transforms losslessly and rejects unknown transforms", () => {
+  const script = `
+import json, sys
+from xml.etree import ElementTree as ET
+sys.path.insert(0, ${JSON.stringify(designProfilePython)})
+from design_profile_core import ProfileError, color
+A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+value = ET.fromstring(f'<a:srgbClr xmlns:a="{A}" val="336699"><a:alpha val="50000"/><a:lumMod val="75000"/></a:srgbClr>')
+captured = color(value, "fixture")
+unknown_rejected = False
+try:
+    color(ET.fromstring(f'<a:srgbClr xmlns:a="{A}" val="336699"><a:invented val="1"/></a:srgbClr>'), "fixture")
+except ProfileError:
+    unknown_rejected = True
+print(json.dumps({"captured": captured, "unknownRejected": unknown_rejected}, sort_keys=True))
+`;
+  const result = spawnSync(python, ["-c", script], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.captured, {
+    kind: "srgbClr",
+    value: "336699",
+    transforms: [
+      { kind: "alpha", attributes: { val: "50000" } },
+      { kind: "lumMod", attributes: { val: "75000" } },
+    ],
+  });
+  assert.equal(report.unknownRejected, true);
+});
 
 test("validates and loads a clone-only source-bound profile", async (t) => {
   const source = profileFixture();
@@ -230,6 +279,26 @@ test("rejects undeclared, duplicate, no-op, and overflowing placeholder edits", 
   assert.throws(() => compileProfileDerivation(profile, request({ body: "one\ntwo\nthree\nfour" })), /maxLines 3/u);
 });
 
+test("compiles a source-bound native-run insertion for an empty template placeholder", () => {
+  const profile = profileFixture();
+  const title = profile.archetypes[0].placeholders[0];
+  title.sourceText = "";
+  const plan = compileProfileDerivation(profile, {
+    archetype: { id: "title-and-body" },
+    edits: { title: "New presentation title" },
+  });
+  assert.equal(plan.edits[0].editMode, "populate-empty-placeholder");
+  assert.equal(plan.edits[0].before, "");
+  assert.equal(plan.edits[0].after, "New presentation title");
+  assert.throws(
+    () => compileProfileDerivation(profile, {
+      archetype: { id: "title-and-body" },
+      edits: { title: "Line one\nLine two" },
+    }),
+    /currently accepts exactly one line/u,
+  );
+});
+
 test("loads and compiles a profile without broadening reuse claims", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-profile-compile-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
@@ -250,6 +319,11 @@ test("loads and compiles a profile without broadening reuse claims", async (t) =
     placeholderIndex: 0,
     before: "Quarterly operating review",
     after: "Annual operating review",
+    sourceObjectKey: "ppt/slides/slide1.xml::/0/0/2::MIT Fixture Title",
+    sourceObjectSha256: "c".repeat(64),
+    sourceShapeId: "2",
+    sourceCreationId: "{00000000-0000-0000-0000-000000000002}",
+    sourceParagraphSha256s: ["d".repeat(64)],
   }]);
 });
 test("maps exact shape-bound content specs into the clone-only plan", () => {
@@ -307,8 +381,12 @@ test("rejects tampered extracted profiles and maps only explicit logo groups", (
     objects: [{
       part: "ppt/slides/slide1.xml",
       name: "Title",
+      objectKey: "ppt/slides/slide1.xml::/0/0/2::Title",
+      xmlSha256: "1".repeat(64),
+      id: "2",
+      creationId: "",
       placeholder: { type: "title", index: 0 },
-      text: { plainText: "Source title" },
+      text: { plainText: "Source title", paragraphs: [{ xmlSha256: "2".repeat(64) }] },
     }],
     assets: {
       logos: [{ name: "SW Logo Group" }],

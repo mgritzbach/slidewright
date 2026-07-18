@@ -10,12 +10,12 @@
     "Python",
     "PowerPoint"
   ],
-  "sourceScorecardSha256": "343d7aca2f1e0c0d978dd14fe83c1666467025d78351b53052ed2b781f782822",
+  "sourceScorecardSha256": "6b6bbf9b36c29c778c0966c183ef66934fbb4102ce61fdfddcedd238cd93d7c2",
   "scorecard": {
     "schemaVersion": "slidewright-design-profile-scorecard/v1",
     "valid": true,
     "sourceSha256": "0f1719c14b8a1fbc910c3b8f46cf5c8cf5e5a0b7ba9843a9e04ed23653dec5ed",
-    "profileSha256": "16225b3f3e99a11d0120b6e5d3aeb6014581928357d15cd27130ebdbb5b3771b",
+    "profileSha256": "9beb72afa3c7850261a24f15699b5adda96f8128027cad61dec524ecffc273db",
     "deterministicProfile": true,
     "slideSize": {
       "heightEmu": 6858000,
@@ -201,7 +201,7 @@
     "powerpointRoundtripValid": true,
     "visualAuditValid": true,
     "powerpointVisualAuditValid": true,
-    "scorecardHash": "cc5bdb072e737a6b2e636caf81de5fa4559ec14e14dd1bc0ec8eb402529d4c9c"
+    "scorecardHash": "a9750ef1c12f08c0cd291d9320addc461a459f848faaa369892c30e15be7fe2f"
   },
-  "publishedHash": "e8ca699d53c860d5bcc915e9131e98def08f8bd78fe0818914a7dfc63648abb6"
+  "publishedHash": "31453fdc7eb5fe0398934aadfbe6b553ce22ffd5cb44da179a371f7758dbee54"
 }

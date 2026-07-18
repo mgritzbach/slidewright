@@ -6,6 +6,7 @@ import { assertPublicScorecard, contentHash, rejectMachineSpecificContent, sha25
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outIndex = process.argv.indexOf("--out");
 const out = outIndex >= 0 ? path.resolve(process.argv[outIndex + 1]) : null;
+const portableSourceOnly = process.argv.includes("--portable-source");
 const manifestPath = path.join(root, "evidence", "manifest.json");
 const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
 
@@ -44,6 +45,36 @@ for (const entry of manifest.entries) {
   verified.push({ id: entry.id, publishedHash: entry.publishedHash, command: entry.command });
 }
 
+const releaseState = JSON.parse(await fs.readFile(path.join(root, "evidence", "release-state.json"), "utf8"));
+if (releaseState.schemaVersion !== "slidewright-public-evidence-release-state/v1"
+  || !["candidate", "replicated"].includes(releaseState.state)
+  || releaseState.manifestHash !== manifest.manifestHash
+  || releaseState.stateHash !== contentHash(releaseState, "stateHash")) {
+  throw new Error("Public evidence release state is invalid, stale, or unauthenticated.");
+}
+
+if (portableSourceOnly) {
+  const result = {
+    schemaVersion: "slidewright-public-evidence-verification/v1",
+    valid: true,
+    verificationScope: "portable-source",
+    releaseState: releaseState.state,
+    manifestHash: manifest.manifestHash,
+    scorecards: verified,
+    freshHostReplication: null,
+  };
+  if (out) {
+    await fs.mkdir(path.dirname(out), { recursive: true });
+    await fs.writeFile(out, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+  }
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.exit(0);
+}
+
+if (releaseState.state !== "replicated") {
+  throw new Error(`Public evidence manifest ${manifest.manifestHash} is a candidate and lacks committed cross-platform replication.`);
+}
+
 const c22Root = path.join(root, "evidence", "c22", "v1");
 const artifactManifest = JSON.parse(await fs.readFile(path.join(c22Root, "artifact-manifest.json"), "utf8"));
 if (artifactManifest.schemaVersion !== "slidewright-c22-artifact-manifest/v1" || artifactManifest.valid !== true) {
@@ -76,6 +107,8 @@ if (aggregate.manifestHash !== manifest.manifestHash || aggregate.portableResult
 const result = {
   schemaVersion: "slidewright-public-evidence-verification/v1",
   valid: true,
+  verificationScope: "release",
+  releaseState: releaseState.state,
   manifestHash: manifest.manifestHash,
   scorecards: verified,
   freshHostReplication: {

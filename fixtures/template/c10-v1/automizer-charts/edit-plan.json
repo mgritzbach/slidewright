@@ -1,0 +1,33 @@
+{
+  "mode": "clone-source-deck",
+  "sourceSha256": "7b4d6833c93229377c160359f6764811a29728c57446ea39b7734eca5189101c",
+  "targetSlide": 1,
+  "edits": [
+    {
+      "shapeName": "Titel 1",
+      "placeholderType": "title",
+      "placeholderIndex": 0,
+      "before": "Test",
+      "after": "Chart portfolio review",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/2::Titel 1",
+      "sourceObjectSha256": "eade07b7f7e092bced6048581c912bbb0d252e8448a1f0da0a75bc9a3c45244d",
+      "sourceShapeId": "2",
+      "sourceCreationId": "{14FDB91B-3D32-470B-A3DA-C322B58684EE}",
+      "sourceParagraphSha256s": ["564ec9555e1ef3689d73363846e5c8d41a51e47c7504bba43ca4f4b60057cc96"]
+    },
+    {
+      "shapeName": "Untertitel 2",
+      "placeholderType": "subtitle",
+      "placeholderIndex": 1,
+      "before": "Template",
+      "after": "Native charts remain editable",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/3::Untertitel 2",
+      "sourceObjectSha256": "016c4fc3b75d314df14270b41ddd77520761d6a10bd806290009d88451ced2a7",
+      "sourceShapeId": "3",
+      "sourceCreationId": "{90AF6778-1CBA-435A-B48B-A2B137BC784D}",
+      "sourceParagraphSha256s": ["d54cc7d90ee61b8a6311fe19d84873edbe0c5b2861cd8771a93bf09d0b105935"]
+    }
+  ],
+  "preserveOnlySlides": [2],
+  "allowedDeviation": ["Replace native text in the two source-bound slide-1 placeholders only."]
+}

@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "slidewright-c10-template-fixtures/v1",
+  "fixtureSet": "c10-v1",
+  "curatedOn": "2026-07-17",
+  "hashAlgorithm": "sha256",
+  "fixtures": [
+    {
+      "id": "automizer-charts-mit",
+      "status": "accepted",
+      "file": "automizer-charts/template.pptx",
+      "editPlan": "automizer-charts/edit-plan.json",
+      "distribution": "deterministically-curated-derivative",
+      "source": {
+        "repositoryCommitUrl": "https://github.com/singerla/pptx-automizer/tree/6466d43abc6a9410b10b801d3aa1b510cc128446",
+        "downloadUrl": "https://raw.githubusercontent.com/singerla/pptx-automizer/6466d43abc6a9410b10b801d3aa1b510cc128446/__tests__/pptx-templates/RootTemplateWithCharts.pptx",
+        "retrievedOn": "2026-07-17",
+        "upstreamBytes": 61712,
+        "upstreamSha256": "cb2773c55cda589145f971a754fd2e0dc5412b83e3bbf87646b3d85602306ef6",
+        "upstreamFile": "automizer-charts/upstream-template.pptx",
+        "curatedBytes": 168400,
+        "curatedSha256": "7b4d6833c93229377c160359f6764811a29728c57446ea39b7734eca5189101c",
+        "sanitizer": "automizer-charts/sanitize.py",
+        "sanitizerArguments": ["{input}", "{output}"],
+        "sanitizationContract": "automizer-charts/SANITIZATION.md",
+        "license": {
+          "spdx": "MIT",
+          "localNotice": "automizer-charts/LICENSE.txt",
+          "repositoryLicenseUrl": "https://github.com/singerla/pptx-automizer/blob/6466d43abc6a9410b10b801d3aa1b510cc128446/LICENSE"
+        }
+      },
+      "inventory": {
+        "packageParts": 49,
+        "protectedParts": 26,
+        "relationshipTuples": 44,
+        "slides": 2,
+        "masters": 1,
+        "layouts": 11,
+        "themes": 1,
+        "objects": 69,
+        "archetypes": 2,
+        "groups": 0,
+        "media": 0,
+        "charts": 2,
+        "tables": 0,
+        "slidePlaceholders": 67,
+        "guides": 0,
+        "slideSizeEmu": { "width": 12192000, "height": 6858000 }
+      },
+      "targetContract": {
+        "mode": "replace-existing-text",
+        "targets": [
+          {
+            "part": "ppt/slides/slide1.xml",
+            "shapeId": "2",
+            "shapeName": "Titel 1",
+            "placeholderType": "ctrTitle",
+            "sourceText": "Test"
+          },
+          {
+            "part": "ppt/slides/slide1.xml",
+            "shapeId": "3",
+            "shapeName": "Untertitel 2",
+            "placeholderType": "subTitle",
+            "placeholderIndex": "1",
+            "sourceText": "Template"
+          }
+        ],
+        "preserve": [
+          "all master, layout, and theme parts",
+          "both native chart structures and their data",
+          "all non-target XML bytes"
+        ]
+      }
+    },
+    {
+      "id": "automizer-tables-mit",
+      "status": "accepted",
+      "file": "automizer-tables/template.pptx",
+      "editPlan": "automizer-tables/edit-plan.json",
+      "distribution": "unmodified-upstream-binary",
+      "source": {
+        "repositoryCommitUrl": "https://github.com/singerla/pptx-automizer/tree/6466d43abc6a9410b10b801d3aa1b510cc128446",
+        "downloadUrl": "https://raw.githubusercontent.com/singerla/pptx-automizer/6466d43abc6a9410b10b801d3aa1b510cc128446/__tests__/pptx-templates/SlideWithTables.pptx",
+        "retrievedOn": "2026-07-17",
+        "upstreamBytes": 44521,
+        "upstreamSha256": "c23ed32ac8e7aed1e3b3f985f5d50ff396547bd7e3fe43d04805a13438a0272e",
+        "curatedSha256": "c23ed32ac8e7aed1e3b3f985f5d50ff396547bd7e3fe43d04805a13438a0272e",
+        "license": {
+          "spdx": "MIT",
+          "localNotice": "automizer-tables/LICENSE.txt",
+          "repositoryLicenseUrl": "https://github.com/singerla/pptx-automizer/blob/6466d43abc6a9410b10b801d3aa1b510cc128446/LICENSE"
+        }
+      },
+      "inventory": {
+        "packageParts": 41,
+        "protectedParts": 26,
+        "relationshipTuples": 38,
+        "slides": 3,
+        "masters": 1,
+        "layouts": 11,
+        "themes": 1,
+        "objects": 74,
+        "archetypes": 3,
+        "groups": 0,
+        "media": 0,
+        "charts": 0,
+        "tables": 8,
+        "slidePlaceholders": 66,
+        "guides": 0,
+        "slideSizeEmu": { "width": 12192000, "height": 6858000 }
+      },
+      "targetContract": {
+        "mode": "replace-existing-text",
+        "targets": [
+          {
+            "part": "ppt/slides/slide1.xml",
+            "shapeId": "5",
+            "shapeName": "Titel 4",
+            "placeholderType": "title",
+            "placeholderIndex": "0",
+            "sourceText": "Tabellen 1"
+          }
+        ],
+        "preserve": [
+          "all master, layout, and theme parts",
+          "all eight native tables and cell formatting",
+          "all non-target XML bytes"
+        ]
+      }
+    },
+    {
+      "id": "martin-mit",
+      "status": "accepted",
+      "file": "martin/template.pptx",
+      "editPlan": "martin/edit-plan.json",
+      "distribution": "unmodified-upstream-binary",
+      "source": {
+        "repositoryCommitUrl": "https://github.com/MartinPacker/md2pptx/tree/4290ee3b431c592690e7e14d539e5715b4622279",
+        "downloadUrl": "https://raw.githubusercontent.com/MartinPacker/md2pptx/4290ee3b431c592690e7e14d539e5715b4622279/Martin%20Template.pptx",
+        "retrievedOn": "2026-07-17",
+        "upstreamBytes": 33776,
+        "upstreamSha256": "4f278a0558f90a5db089235464af4f5746e738579754866acd704cab704a56e4",
+        "curatedSha256": "4f278a0558f90a5db089235464af4f5746e738579754866acd704cab704a56e4",
+        "license": {
+          "spdx": "MIT",
+          "localNotice": "martin/LICENSE.txt",
+          "repositoryLicenseUrl": "https://github.com/MartinPacker/md2pptx/blob/4290ee3b431c592690e7e14d539e5715b4622279/LICENSE"
+        }
+      },
+      "inventory": {
+        "packageParts": 40,
+        "protectedParts": 27,
+        "relationshipTuples": 36,
+        "slides": 1,
+        "masters": 1,
+        "layouts": 11,
+        "themes": 2,
+        "objects": 66,
+        "archetypes": 1,
+        "groups": 0,
+        "media": 0,
+        "slidePlaceholders": 3,
+        "guides": 2,
+        "slideSizeEmu": { "width": 12192000, "height": 6858000 }
+      },
+      "targetContract": {
+        "mode": "populate-empty-placeholder",
+        "targets": [
+          {
+            "part": "ppt/slides/slide1.xml",
+            "shapeId": "4",
+            "shapeName": "Title 4",
+            "placeholderType": "title",
+            "placeholderIndex": "0",
+            "sourceText": ""
+          },
+          {
+            "part": "ppt/slides/slide1.xml",
+            "shapeId": "5",
+            "shapeName": "Content Placeholder 5",
+            "placeholderType": "body",
+            "placeholderIndex": "1",
+            "sourceText": ""
+          }
+        ],
+        "preserve": [
+          "native placeholder identity",
+          "inherited font, size, color, insets, alignment, and spacing",
+          "all master, layout, and theme parts",
+          "all non-target XML bytes"
+        ]
+      }
+    },
+    {
+      "id": "cats-cc0-sanitized",
+      "status": "accepted",
+      "file": "cats/template.pptx",
+      "editPlan": "cats/edit-plan.json",
+      "distribution": "deterministically-sanitized-derivative",
+      "source": {
+        "sourcePageUrl": "https://johndewees.com/2023/07/10/anatomy-of-a-creative-commons-license/",
+        "downloadUrl": "https://johndewees.com/wp-content/uploads/2023/07/cat_template.pptx",
+        "retrievedOn": "2026-07-17",
+        "upstreamBytes": 6546378,
+        "upstreamSha256": "b0b5eea81ad7d8a47c5cb98f04e286d0b9bbe6177b15b57003618e1165dc77ba",
+        "upstreamFile": "cats/upstream-template.pptx",
+        "curatedBytes": 6982105,
+        "curatedSha256": "b996327ede97791a8e54cde0983f04880bdddd68b28901ff129146d59362547c",
+        "sanitizer": "cats/sanitize.py",
+        "sanitizerArguments": ["--input", "{input}", "--output", "{output}"],
+        "sanitizationContract": "cats/SANITIZATION.md",
+        "license": {
+          "spdx": "CC0-1.0",
+          "localNotice": "cats/LICENSE.txt",
+          "sourceLicenseStatementUrl": "https://johndewees.com/2023/07/10/anatomy-of-a-creative-commons-license/",
+          "legalCodeUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
+        }
+      },
+      "inventory": {
+        "packageParts": 138,
+        "protectedParts": 26,
+        "relationshipTuples": 232,
+        "slides": 33,
+        "masters": 1,
+        "layouts": 11,
+        "themes": 1,
+        "objects": 252,
+        "archetypes": 33,
+        "groups": 0,
+        "media": 35,
+        "slidePictures": 66,
+        "slidePlaceholders": 0,
+        "guides": 0,
+        "slideSizeEmu": { "width": 12192000, "height": 6858000 }
+      },
+      "targetContract": {
+        "mode": "preserve-only",
+        "targets": [],
+        "preserve": [
+          "all 33 slides and their order",
+          "all artwork images",
+          "all artwork credit text and source URLs",
+          "all hyperlink relationships",
+          "all master, layout, and theme parts",
+          "all non-sanitization XML bytes"
+        ]
+      }
+    }
+  ],
+  "rejected": ["rejected/triple.json", "rejected/keith-powerpoint.json"]
+}

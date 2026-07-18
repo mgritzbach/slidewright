@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "slidewright-c10-rejected-source/v1",
+  "id": "triple-cc-by-4.0",
+  "status": "rejected",
+  "binaryVendored": false,
+  "source": {
+    "sourcePageUrl": "https://www.gotriple.eu/information-material/",
+    "downloadUrl": "https://www.gotriple.eu/wp-content/uploads/2021/09/TRIPLE_PPT_TEMPLATE_2021_09_03.pptx",
+    "retrievedOn": "2026-07-17",
+    "bytes": 2507723,
+    "sha256": "33d40d44c0780ab90afc7839314b4099830825612a450b373ddc6d2d5126907a",
+    "license": {
+      "spdx": "CC-BY-4.0",
+      "sourceLicenseStatementUrl": "https://www.gotriple.eu/information-material/",
+      "legalCodeUrl": "https://creativecommons.org/licenses/by/4.0/legalcode"
+    }
+  },
+  "rejectionReason": "The published download is not a healthy, reliably readable OOXML ZIP package and cannot serve as preservation evidence.",
+  "diagnostics": [
+    {
+      "validator": "python-zipfile-test",
+      "result": "failed",
+      "detail": "python -m zipfile -t raised OSError: [Errno 22] Invalid argument while reading a local file header"
+    },
+    {
+      "validator": "slidewright-design-profile",
+      "result": "failed",
+      "detail": "Cannot read PPTX package: [Errno 22] Invalid argument"
+    },
+    {
+      "validator": "bsdtar-extract",
+      "result": "failed",
+      "detail": "ppt/media/image7.png has ZIP CRC 0x3c0cc528 but the archive declares 0x9165b7ce; extraction exited 1"
+    }
+  ]
+}

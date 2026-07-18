@@ -1,0 +1,33 @@
+{
+  "mode": "clone-source-deck",
+  "sourceSha256": "56dffe7f7babd625f297dee0955e43f5f546ff6330bd3e8129915f2bce1cf0ed",
+  "targetSlide": 1,
+  "edits": [
+    {
+      "shapeName": "Title 1",
+      "placeholderType": "title",
+      "placeholderIndex": 0,
+      "before": "Presentation title Alt",
+      "after": "Portfolio performance review",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/2::Title 1",
+      "sourceObjectSha256": "e7677f0a39b11c077ed16c30f77e5c0d938f6b88f827fd4fd658c85deaa3a5ef",
+      "sourceShapeId": "2",
+      "sourceCreationId": "{FBAB08B8-3DB3-4637-AE23-B8DB96D9FCEC}",
+      "sourceParagraphSha256s": ["5956b7fa96d1cc7016992b3b2cbbbdee0b15f3968c39bf2b7ef0ff7a7dfa7f41"]
+    },
+    {
+      "shapeName": "Subtitle 2",
+      "placeholderType": "subtitle",
+      "placeholderIndex": 1,
+      "before": "Subtitle comes here",
+      "after": "Editable template-preservation benchmark",
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/3::Subtitle 2",
+      "sourceObjectSha256": "c2dc8cbbd581b6f95b36e0e51f07aeb4ccf57b60fc10f3d1b3256b3eeed38a0a",
+      "sourceShapeId": "3",
+      "sourceCreationId": "{2198AA37-E298-4CD8-9F0F-2123ACFD9653}",
+      "sourceParagraphSha256s": ["507601654e5e45af73f30beeccc3b41cba9335319ade85b44d3db4b503cd23a0"]
+    }
+  ],
+  "preserveOnlySlides": [2, 3],
+  "allowedDeviation": ["Replace native text in the two source-bound slide-1 placeholders only."]
+}

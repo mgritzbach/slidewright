@@ -22,7 +22,13 @@ CHROME_WORDS = re.compile(
     r"(?:^|[-_\s])(logo|brand|rail|rim|limit(?:er)?|divider|footer|header|chrome|rule|border|page|slide[-_\s]?number)(?:$|[-_\s])",
     re.I,
 )
-COLOR_MODELS = {"srgbClr", "sysClr", "schemeClr"}
+COLOR_MODELS = {"srgbClr", "sysClr", "schemeClr", "prstClr"}
+COLOR_TRANSFORMS = {
+    "alpha", "alphaMod", "alphaOff", "blue", "blueMod", "blueOff", "comp", "gamma", "gray",
+    "green", "greenMod", "greenOff", "hue", "hueMod", "hueOff", "inv", "invGamma", "lum",
+    "lumMod", "lumOff", "red", "redMod", "redOff", "sat", "satMod", "satOff", "shade", "tint",
+}
+VALUELESS_COLOR_TRANSFORMS = {"comp", "gamma", "gray", "inv", "invGamma"}
 FILL_MODELS = {"solidFill", "noFill", "grpFill"}
 
 
@@ -146,7 +152,7 @@ def rel_map(parts: dict[str, bytes], owner: str) -> dict[str, str]:
     return result
 
 
-def color(node: ET.Element | None, context: str) -> dict[str, str] | None:
+def color(node: ET.Element | None, context: str) -> dict[str, Any] | None:
     if node is None:
         return None
     value = node if lname(node.tag).endswith("Clr") else next(
@@ -157,13 +163,31 @@ def color(node: ET.Element | None, context: str) -> dict[str, str] | None:
     kind = lname(value.tag)
     if kind not in COLOR_MODELS:
         raise ProfileError(f"Unsupported v1 color model {kind} in {context}.")
-    if list(value):
-        raise ProfileError(f"Unsupported v1 color transform in {context}: {[lname(x.tag) for x in value]}.")
+    transforms = []
+    for transform in value:
+        transform_kind = lname(transform.tag)
+        if (
+            not transform.tag.startswith(f"{{{A}}}")
+            or transform_kind not in COLOR_TRANSFORMS
+            or list(transform)
+        ):
+            raise ProfileError(f"Unsupported v1 color transform in {context}: {transform_kind}.")
+        attributes = attrs(transform)
+        if transform_kind in VALUELESS_COLOR_TRANSFORMS:
+            if attributes:
+                raise ProfileError(f"Valueless color transform {transform_kind} has attributes in {context}.")
+        elif set(attributes) != {"val"}:
+            raise ProfileError(f"Color transform {transform_kind} must have exactly one val attribute in {context}.")
+        transforms.append({"kind": transform_kind, "attributes": attributes})
     if kind == "srgbClr":
-        return {"kind": kind, "value": value.get("val", "").upper()}
-    if kind == "sysClr":
-        return {"kind": kind, "value": value.get("lastClr", "").upper(), "system": value.get("val", "")}
-    return {"kind": kind, "value": value.get("val", "")}
+        result = {"kind": kind, "value": value.get("val", "").upper()}
+    elif kind == "sysClr":
+        result = {"kind": kind, "value": value.get("lastClr", "").upper(), "system": value.get("val", "")}
+    else:
+        result = {"kind": kind, "value": value.get("val", "")}
+    if transforms:
+        result["transforms"] = transforms
+    return result
 
 
 def fill(node: ET.Element | None, context: str) -> dict[str, Any]:
@@ -249,13 +273,24 @@ def text_data(shape: ET.Element, context: str) -> dict[str, Any] | None:
                 sizes.add(formatting["sizePt"])
             node = child(run, "t")
             runs.append({"text": "" if node is None or node.text is None else node.text, "format": formatting})
-        paragraphs.append({"runs": runs, "endParagraphFormat": run_format(child(paragraph, "endParaRPr"), context)})
+        paragraph_properties = child(paragraph, "pPr")
+        paragraphs.append(
+            {
+                "runs": runs,
+                "properties": attrs(paragraph_properties),
+                "propertiesXmlSha256": "" if paragraph_properties is None else sha(ET.tostring(paragraph_properties, encoding="utf-8")),
+                "xmlSha256": sha(ET.tostring(paragraph, encoding="utf-8")),
+                "endParagraphFormat": run_format(child(paragraph, "endParaRPr"), context),
+            }
+        )
+    body_properties = child(body, "bodyPr")
     return {
         "plainText": "\n".join("".join(run["text"] for run in paragraph["runs"]) for paragraph in paragraphs),
         "paragraphs": paragraphs,
         "fonts": sorted(fonts),
         "fontSizesPt": sorted(sizes),
-        "bodyProperties": attrs(child(body, "bodyPr")),
+        "bodyProperties": attrs(body_properties),
+        "bodyPropertiesXmlSha256": "" if body_properties is None else sha(ET.tostring(body_properties, encoding="utf-8")),
     }
 
 
@@ -300,7 +335,20 @@ def object_records(parts: dict[str, bytes]) -> list[dict[str, Any]]:
                         "path": item_path,
                         "order": order,
                         "type": lname(item.tag),
+                        "semanticKind": (
+                            "chart" if any(lname(node.tag) == "chart" for node in item.iter())
+                            else "table" if any(lname(node.tag) == "tbl" for node in item.iter())
+                            else lname(item.tag)
+                        ),
                         "id": "" if non_visual is None else non_visual.get("id", ""),
+                        "creationId": next(
+                            (
+                                value.get("id", "")
+                                for value in item.iter()
+                                if lname(value.tag) == "creationId" and value.get("id")
+                            ),
+                            "",
+                        ),
                         "name": name,
                         "title": "" if non_visual is None else non_visual.get("title", ""),
                         "description": "" if non_visual is None else non_visual.get("descr", ""),
@@ -332,6 +380,53 @@ def object_records(parts: dict[str, bytes]) -> list[dict[str, Any]]:
 
         visit(root, "")
     return sorted(result, key=lambda item: (item["part"], item["order"], item["path"]))
+
+
+def spacing_records(parts: dict[str, bytes]) -> list[dict[str, Any]]:
+    """Capture text inset/fit and paragraph-spacing XML explicitly across the deck."""
+    accepted_parts = re.compile(
+        r"ppt/(?:presentation|slides/slide\d+|slideLayouts/slideLayout\d+|slideMasters/slideMaster\d+|tableStyles)\.xml"
+    )
+    spacing_nodes = {"bodyPr", "pPr", "defPPr", "lnSpc", "spcBef", "spcAft", "tcPr"}
+    result: list[dict[str, Any]] = []
+    for part in sorted(name for name in parts if accepted_parts.fullmatch(name)):
+        root = ET.fromstring(parts[part])
+
+        def visit(node: ET.Element, path: str) -> None:
+            for index, item in enumerate(list(node)):
+                item_path = f"{path}/{index}"
+                if lname(item.tag) in spacing_nodes or re.fullmatch(r"lvl\d+pPr", lname(item.tag)):
+                    result.append(
+                        {
+                            "part": part,
+                            "path": item_path,
+                            "kind": lname(item.tag),
+                            "attributes": attrs(item),
+                            "xmlSha256": sha(ET.tostring(item, encoding="utf-8")),
+                        }
+                    )
+                visit(item, item_path)
+
+        visit(root, "")
+    return result
+
+
+def inheritance_chains(parts: dict[str, bytes]) -> list[dict[str, str]]:
+    chains = []
+    for slide in sorted(name for name in parts if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)):
+        layout = slide_layout(parts, slide)
+        layout_relationships = rel_map(parts, layout) if layout else {}
+        master = next(
+            (target for target in layout_relationships.values() if target.startswith("ppt/slideMasters/")),
+            "",
+        )
+        master_relationships = rel_map(parts, master) if master else {}
+        theme = next(
+            (target for target in master_relationships.values() if target.startswith("ppt/theme/")),
+            "",
+        )
+        chains.append({"slidePart": slide, "layoutPart": layout, "masterPart": master, "themePart": theme})
+    return chains
 
 
 def themes(parts: dict[str, bytes]) -> list[dict[str, Any]]:
@@ -622,7 +717,12 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
             "relationshipManifestSha256": canonical_hash(relationships),
             "protectedParts": [{"part": name, "sha256": sha(parts[name])} for name in protected],
         },
-        "presentation": {"slideSize": size, "guides": guides(parts)},
+        "presentation": {
+            "slideSize": size,
+            "guides": guides(parts),
+            "inheritanceChains": inheritance_chains(parts),
+        },
+        "spacing": {"records": spacing_records(parts)},
         "themes": themes(parts),
         "masters": named_parts(parts, "masters"),
         "layouts": named_parts(parts, "layouts"),
@@ -652,7 +752,8 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
         "declaredAsymmetries": declarations,
         "unsupported": {
             "policy": "fail-closed",
-            "themeColorTransforms": "rejected",
+            "standardColorTransforms": "captured-losslessly",
+            "unknownColorTransforms": "rejected",
             "colorModels": sorted(COLOR_MODELS),
             "fills": sorted(FILL_MODELS | {"inherit"}),
         },

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "slidewright-public-evidence-release-state/v1",
+  "state": "candidate",
+  "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+  "priorReplicatedManifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+  "stateHash": "00cd6c1f51bb083b936d7b78ec0c1dde4aa3e308a44d1748558dd2020035906b"
+}
