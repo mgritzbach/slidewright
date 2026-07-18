@@ -16,6 +16,7 @@ import {
   collectReceiptTree,
   exactPathInventoryMatches,
   expectedSemanticReceiptPaths,
+  moveSemanticEvidenceDirectory,
   normalizeCommandArgument,
   publishVerifiedSemanticEvidence,
   runForcedParentWatchdogControl,
@@ -531,6 +532,39 @@ test("versioned evidence publication accepts an identical replay but rejects a t
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }
+});
+
+test("semantic publication retries a transient Windows EPERM only while the destination is absent", async () => {
+  const calls = [];
+  const delays = [];
+  const disposition = await moveSemanticEvidenceDirectory({
+    staging: "staging",
+    finalRun: "final",
+    rename: async () => {
+      calls.push("rename");
+      if (calls.length < 3) throw Object.assign(new Error("transient filter lock"), { code: "EPERM" });
+    },
+    access: async () => { throw Object.assign(new Error("missing"), { code: "ENOENT" }); },
+    sleep: async (milliseconds) => { delays.push(milliseconds); },
+    maxAttempts: 3,
+    retryDelayMs: 10,
+  });
+  assert.equal(disposition, "moved");
+  assert.equal(calls.length, 3);
+  assert.deepEqual(delays, [10, 20]);
+
+  let renameCalls = 0;
+  assert.equal(await moveSemanticEvidenceDirectory({
+    staging: "staging",
+    finalRun: "final",
+    rename: async () => {
+      renameCalls += 1;
+      throw Object.assign(new Error("destination exists"), { code: "EPERM" });
+    },
+    access: async () => undefined,
+    sleep: async () => { throw new Error("must not retry an existing immutable run"); },
+  }), "existing");
+  assert.equal(renameCalls, 1);
 });
 
 test("versioned publication verifies the final run before advancing current", async () => {

@@ -266,15 +266,48 @@ async function replaceFileAtomically(target, contents) {
   try { await fs.rename(temporary, target); } finally { await fs.rm(temporary, { force: true }); }
 }
 
+export async function moveSemanticEvidenceDirectory({
+  staging,
+  finalRun,
+  rename = fs.rename,
+  access = fs.access,
+  sleep = delay,
+  maxAttempts = 12,
+  retryDelayMs = 250,
+}) {
+  requireEvidence(Number.isInteger(maxAttempts) && maxAttempts > 0, "C08 publication retry count is invalid.");
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await rename(staging, finalRun);
+      return "moved";
+    } catch (error) {
+      if (!["EEXIST", "ENOTEMPTY", "EPERM"].includes(error.code)) throw error;
+      const targetExists = await access(finalRun).then(
+        () => true,
+        (accessError) => {
+          if (accessError.code === "ENOENT") return false;
+          throw accessError;
+        },
+      );
+      if (targetExists) return "existing";
+      // OneDrive and antivirus filters can transiently hold a just-written
+      // directory on Windows. EPERM without a destination is not an existing
+      // immutable run, so retry the atomic rename instead of comparing a path
+      // that does not exist.
+      if (error.code !== "EPERM" || attempt === maxAttempts) throw error;
+      await sleep(retryDelayMs * attempt);
+    }
+  }
+  throw new Error("C08 publication rename retry loop exhausted unexpectedly.");
+}
+
 export async function publishVerifiedSemanticEvidence({ staging, published, scorecardHash, verify }) {
   const finalRun = path.join(published, "runs", scorecardHash);
   await fs.mkdir(path.dirname(finalRun), { recursive: true });
   const scorecard = JSON.parse((await fs.readFile(path.join(staging, "scorecard.json"), "utf8")).replace(/^\uFEFF/u, ""));
   requireEvidence(scorecard.scorecardHash === scorecardHash, "C08 staging scorecard does not match its publication key.");
-  try {
-    await fs.rename(staging, finalRun);
-  } catch (error) {
-    if (!["EEXIST", "ENOTEMPTY", "EPERM"].includes(error.code)) throw error;
+  const disposition = await moveSemanticEvidenceDirectory({ staging, finalRun });
+  if (disposition === "existing") {
     await assertIdenticalTrees(staging, finalRun);
     await fs.rm(staging, { recursive: true, force: true });
   }
