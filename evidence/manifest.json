@@ -16,16 +16,16 @@
       "file": "scorecards/v1/c14-geometric-readability.json",
       "sourceOutput": "outputs/defects/scorecard.json",
       "command": "npm run defects",
-      "publishedHash": "a559877a6938ac15cafc0a81f4b3a3f412ec446304b24f80162a33a0ef2bdc35",
-      "fileSha256": "e41ef04eb05fbdf0a85eea815654cb846a0d58eb8127ca91aad8fa0d5b94f93d"
+      "publishedHash": "ef6c68d24941a26c37bac91cf9cfc70c014d1f0c5dadc41c9282298a9ca86902",
+      "fileSha256": "b3e7450cf613beb6d1a6b6360b4a057e35280098fdf98e6910858a423c9a6404"
     },
     {
       "id": "g22-g23-design-profile",
       "file": "scorecards/v1/g22-g23-design-profile.json",
       "sourceOutput": "outputs/design-profile/scorecard.json",
       "command": "npm run design-profile",
-      "publishedHash": "e8ca699d53c860d5bcc915e9131e98def08f8bd78fe0818914a7dfc63648abb6",
-      "fileSha256": "5443eea6796ceaa17e3f74d33c6ea67ec11a8f75c7ad450765b2581286da884c"
+      "publishedHash": "31453fdc7eb5fe0398934aadfbe6b553ce22ffd5cb44da179a371f7758dbee54",
+      "fileSha256": "10b4d0448c1182fe1115730a0fe46e643c8ab135592a568d0c3f9a7dd2e8e69b"
     },
     {
       "id": "g24-g28-feedback-contracts",
@@ -36,5 +36,5 @@
       "fileSha256": "fa62be04aea23fc089939cc4d691420eee9ec7fa9d5ad3e1378ceb52f58f2cd2"
     }
   ],
-  "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d"
+  "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc"
 }

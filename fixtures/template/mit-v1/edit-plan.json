@@ -2,6 +2,7 @@
   "version": "0.1",
   "source": "slidewright-mit-template.pptx",
   "sourceSha256": "a76776ce9a106f2976ca448a8fb92e97e7c9c44f5733caac7e67b32624959038",
+  "mode": "clone-source-deck",
   "expectedCoreAuthor": "Slidewright contributors",
   "targetSlide": 1,
   "edits": [
@@ -9,6 +10,13 @@
       "shapeName": "MIT Fixture Title",
       "placeholderType": "title",
       "placeholderIndex": 0,
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/2::MIT Fixture Title",
+      "sourceObjectSha256": "f9e8a2a3a77d993972b31fa9b672ed92584d1fed9543b5f47a8ae4e6b5a2d9de",
+      "sourceShapeId": "2",
+      "sourceCreationId": "{45F006EE-C28D-2785-FE87-85915B48FCBE}",
+      "sourceParagraphSha256s": [
+        "7415d309017579aecc40c7809aeb0cebff374cb40f0db7c57129a9f1743cce47"
+      ],
       "before": "Quarterly operating review",
       "after": "Annual operating review"
     },
@@ -16,6 +24,15 @@
       "shapeName": "MIT Fixture Body",
       "placeholderType": "body",
       "placeholderIndex": 1,
+      "sourceObjectKey": "ppt/slides/slide1.xml::/0/0/3::MIT Fixture Body",
+      "sourceObjectSha256": "6291682c9b530b4299f15b381244df6c5ca0a1a4addfa2e7e2e4d8d7341076be",
+      "sourceShapeId": "3",
+      "sourceCreationId": "{DF19F157-94B8-2313-0518-8700461433F7}",
+      "sourceParagraphSha256s": [
+        "be2a6e913bc1017e3392d969f010a36547de3a5b0562440d374f7cd8c513e915",
+        "eb86f3c37ebcc99514ab00584bf83f54d993144f9b212addc228ef11a5c309d0",
+        "dc15570d6c39bbfaaaf488ab853e94ecbbe87e13598702cefef48eacb23cc10b"
+      ],
       "before": "Three priorities\nOne accountable owner\nA decision by Friday",
       "after": "Four priorities\nOne accountable owner\nA decision by Thursday"
     }

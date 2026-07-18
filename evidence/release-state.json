@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "slidewright-public-evidence-release-state/v1",
+  "state": "replicated",
+  "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
+  "priorReplicatedManifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+  "sourceCommit": "8429ed065f23bdba43f36a571020f21b781b6ae7",
+  "runId": "29642280222",
+  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29642280222",
+  "artifactManifestHash": "cd3ba26697d56d5c3140275e540a24cbb14f35dc9e409f74d3fa13c26fdc31fb",
+  "stateHash": "e7ccc6da2ce5be4998a523296d861c447207c6758efea26b89aeb6ed2c1f68e5"
+}

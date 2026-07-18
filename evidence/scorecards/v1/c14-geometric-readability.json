@@ -10,7 +10,7 @@
     "Python",
     "PowerPoint for the final bounds control"
   ],
-  "sourceScorecardSha256": "1e02ddbeab58ddaa8dbef84ae8a33f4461b063efd3e9d7f568a14a155d6d39d1",
+  "sourceScorecardSha256": "dae1b166d9526a22ec5f5bf050d23f62236b4c87764f540673d76c39cde3d1e5",
   "scorecard": {
     "valid": true,
     "fixtureVersion": "c14-v1",
@@ -134,7 +134,7 @@
     "renderedChartComponents": {
       "valid": true,
       "slides": 2,
-      "nativeEditableObjects": 18
+      "nativeEditableObjects": 28
     },
     "renderedFalseFit": {
       "rejected": true,
@@ -150,7 +150,7 @@
     "powerPointChartTextBounds": {
       "valid": true,
       "slides": 2,
-      "textShapes": 8
+      "textShapes": 16
     },
     "powerPointClippingNegative": {
       "rejected": true,
@@ -173,7 +173,7 @@
       "maximumChartCategories": 12,
       "maximumChartSeries": 6
     },
-    "scorecardHash": "a980820b5974119151b639f1370279fd1ed4f8925481b1cf86e2c9b15c76ee70"
+    "scorecardHash": "0a3fb756e88c14eb3741c2f3717d682c760bbbba8e7eddef1196153c48e4db63"
   },
-  "publishedHash": "a559877a6938ac15cafc0a81f4b3a3f412ec446304b24f80162a33a0ef2bdc35"
+  "publishedHash": "ef6c68d24941a26c37bac91cf9cfc70c014d1f0c5dadc41c9282298a9ca86902"
 }

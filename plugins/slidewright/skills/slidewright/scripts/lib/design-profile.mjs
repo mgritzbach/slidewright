@@ -120,6 +120,12 @@ function validatePlaceholder(placeholder, label) {
   requireValue(PLACEHOLDER_TYPES.has(placeholder.placeholderType), label + ".placeholderType is invalid.");
   requireFinite(placeholder.placeholderIndex, label + ".placeholderIndex", { min: 0, integer: true });
   requireValue(typeof placeholder.sourceText === "string", label + ".sourceText must be a string.");
+  requireString(placeholder.sourceObjectKey, label + ".sourceObjectKey");
+  requireValue(SHA256.test(placeholder.sourceObjectSha256 ?? ""), label + ".sourceObjectSha256 must be SHA-256.");
+  requireString(placeholder.sourceShapeId, label + ".sourceShapeId");
+  requireValue(typeof placeholder.sourceCreationId === "string", label + ".sourceCreationId must explicitly preserve the source value, including an empty value.");
+  requireValue(Array.isArray(placeholder.sourceParagraphSha256s) && placeholder.sourceParagraphSha256s.length > 0
+    && placeholder.sourceParagraphSha256s.every((value) => SHA256.test(value)), label + ".sourceParagraphSha256s must be a non-empty SHA-256 array.");
   requireValue(Array.isArray(placeholder.allowedEdits) && placeholder.allowedEdits.length > 0, label + ".allowedEdits must be non-empty.");
   requireUnique(placeholder.allowedEdits, label + ".allowedEdits");
   requireValue(placeholder.allowedEdits.every((operation) => operation === "text"), label + ".allowedEdits may only contain 'text' in g22-v1.");
@@ -370,17 +376,30 @@ export function adaptExtractedProfile(rawInput, intentInput) {
     const slideObjects = raw.objects.filter((item) => item.part === slide.part);
     const placeholders = slideObjects
       .filter((item) => item.placeholder && item.text && (editableNames.size === 0 || editableNames.has(item.name)))
-      .map((item) => ({
+      .map((item) => {
+        requireValue(typeof item.objectKey === "string" && item.objectKey.length > 0
+          && SHA256.test(item.xmlSha256 ?? "") && typeof item.id === "string"
+          && Object.hasOwn(item, "creationId") && typeof item.creationId === "string"
+          && Array.isArray(item.text.paragraphs) && item.text.paragraphs.length > 0
+          && item.text.paragraphs.every((paragraph) => SHA256.test(paragraph.xmlSha256 ?? "")),
+        `source placeholder ${item.name} lacks complete object identity and paragraph hashes.`);
+        return ({
         id: slug(item.name),
         shapeName: item.name,
         placeholderType: item.placeholder.type,
         placeholderIndex: item.placeholder.index,
         sourceText: item.text.plainText,
+        sourceObjectKey: item.objectKey,
+        sourceObjectSha256: item.xmlSha256,
+        sourceShapeId: item.id,
+        sourceCreationId: item.creationId ?? "",
+        sourceParagraphSha256s: item.text.paragraphs.map((paragraph) => paragraph.xmlSha256),
         allowedEdits: ["text"],
         required: true,
         maxCharacters: item.placeholder.type === "title" ? 100 : 360,
         maxLines: item.placeholder.type === "title" ? 2 : 8,
-      }));
+        });
+      });
     requireValue(placeholders.length > 0, "source slide " + sourceSlide + " has no declared editable placeholders.");
     const relevantParts = new Set([slide.layoutPart, ...(raw.masters ?? []).map((master) => master.part)]);
     const rimPairs = (raw.symmetryContracts ?? []).filter((contract) => relevantParts.has(contract.part)).map(contractToRimPair);

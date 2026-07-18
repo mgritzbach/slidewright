@@ -81,10 +81,12 @@ const negatives = [];
 for (const fixture of negativeQualityFixtures) {
   const runs = Array.from({ length: manifest.repetitions }, () => lintPlan(fixture.build()));
   if (!runs.every((report) => stable(report.diagnostics) === stable(runs[0].diagnostics))) throw new Error(`${fixture.id} diagnostics are nondeterministic.`);
-  if (stable(runs[0].diagnostics) !== stable([fixture.expectedDiagnostic])) throw new Error(`${fixture.id} diagnostics do not match the exact fixture contract.`);
+  const expectedDiagnostics = fixture.expectedDiagnostics ?? [fixture.expectedDiagnostic];
+  if (stable(runs[0].diagnostics) !== stable(expectedDiagnostics)) throw new Error(`${fixture.id} diagnostics do not match the exact fixture contract.`);
   const ruleIds = [...new Set(runs[0].diagnostics.map((item) => item.ruleId))];
-  if (stable(ruleIds) !== stable([fixture.ruleId])) throw new Error(`${fixture.id} did not fail only ${fixture.ruleId}: ${ruleIds.join(", ")}`);
-  negatives.push({ id: fixture.id, ruleId: fixture.ruleId, diagnostics: runs[0].diagnostics });
+  const expectedRuleIds = [...new Set(expectedDiagnostics.map((item) => item.ruleId))];
+  if (stable(ruleIds) !== stable(expectedRuleIds)) throw new Error(`${fixture.id} did not fail with the exact rule sequence ${expectedRuleIds.join(", ")}: ${ruleIds.join(", ")}`);
+  negatives.push({ id: fixture.id, ruleId: fixture.ruleId, ruleIds, diagnostics: runs[0].diagnostics });
 }
 
 await renderPlan(cleanPlan, { out: cleanPptx, previewDir: cleanPreview });

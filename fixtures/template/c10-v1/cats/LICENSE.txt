@@ -1,0 +1,10 @@
+SPDX-License-Identifier: CC0-1.0
+
+The source page dedicates the Cats PowerPoint template under the Creative
+Commons CC0 1.0 Universal Public Domain Dedication.
+
+Source statement:
+https://johndewees.com/2023/07/10/anatomy-of-a-creative-commons-license/
+
+Legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+

@@ -42,7 +42,7 @@ commands.push(await run("tests", node, [npmCli, "test"], "npm test"));
 commands.push(await run("demo-compile", node, [npmCli, "run", "demo:compile"], "npm run demo:compile"));
 commands.push(await run("demo-lint", node, [npmCli, "run", "demo:lint"], "npm run demo:lint"));
 const relativeVerification = path.posix.join("outputs", "public-evidence", slug, "verified-evidence.json");
-commands.push(await run("public-evidence", node, ["scripts/verify-public-evidence.mjs", "--out", relativeVerification], `node scripts/verify-public-evidence.mjs --out ${relativeVerification}`));
+commands.push(await run("public-evidence", node, ["scripts/verify-public-evidence.mjs", "--portable-source", "--out", relativeVerification], `node scripts/verify-public-evidence.mjs --portable-source --out ${relativeVerification}`));
 
 const lint = JSON.parse(await fs.readFile(path.join(root, "outputs", "demo", "lint-report.json"), "utf8"));
 const plan = JSON.parse(await fs.readFile(path.join(root, "outputs", "demo", "plan.json"), "utf8"));

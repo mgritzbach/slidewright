@@ -54,4 +54,19 @@ const manifest = {
 };
 manifest.manifestHash = contentHash(manifest, "manifestHash");
 await fs.writeFile(path.join(root, "evidence", "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+let replicatedManifestHash = null;
+try {
+  const aggregate = JSON.parse(await fs.readFile(path.join(root, "evidence", "c22", "v1", "aggregate-scorecard.json"), "utf8"));
+  if (aggregate.valid === true) replicatedManifestHash = aggregate.manifestHash;
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+const releaseState = {
+  schemaVersion: "slidewright-public-evidence-release-state/v1",
+  state: replicatedManifestHash === manifest.manifestHash ? "replicated" : "candidate",
+  manifestHash: manifest.manifestHash,
+  priorReplicatedManifestHash: replicatedManifestHash,
+};
+releaseState.stateHash = contentHash(releaseState, "stateHash");
+await fs.writeFile(path.join(root, "evidence", "release-state.json"), `${JSON.stringify(releaseState, null, 2)}\n`, "utf8");
 process.stdout.write(`Published ${entries.length} versioned scorecards with manifest ${manifest.manifestHash}\n`);

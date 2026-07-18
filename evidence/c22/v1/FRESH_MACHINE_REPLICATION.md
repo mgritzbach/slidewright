@@ -2,16 +2,16 @@
 
 - Valid: **true**
 - Repository: mgritzbach/slidewright
-- Commit: `bdcb6c94beb5c0bd206d789bf63b5c23d96f2830`
-- Run: https://github.com/mgritzbach/slidewright/actions/runs/29530184850
-- Evidence manifest: `6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d`
-- Portable result: `d6e16366a868e7e558f45f95ea28b1f32932b5450a6be3fe5d67d69ce9984753`
-- Aggregate: `a57bf6eeb0ccef28d7eb1a5f0496aee83a0f28a5104702488dd013314811f00e`
+- Commit: `8429ed065f23bdba43f36a571020f21b781b6ae7`
+- Run: https://github.com/mgritzbach/slidewright/actions/runs/29642280222
+- Evidence manifest: `f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc`
+- Portable result: `bd13f658eefa06b9d8845bf72222d0720565371a6c4ae4ad841eb69bb012ec1c`
+- Aggregate: `b3082b4d740d649b7faefa47ed53235c1a006e00e65da8668d03acecc3e91215`
 
 ## Platforms
 
-- Linux: 80 tests, 15/15 required destructive-control tests, 3 demo slides, 0 errors, 0 warnings
-- Windows: 80 tests, 15/15 required destructive-control tests, 3 demo slides, 0 errors, 0 warnings
+- Linux: 244 passed, 9 skipped (253 total), 15/15 required destructive-control tests, 3 demo slides, 0 errors, 0 warnings
+- Windows: 252 passed, 1 skipped (253 total), 15/15 required destructive-control tests, 3 demo slides, 0 errors, 0 warnings
 
 ## Scope
 

@@ -61,7 +61,7 @@ for (const item of [linux, windows]) {
   const commandTextValid = (command) => command.id === "tests" ? command.command === "npm test"
     : command.id === "demo-compile" ? command.command === "npm run demo:compile"
       : command.id === "demo-lint" ? command.command === "npm run demo:lint"
-        : command.id === "public-evidence" && /^node scripts\/verify-public-evidence\.mjs --out outputs\/public-evidence\/[a-z0-9-]+\/verified-evidence\.json$/u.test(command.command);
+        : command.id === "public-evidence" && /^node scripts\/verify-public-evidence\.mjs --portable-source --out outputs\/public-evidence\/[a-z0-9-]+\/verified-evidence\.json$/u.test(command.command);
   if (!Array.isArray(commands) || JSON.stringify(commands.map((command) => command.id)) !== JSON.stringify(expectedCommandIds) || commands.some((command) => command.exitCode !== 0 || command.signal !== null || command.error !== null || !commandTextValid(command))) {
     failures.push(`${label}: command summary invalid`);
   }

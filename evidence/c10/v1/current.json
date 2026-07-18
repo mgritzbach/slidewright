@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "slidewright-c10-public-evidence/v1",
+  "valid": true,
+  "scorecardHash": "8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
+  "reviewHash": "56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1",
+  "run": "runs/8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
+  "review": "reviews/56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1.json",
+  "files": {
+    "scorecard": {
+      "byteLength": 204799,
+      "sha256": "baafa4bd3e4d09c5658d1b96d30a8489d690fb413622d7c773ea343963cbf15e"
+    },
+    "review": {
+      "byteLength": 61534,
+      "sha256": "e94b173c04e8b3c153e764a62388fd53dbac0ac2cc7d55d81804cd94ccd5dafd"
+    }
+  },
+  "scope": {
+    "artifactHashesPublished": true,
+    "artifactBodiesCommitted": false,
+    "regenerationCommand": "npm run template:matrix",
+    "reviewCommand": "npm run template:matrix:review -- --input <review-input.json>",
+    "verificationCommand": "npm run template:matrix:verify:published",
+    "limitation": "The public snapshot contains all artifact paths, byte lengths, SHA-256 receipts, machine decisions, and human review bindings; generated PPTX and PNG bodies remain ignored and are regenerated on a PowerPoint-capable host."
+  },
+  "pointerHash": "3e1f1a027ad16f67b4fa183d92d51583dcdb435386f181cbf3529ad64d7b9e63"
+}

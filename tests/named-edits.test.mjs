@@ -5,10 +5,12 @@ import path from "node:path";
 import { main as slidewrightMain } from "../plugins/slidewright/skills/slidewright/scripts/slidewright.mjs";
 import test from "node:test";
 import { buildIterationManifests, buildIterationPlan } from "../plugins/slidewright/skills/slidewright/scripts/benchmark/iteration_suite.mjs";
+import { lintPlan } from "../plugins/slidewright/skills/slidewright/scripts/lib/linter.mjs";
 import {
   applyNamedEditManifest,
   applyNamedEdits,
   compareNamedFingerprints,
+  fingerprintNamedObjects,
   planContentHash,
 } from "../plugins/slidewright/skills/slidewright/scripts/lib/named-edits.mjs";
 
@@ -23,12 +25,19 @@ const expectedClosures = {
 
 test("six c16-v1 manifests derive exact bounded change closures", () => {
   const baseline = buildIterationPlan();
+  const namedObjectCount = Object.keys(fingerprintNamedObjects(baseline)).length;
   for (const manifest of buildIterationManifests(baseline)) {
     const result = applyNamedEditManifest(baseline, manifest);
     assert.deepEqual(result.changedIds, expectedClosures[manifest.id]);
     assert.equal(result.comparison.valid, true);
-    assert.equal(result.comparison.unchangedCount, 27 - result.changedIds.length);
+    assert.equal(result.comparison.unchangedCount, namedObjectCount - result.changedIds.length);
   }
+});
+
+test("c16 baseline remains inside the universal design and zero-warning quality contract", () => {
+  const report = lintPlan(buildIterationPlan());
+  assert.equal(report.valid, true, JSON.stringify(report.diagnostics, null, 2));
+  assert.deepEqual(report.counts, { error: 0, warning: 0 });
 });
 
 test("named edit manifests reject stale hashes, missing targets, invalid runs, and no-ops", () => {
@@ -52,10 +61,10 @@ test("user-supplied allowlists cannot expand the editor-derived closure", () => 
 test("fingerprint comparison rejects collateral drift", () => {
   const baseline = buildIterationPlan();
   const result = applyNamedEdits(baseline, [{ type: "bold", targetId: "s1-title", runIndex: 0, value: true }]);
-  result.plan.slides[3].shapes.find((shape) => shape.id === "s3-eyebrow").style.color = "#000000";
+  result.plan.slides[3].shapes.find((shape) => shape.id === "s4-eyebrow").style.color = "#000000";
   const comparison = compareNamedFingerprints(baseline, result.plan, result.changedIds);
   assert.equal(comparison.valid, false);
-  assert.deepEqual(comparison.actualChangedIds, ["s1-title", "s3-eyebrow"]);
+  assert.deepEqual(comparison.actualChangedIds, ["s1-title", "s4-eyebrow"]);
 });
 
 test("iterate CLI applies a stale-safe manifest and writes an updated plan", async (t) => {

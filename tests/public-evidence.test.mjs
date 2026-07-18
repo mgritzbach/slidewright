@@ -14,7 +14,7 @@ const evidenceCommandIds = ["tests", "demo-compile", "demo-lint", "public-eviden
 const commandText = (id) => id === "tests" ? "npm test"
   : id === "demo-compile" ? "npm run demo:compile"
     : id === "demo-lint" ? "npm run demo:lint"
-      : "node scripts/verify-public-evidence.mjs --out outputs/public-evidence/test/verified-evidence.json";
+      : "node scripts/verify-public-evidence.mjs --portable-source --out outputs/public-evidence/test/verified-evidence.json";
 const passingTestLog = (passed, skipped, total = passed + skipped) => `${portableContract.requiredTestNames.map((name, index) => `ok ${index + 1} - ${name}`).join("\n")}\n# tests ${total}\n# pass ${passed}\n# fail 0\n# cancelled 0\n# skipped ${skipped}\n`;
 const commandLog = (id, testLog) => id === "tests" ? testLog : `${id} passed\n`;
 const evidenceCommands = (testLog) => evidenceCommandIds.map((id) => {
@@ -36,9 +36,18 @@ function runSyntheticAggregate(input, output) {
 }
 
 test("committed public evidence verifies as content-addressed release data", () => {
-  const result = spawnSync(process.execPath, ["scripts/verify-public-evidence.mjs"], { cwd: root, encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).valid, true);
+  const state = JSON.parse(fs.readFileSync(path.join(root, "evidence", "release-state.json"), "utf8"));
+  const portable = spawnSync(process.execPath, ["scripts/verify-public-evidence.mjs", "--portable-source"], { cwd: root, encoding: "utf8" });
+  assert.equal(portable.status, 0, portable.stderr);
+  assert.equal(JSON.parse(portable.stdout).valid, true);
+  const release = spawnSync(process.execPath, ["scripts/verify-public-evidence.mjs"], { cwd: root, encoding: "utf8" });
+  if (state.state === "replicated") {
+    assert.equal(release.status, 0, release.stderr);
+    assert.equal(JSON.parse(release.stdout).verificationScope, "release");
+  } else {
+    assert.notEqual(release.status, 0);
+    assert.match(release.stderr, /candidate and lacks committed cross-platform replication/u);
+  }
 });
 
 test("published scorecard hashes reject any content mutation", () => {
