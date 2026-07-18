@@ -1,6 +1,6 @@
 {
   "name": "slidewright",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Compile ideas into formatting-safe, native editable PowerPoint decks and verify the exported artifact.",
   "author": {
     "name": "Michael Gritzbach"
@@ -18,8 +18,7 @@
     "brandColor": "#4F46E5",
     "defaultPrompt": [
       "Turn this outline into an editable PowerPoint deck.",
-      "Repair the formatting of this presentation.",
-      "Audit this deck for spacing and text-fit problems.",
+      "Repair and audit this presentation for formatting, spacing, and text-fit problems.",
       "Create a clean deck plus an editable executive-review copy with yellow partner checks."
     ]
   }

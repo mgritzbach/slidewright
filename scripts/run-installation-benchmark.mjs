@@ -8,6 +8,7 @@ import { closeAppServerClients, CodexAppServerClient } from "./lib/codex-app-ser
 import {
   assertDeclaredCheckoutSha,
   assertInstallReleaseVersions,
+  assertPluginInterfaceContract,
   assertInstallScorecard,
   computeInstallImplementationBinding,
   exists,
@@ -23,11 +24,13 @@ import { sha256, stable } from "./public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = JSON.parse(await fs.readFile(path.join(root, "evidence", "install-contract.json"), "utf8"));
+const pluginManifest = JSON.parse(await fs.readFile(path.join(root, "plugins", contract.pluginName, ".codex-plugin", "plugin.json"), "utf8"));
 assertInstallReleaseVersions(contract, {
   packageJson: JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8")),
   packageLock: JSON.parse(await fs.readFile(path.join(root, "package-lock.json"), "utf8")),
-  pluginManifest: JSON.parse(await fs.readFile(path.join(root, "plugins", contract.pluginName, ".codex-plugin", "plugin.json"), "utf8")),
+  pluginManifest,
 });
+assertPluginInterfaceContract(pluginManifest);
 const ownedOutput = path.resolve(root, "outputs", "installation");
 const requestedOutput = process.env.SLIDEWRIGHT_INSTALL_OUTPUT ? path.resolve(process.env.SLIDEWRIGHT_INSTALL_OUTPUT) : ownedOutput;
 const output = ownedOutput;
