@@ -6,7 +6,7 @@
   "marketplaceName": "slidewright",
   "pluginName": "slidewright",
   "pluginId": "slidewright@slidewright",
-  "pluginVersion": "0.1.0",
+  "pluginVersion": "0.2.0",
   "skillName": "slidewright",
   "qualifiedSkillName": "slidewright:slidewright",
   "requiredSurfaces": ["cli", "desktop-app-server-backend", "ide-app-server-backend"],

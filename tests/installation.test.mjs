@@ -7,7 +7,9 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { closeAppServerClients, CodexAppServerClient } from "../scripts/lib/codex-app-server-client.mjs";
 import {
+  INSTALL_IMPLEMENTATION_FILES,
   aggregateInstallationScorecards,
+  assertInstallReleaseVersions,
   assertInstallScorecard,
   finalizeInstallScorecard,
   findAppServerPlugin,
@@ -20,6 +22,9 @@ import { sha256, stable } from "../scripts/public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = JSON.parse(fs.readFileSync(path.join(root, "evidence", "install-contract.json"), "utf8"));
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const packageLock = JSON.parse(fs.readFileSync(path.join(root, "package-lock.json"), "utf8"));
+const pluginManifest = JSON.parse(fs.readFileSync(path.join(root, "plugins", contract.pluginName, ".codex-plugin", "plugin.json"), "utf8"));
 const testGitSha = "a".repeat(40);
 
 function processExists(pid) {
@@ -52,19 +57,7 @@ function commandReceipts(scorecard) {
 }
 
 function validScorecard() {
-  const implementationFiles = [
-    "scripts/run-installation-benchmark.mjs",
-    "scripts/aggregate-installation-evidence.mjs",
-    "scripts/lib/codex-app-server-client.mjs",
-    "scripts/lib/install-evidence.mjs",
-    "tests/installation.test.mjs",
-    "evidence/install-contract.json",
-    ".agents/plugins/marketplace.json",
-    ".github/workflows/ci.yml",
-    "package.json",
-    "tools/installation/package.json",
-    "tools/installation/package-lock.json",
-  ].map((relative) => ({ relative, sha256: "a".repeat(64) }));
+  const implementationFiles = INSTALL_IMPLEMENTATION_FILES.map((relative) => ({ relative, sha256: "a".repeat(64) }));
   const implementationHash = sha256(stable(implementationFiles));
   const scorecard = {
     schemaVersion: "slidewright-installation-scorecard/v1",
@@ -93,6 +86,19 @@ test("C02 parsers find the exact plugin and skill across CLI, desktop, and IDE p
   assert.equal(findCliPlugin({ installed: [{ pluginId: contract.pluginId }] }, contract.pluginId)?.pluginId, contract.pluginId);
   assert.equal(findAppServerPlugin({ marketplaces: [{ name: "slidewright", plugins: [{ id: contract.pluginId }] }] }, contract.pluginId)?.plugin.id, contract.pluginId);
   assert.equal(findSkill({ data: [{ cwd: "/tmp", errors: [], skills: [{ name: contract.skillName }] }] }, contract.skillName)?.skill.name, contract.skillName);
+});
+
+test("C02 release version is identical across the contract, package, lockfile, and plugin manifest", () => {
+  assert.deepEqual(assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest }), {
+    contract: contract.pluginVersion,
+    package: contract.pluginVersion,
+    packageLock: contract.pluginVersion,
+    plugin: contract.pluginVersion,
+  });
+  assert.throws(
+    () => assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest: { ...pluginManifest, version: "9.9.9" } }),
+    /Install release version drift:.*plugin=9\.9\.9/u,
+  );
 });
 
 test("C02 path confinement accepts a true descendant and rejects equality, siblings, and prefix collisions", () => {
