@@ -11,11 +11,38 @@ export const INSTALL_IMPLEMENTATION_FILES = [
   "tests/installation.test.mjs",
   "evidence/install-contract.json",
   ".agents/plugins/marketplace.json",
+  "plugins/slidewright/.codex-plugin/plugin.json",
   ".github/workflows/ci.yml",
   "package.json",
+  "package-lock.json",
   "tools/installation/package.json",
   "tools/installation/package-lock.json",
 ];
+
+export function assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest }) {
+  const versions = {
+    contract: contract?.pluginVersion,
+    package: packageJson?.version,
+    packageLock: packageLock?.packages?.[""]?.version ?? packageLock?.version,
+    plugin: pluginManifest?.version,
+  };
+  const expected = versions.contract;
+  const drift = Object.entries(versions).filter(([, version]) => typeof version !== "string" || version !== expected);
+  if (typeof expected !== "string" || drift.length) {
+    const detail = Object.entries(versions).map(([name, version]) => `${name}=${version ?? "<missing>"}`).join(", ");
+    throw new Error(`Install release version drift: ${detail}.`);
+  }
+  return versions;
+}
+
+export function assertDeclaredCheckoutSha(checkoutHead, environment = process.env) {
+  const declared = environment.SLIDEWRIGHT_CHECKOUT_SHA || environment.GITHUB_SHA || null;
+  if (declared && declared !== checkoutHead) {
+    const source = environment.SLIDEWRIGHT_CHECKOUT_SHA ? "SLIDEWRIGHT_CHECKOUT_SHA" : "GITHUB_SHA";
+    throw new Error(`${source} does not match the checked-out exact Git commit.`);
+  }
+  return declared;
+}
 
 export async function exists(candidate) {
   try { await fs.access(candidate); return true; } catch { return false; }

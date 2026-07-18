@@ -6,6 +6,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { closeAppServerClients, CodexAppServerClient } from "./lib/codex-app-server-client.mjs";
 import {
+  assertDeclaredCheckoutSha,
+  assertInstallReleaseVersions,
   assertInstallScorecard,
   computeInstallImplementationBinding,
   exists,
@@ -21,6 +23,11 @@ import { sha256, stable } from "./public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = JSON.parse(await fs.readFile(path.join(root, "evidence", "install-contract.json"), "utf8"));
+assertInstallReleaseVersions(contract, {
+  packageJson: JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8")),
+  packageLock: JSON.parse(await fs.readFile(path.join(root, "package-lock.json"), "utf8")),
+  pluginManifest: JSON.parse(await fs.readFile(path.join(root, "plugins", contract.pluginName, ".codex-plugin", "plugin.json"), "utf8")),
+});
 const ownedOutput = path.resolve(root, "outputs", "installation");
 const requestedOutput = process.env.SLIDEWRIGHT_INSTALL_OUTPUT ? path.resolve(process.env.SLIDEWRIGHT_INSTALL_OUTPUT) : ownedOutput;
 const output = ownedOutput;
@@ -34,7 +41,7 @@ if (requestedOutput !== ownedOutput) {
 const gitResult = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
 const checkoutHead = gitResult.status === 0 ? gitResult.stdout.trim() : null;
 if (!/^[a-f0-9]{40}$/.test(checkoutHead ?? "")) throw new Error("Could not resolve the checked-out exact Git commit.");
-if (process.env.GITHUB_SHA && process.env.GITHUB_SHA !== checkoutHead) throw new Error("GITHUB_SHA does not match the checked-out exact Git commit.");
+assertDeclaredCheckoutSha(checkoutHead);
 if (requestedMarketplaceSource && marketplaceRef !== checkoutHead) throw new Error("Remote marketplace installation must use the checked-out exact Git commit as --ref.");
 
 await fs.rm(output, { recursive: true, force: true });

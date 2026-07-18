@@ -86,6 +86,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -95,7 +97,8 @@ jobs:
       - run: node scripts/run-installation-benchmark.mjs
         env:
           SLIDEWRIGHT_MARKETPLACE_SOURCE: ${{ github.repository }}
-          SLIDEWRIGHT_MARKETPLACE_REF: ${{ github.sha }}
+          SLIDEWRIGHT_MARKETPLACE_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          SLIDEWRIGHT_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -110,6 +113,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -118,6 +123,8 @@ jobs:
           pattern: slidewright-installation-*-${{ github.sha }}
           path: outputs/installation-hosts
       - run: node scripts/aggregate-installation-evidence.mjs --input outputs/installation-hosts --out outputs/installation-aggregate
+        env:
+          SLIDEWRIGHT_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/upload-artifact@v7
         with:
           name: slidewright-installation-aggregate-${{ github.sha }}
