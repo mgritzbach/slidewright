@@ -211,3 +211,18 @@ test("C19 importer rejects a mixed source-deck matrix", async (t) => {
   await fs.writeFile(artifactsFile, JSON.stringify(artifacts), "utf8");
   await assert.rejects(() => importC19Evidence({ root, input, artifactsFile, runId: "12345", sourceCommit, repository, published: path.join(directory, "published"), enforceCheckout: false }), /one exact source deck/u);
 });
+
+test("C19 PowerPoint Windows adapter owns an isolated application and performs a native edit", async () => {
+  const worker = await fs.readFile(path.join(root, "scripts", "c19", "powerpoint_windows_worker.ps1"), "utf8");
+  const runner = await fs.readFile(path.join(root, "scripts", "c19", "run_powerpoint_windows_suite.mjs"), "utf8");
+  assert.match(worker, /requires PowerPoint to be fully closed/u);
+  assert.match(worker, /\/AUTOMATION/u);
+  assert.match(worker, /TextFrame2\.TextRange\.Text = \$replacement/u);
+  assert.match(worker, /SaveAs\(\$outputPath, 24\)/u);
+  assert.match(worker, /native sentinel text did not survive save and reopen/u);
+  assert.match(worker, /\.Export\(\$file, 'PNG', 1600, 900\)/u);
+  assert.doesNotMatch(worker, /Stop-Process|\.Kill\s*\(/u);
+  assert.match(runner, /git\(\["status", "--porcelain"\]\) !== ""/u);
+  assert.match(runner, /verifyArtifactBodies: true/u);
+  assert.match(runner, /runC19DestructiveControls/u);
+});

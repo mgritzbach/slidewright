@@ -33,6 +33,12 @@ The application-specific adapter creates the bundle. On that same exact clean ch
 node scripts/run-c19-interoperability-benchmark.mjs --evidence <bundle>/suite-evidence.json --out <bundle>/suite-validation.json
 ```
 
+The Windows adapter uses a newly owned hidden PowerPoint COM process, refuses a pre-existing PowerPoint session, creates a native mixed-emphasis cross-suite source from the semantic-surface fixture, performs a named native text edit, saves, reopens, inventories the result independently from OOXML, and renders every slide:
+
+```text
+node scripts/c19/run_powerpoint_windows_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
+```
+
 After all seven GitHub artifacts (six suite bundles and the matrix artifact) are downloaded, publish only through:
 
 ```text
