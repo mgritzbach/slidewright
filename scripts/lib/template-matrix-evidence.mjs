@@ -5,6 +5,7 @@ import path from "node:path";
 export const TEMPLATE_MATRIX_IMPLEMENTATION_PATHS = [
   "package.json",
   "package-lock.json",
+  "requirements-ci.txt",
   "scripts/run-template-matrix-benchmark.mjs",
   "scripts/finalize-template-matrix-review.mjs",
   "scripts/verify-template-matrix-evidence.mjs",
@@ -101,6 +102,13 @@ export function canonicalHash(value) {
 
 export async function sha256File(file) {
   return crypto.createHash("sha256").update(await fs.readFile(file)).digest("hex");
+}
+
+export async function sha256ImplementationFile(file) {
+  const bytes = await fs.readFile(file);
+  if (path.extname(file).toLowerCase() === ".pptx") return crypto.createHash("sha256").update(bytes).digest("hex");
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/\r\n?/gu, "\n");
+  return crypto.createHash("sha256").update(text, "utf8").digest("hex");
 }
 
 export async function readJson(file) {
@@ -286,7 +294,7 @@ export async function verifyTemplateMatrixEvidence({ root, runDirectory, require
     requireEvidence(JSON.stringify(scorecard.implementationClosure.map((item) => item.path)) === JSON.stringify(expectedClosurePaths), "C10 implementation closure path set is incomplete or excessive.");
     for (const item of scorecard.implementationClosure) {
       const absolute = path.join(root, ...item.path.split("/"));
-      requireEvidence(await sha256File(absolute) === item.sha256, `C10 implementation closure drifted: ${item.path}`);
+      requireEvidence(await sha256ImplementationFile(absolute) === item.sha256, `C10 implementation closure drifted: ${item.path}`);
     }
     requireEvidence(canonicalHash(scorecard.implementationClosure) === scorecard.implementationClosureHash, "C10 implementation closure hash drifted.");
   }

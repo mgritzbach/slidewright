@@ -1,20 +1,20 @@
 {
   "schemaVersion": "slidewright-template-matrix-review/v1",
   "valid": true,
-  "scorecardHash": "36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d",
+  "scorecardHash": "8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
   "reviewer": {
     "kind": "codex-agent-ensemble",
-    "id": "c10-ensemble-corrected-public-final-2026-07-17",
+    "id": "c10-ensemble-portable-final-2026-07-17",
     "members": [
       "root",
       "c10_visual_a",
       "c10_visual_b",
       "c10_template_sources"
     ],
-    "inspectionSummary": "Three independent assignments inspected all 195 renders individually at original size; the corrected-closure run matched all 195 inspected artifact hashes with zero unexpected defects.",
+    "inspectionSummary": "Three independent assignments inspected all 195 renders individually at original size; the portability-correct run matched all 195 inspected artifact hashes with zero unexpected defects.",
     "carryForward": {
-      "reviewedScorecardHash": "c6eea6941258c63bbe3e9cde553bfdc6e16ffec022c26afcc25b38b938f423c5",
-      "finalScorecardHash": "36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d",
+      "reviewedScorecardHash": "36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d",
+      "finalScorecardHash": "8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
       "comparedArtifacts": 195,
       "byteIdenticalArtifacts": 195,
       "mismatchedArtifacts": 0
@@ -1778,5 +1778,5 @@
       "findings": []
     }
   ],
-  "reviewHash": "d0eb2e3e28ec919d94046c0d5408886b94e2ca4fe022bd03e494d106a2b63911"
+  "reviewHash": "56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1"
 }

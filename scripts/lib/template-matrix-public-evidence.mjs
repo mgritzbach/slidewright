@@ -5,6 +5,7 @@ import {
   expectedTemplateMatrixClosurePaths,
   readJson,
   sha256File,
+  sha256ImplementationFile,
   validateTemplateMatrixManifest,
 } from "./template-matrix-evidence.mjs";
 
@@ -119,7 +120,7 @@ export async function verifyPublishedTemplateMatrixEvidence({ root, published })
     && JSON.stringify(scorecard.implementationClosure.map((item) => item.path)) === JSON.stringify(expectedClosurePaths), "C10 public implementation closure path set drifted.");
   for (const item of scorecard.implementationClosure) {
     assertDigest(item.sha256, `C10 public implementation closure ${item.path}`);
-    requireEvidence(await sha256File(path.join(root, ...item.path.split("/"))) === item.sha256, `C10 public implementation closure drifted: ${item.path}`);
+    requireEvidence(await sha256ImplementationFile(path.join(root, ...item.path.split("/"))) === item.sha256, `C10 public implementation closure drifted: ${item.path}`);
   }
   requireEvidence(canonicalHash(scorecard.implementationClosure) === scorecard.implementationClosureHash, "C10 public implementation closure hash drifted.");
 

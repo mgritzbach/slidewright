@@ -11,6 +11,7 @@ import {
   loadValidatedRejectedSources,
   readJson,
   sha256File,
+  sha256ImplementationFile,
   validateTemplateMatrixManifest,
   verifyTemplateMatrixEvidence,
 } from "./lib/template-matrix-evidence.mjs";
@@ -66,7 +67,7 @@ async function implementationClosure(rawManifest) {
   for (const relative of await expectedTemplateMatrixClosurePaths(root, rawManifest)) {
     const absolute = path.join(root, ...relative.split("/"));
     await fs.access(absolute);
-    records.push({ path: relative, sha256: await sha256File(absolute) });
+    records.push({ path: relative, sha256: await sha256ImplementationFile(absolute) });
   }
   return records;
 }

@@ -263,9 +263,9 @@
       "powerpointRoundtripValid": true,
       "powerpointRepeatRoundtripValid": true,
       "powerpointSemanticAuditValid": true,
-      "powerpointSemanticAuditSha256": "532c923d1f2d11aac7de3658d79c53ad3d3c422982c060a945480c904772452b",
+      "powerpointSemanticAuditSha256": "d66018adb08a82f734913ee7505760bd633a3377ecd8c22cc7f9534e8f7afee7",
       "powerpointSemanticRepeatAuditValid": true,
-      "powerpointSemanticRepeatAuditSha256": "d7bede6d9f1822c303a0b3470f7490be1ab7e034eeb6f03ec625c897c8d957b7",
+      "powerpointSemanticRepeatAuditSha256": "c3a2aa5e0bdd194713d341824f4faf54ee3ecff38f9e2acd04efc21c3b0e55ec",
       "powerpointSemanticControlsValid": true,
       "powerpointSemanticControls": [
         {
@@ -524,9 +524,9 @@
       "powerpointRoundtripValid": true,
       "powerpointRepeatRoundtripValid": true,
       "powerpointSemanticAuditValid": true,
-      "powerpointSemanticAuditSha256": "e6b0ca6c3ae76c24af9cfbf8b6ee62214559dc3d8a1f59c666aef817541f6d2d",
+      "powerpointSemanticAuditSha256": "12610be86461094b5ab04432e29b58b45919cfdc5455f46b0c8c60561ded4d70",
       "powerpointSemanticRepeatAuditValid": true,
-      "powerpointSemanticRepeatAuditSha256": "12ce651baf6a140364a28ea486e32688aa299fa542faf52457648db15d8a167d",
+      "powerpointSemanticRepeatAuditSha256": "28294e3c4a498bfa5d716e7c9894438c5476e542df284d59c58860e24810fa25",
       "powerpointSemanticControlsValid": true,
       "powerpointSemanticControls": [
         {
@@ -791,9 +791,9 @@
       "powerpointRoundtripValid": true,
       "powerpointRepeatRoundtripValid": true,
       "powerpointSemanticAuditValid": true,
-      "powerpointSemanticAuditSha256": "14c2290332050597d16e967cc7df2ea9d175cf17debe1f1154b8dd708c910720",
+      "powerpointSemanticAuditSha256": "5fb87b6bb55841bf7d93d216d7b79da3ffe10afdde8941fb91f7fad416206937",
       "powerpointSemanticRepeatAuditValid": true,
-      "powerpointSemanticRepeatAuditSha256": "08438cfbfaab0a550cd33b871622945708f81e4fba03ded19c67b9d11817521f",
+      "powerpointSemanticRepeatAuditSha256": "a88e769191280a0a00a4fc55b8ab0efde12e3451feb2c3b40cff00b20d904da2",
       "powerpointSemanticControlsValid": true,
       "powerpointSemanticControls": [
         {
@@ -1036,9 +1036,9 @@
       "powerpointRoundtripValid": true,
       "powerpointRepeatRoundtripValid": true,
       "powerpointSemanticAuditValid": true,
-      "powerpointSemanticAuditSha256": "722295fc15c55726fa45a89ce3ec4093cb44ea9c94ed8b84c72dcda51a1e0b4e",
+      "powerpointSemanticAuditSha256": "4f4ad41cf7ba4ceff679f8338dad34ec9d28423e2459d9e80cc8e868619d9c9f",
       "powerpointSemanticRepeatAuditValid": true,
-      "powerpointSemanticRepeatAuditSha256": "7451be10ae539f1346912700993dbe2b4912fe77e96c81ec95a2cb1fe61cb392",
+      "powerpointSemanticRepeatAuditSha256": "459eb8cc5fd5f565fd296131e6cc68a0f32b3f547ecb05f544caf3e1f6279d72",
       "powerpointSemanticControlsValid": true,
       "powerpointSemanticControls": [
         {
@@ -2468,7 +2468,7 @@
     },
     {
       "path": "fixtures/template/c10-v1/automizer-charts/LICENSE.txt",
-      "sha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2"
+      "sha256": "85bcdef6d2692b8dc4e0acc048abede91e667a68f3bd5e8933b1e55d23069d9e"
     },
     {
       "path": "fixtures/template/c10-v1/automizer-charts/SANITIZATION.md",
@@ -2492,7 +2492,7 @@
     },
     {
       "path": "fixtures/template/c10-v1/automizer-tables/LICENSE.txt",
-      "sha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2"
+      "sha256": "85bcdef6d2692b8dc4e0acc048abede91e667a68f3bd5e8933b1e55d23069d9e"
     },
     {
       "path": "fixtures/template/c10-v1/automizer-tables/edit-plan.json",
@@ -2572,15 +2572,15 @@
     },
     {
       "path": "plugins/slidewright/skills/slidewright/scripts/design_profile/audit_design_profile.py",
-      "sha256": "5d230571dd799198194d0f9b09cb1c97705989a3dd37e9bafdd901d4073399ef"
+      "sha256": "fb454b6acca6422ccf94d01d2b0afa01b31d18af9803c7806d6b42cefd1edbee"
     },
     {
       "path": "plugins/slidewright/skills/slidewright/scripts/design_profile/design_profile_core.py",
-      "sha256": "bea6cb028123c1a43e984a3ee17962c07ee35baa44a62d98066cdce9eec0d424"
+      "sha256": "26b631bc1945deea9b82f85d2f6e0dc75ff7d86adb12c73beb5255308a29cf27"
     },
     {
       "path": "plugins/slidewright/skills/slidewright/scripts/design_profile/extract_design_profile.py",
-      "sha256": "f521ad493a9edc54457cb77af1a2fe450a410842d456d114392b65ae47ab2bc6"
+      "sha256": "f830ddeffb60726740921cb487ad9f5c77edfbde3729177e7bfb7a0ac81914d4"
     },
     {
       "path": "plugins/slidewright/skills/slidewright/scripts/design_profile/template_matrix_negative_controls.py",
@@ -2619,16 +2619,20 @@
       "sha256": "213e033dab7ff5ab3a3c53d3ad72cecbe6a67734e652882fdcae724e10847310"
     },
     {
+      "path": "requirements-ci.txt",
+      "sha256": "2289ce6638e3fb821b4815028c08ece332d68ce9c89b0c363160ef5076d7c5cc"
+    },
+    {
       "path": "scripts/finalize-template-matrix-review.mjs",
       "sha256": "0d6f144ec1ba9be3cef9362062e40bdb9716ff62b23a501ba2b24591ece32048"
     },
     {
       "path": "scripts/lib/template-matrix-evidence.mjs",
-      "sha256": "c3e93f81dd1761c7f61bfb83a35e7fc2fd224266289ef11fde0a3f20c9da4e47"
+      "sha256": "2ed58e3319764e1a15c14e68fc833a56ef46aa38452e44fa61d583324e27a14f"
     },
     {
       "path": "scripts/lib/template-matrix-public-evidence.mjs",
-      "sha256": "b1c13a8382d87bbb6eb644da16ca04506ec4816a7b0e544667dffd3cbfa7edc1"
+      "sha256": "bdc616c3716b1b49f27148892125bc5c3ce214c43b02ecf0fab4c6eaade3e358"
     },
     {
       "path": "scripts/publish-template-matrix-evidence.mjs",
@@ -2636,7 +2640,7 @@
     },
     {
       "path": "scripts/run-template-matrix-benchmark.mjs",
-      "sha256": "14ff6c9c813df735a2749a814282928942d9ab1c7b4caf8715356b66d26ebe96"
+      "sha256": "2b84de53f49ad2852bd7c9ccdc24af37592867ae4b6c085b428e01565726b3e0"
     },
     {
       "path": "scripts/verify-template-matrix-evidence.mjs",
@@ -2648,15 +2652,15 @@
     },
     {
       "path": "tests/template-matrix.test.mjs",
-      "sha256": "256dd4a64303a09ab0fb879f986b792ac4927d2a596f751ba33585a1ac72151e"
+      "sha256": "fa87a6c0ed20b87030112580c95824f9fc64e27907b8dcb4d1fe89eaea4b72d2"
     }
   ],
-  "implementationClosureHash": "60f4d86a35934732b54c06f93231ce5bcf3753f42a71a77376dddb69499bbd94",
+  "implementationClosureHash": "3e8f913e49146702e03be58fc41d5e9755ab9704c3b0264c96d92b4d7ffe5b3e",
   "artifactInventory": [
     {
       "path": "fixtures/automizer-charts-mit/edit-report.json",
       "byteLength": 672,
-      "sha256": "c998f70e1a71c6fa45269f9b5e9075a9e3772f2a8ed8199b2be06952da5befe5"
+      "sha256": "9f87ee67177d50e7e1e6230009961ca1244cb3005ffbce77ea5ff8b0b75097e2"
     },
     {
       "path": "fixtures/automizer-charts-mit/edited.pptx",
@@ -2681,7 +2685,7 @@
     {
       "path": "fixtures/automizer-charts-mit/negative-controls.json",
       "byteLength": 9458,
-      "sha256": "5691542961b1131d3327fb49084a4de41bf90645618edc83b6760323cfbf8e3d"
+      "sha256": "574c89b084b2abad999114eac72ed324793a2104105921c63ed2fa90cd9d7476"
     },
     {
       "path": "fixtures/automizer-charts-mit/negative-controls/chrome-geometry-drift.json",
@@ -2771,12 +2775,12 @@
     {
       "path": "fixtures/automizer-charts-mit/negative-controls/unexpected-package-part.json",
       "byteLength": 5283,
-      "sha256": "b59e0e15e09ceed6d7d926bcb819c1136e0f9ca8b6c52deced7c081f989b7c71"
+      "sha256": "3d89e76c731d9e3b5f8ecd05eb4a70b3f91d21351ba260e3b41ef7aeca3993e8"
     },
     {
       "path": "fixtures/automizer-charts-mit/negative-controls/unexpected-package-part.pptx",
       "byteLength": 168588,
-      "sha256": "26e9ee1952e3021bdcc502ad7d7c64b394249b94ddb7c5c8779de7eecdc7d95e"
+      "sha256": "2675bd78c4d0ca274d320dabc28bbf72f0d7f760df97bff2b2508293e5cf8fac"
     },
     {
       "path": "fixtures/automizer-charts-mit/negative-controls/visible-geometry-drift.json",
@@ -2801,22 +2805,22 @@
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-ownership-repeat.json",
       "byteLength": 1305,
-      "sha256": "08cfee0808a38dbe8494e92b28b8978922c4c8814fc4908179f600126dc4a6f2"
+      "sha256": "a0445059e8fc8f1723262babc420a84d3347f1ecdf759f59c1bb0376f0b5ceee"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-ownership.json",
       "byteLength": 1291,
-      "sha256": "03260cf8dd52c27b33ba3529202bc13881e26a94fa6a79c7a0ccba461a807f7c"
+      "sha256": "0d9d995395c0ce3e0e16c9bed9c5ddef7174257fe27ede13b07ddb7386f05ad0"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip-repeat.json",
       "byteLength": 1686955,
-      "sha256": "471fa14cc3b512211d1c45b6744379a0f0fab2ce27a598afebc52ac21ebf7383"
+      "sha256": "4a37e694f9cb8dda404fcab90ac1818d43422f7a3ce50c3ca0c2469eef96766b"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip-repeat.pptx",
       "byteLength": 61616,
-      "sha256": "d946d7a15829502a38991f3d92fa8dace88e0d30ce541f99e09de1aa39b0710c"
+      "sha256": "abbfe3ee98241b278d0aede943dd9e38ab8b0d490c96f22d62be203d317c7b1f"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip-repeat/slide-1.png",
@@ -2831,12 +2835,12 @@
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip.json",
       "byteLength": 1686934,
-      "sha256": "ab6dbea6c6506a38938a4e411b615531c157fe85d83ded542a63007c3fa6335e"
+      "sha256": "3a15a728d59f94e467ec36ba6becc598583ecb9ddf43137e7c1097e36ee8aece"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip.pptx",
       "byteLength": 61616,
-      "sha256": "cc41ffbd933d1dc27129b3dacc51e2c37c55f07a5e4000a83a9527fb16381964"
+      "sha256": "53ee7be93d3b989a7dc4fb9bf5d192621a6f317e8e52254fe3ef0fee74d9d6a3"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip/slide-1.png",
@@ -2851,32 +2855,32 @@
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-audit-repeat.json",
       "byteLength": 4463,
-      "sha256": "fa7f248d402aecb552289b6793b3a68483e86d7d68d77945643976f4517f2563"
+      "sha256": "f2677f41e1d032cd74eb24aae98ec02bd35d70b1cbacf2dc5ef92088780faa6a"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-audit.json",
       "byteLength": 4456,
-      "sha256": "a99c4b5a86e1e141cce629e2f9c6185415a4938377c37d620ad64b2731190591"
+      "sha256": "be55076214413e5e2f1d66aea6a1a048c7fe1adfe0c1261e3c7a98baca720667"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-controls.json",
       "byteLength": 1507,
-      "sha256": "ca8787405ba907036f277a95969f54feaac35af1d791eba487613094c423a52e"
+      "sha256": "e6ff8d719ca2e87a88e8a59533d375acbab7d6fae7bfe5df4b28863e9f45072c"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-controls/chart-semantic-drift.pptx",
-      "byteLength": 59104,
-      "sha256": "2d59201fc33ed0b59a6a0cbf002fd0364bc87ee337330c97471f168d19d584be"
+      "byteLength": 59105,
+      "sha256": "ddc14153514f5bb6ed6f17715ded97b1dd537acb918763bfa47f2bcb770a75ba"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-controls/embedded-workbook-drift.pptx",
-      "byteLength": 59104,
-      "sha256": "941ab4adf62ce79d822883cc6f069218f28914e862e7b3181203e4787d23bbda"
+      "byteLength": 59105,
+      "sha256": "d646498d22ab93965fdb531efcef667f5464ea4d324eed7e03b7017f88bc2a7a"
     },
     {
       "path": "fixtures/automizer-charts-mit/powerpoint-semantic-controls/native-object-editability-drift.pptx",
-      "byteLength": 59131,
-      "sha256": "8b912a685856b8384f00c3c26b5be438e1eb2ff4b94543a281d3b4f5717da811"
+      "byteLength": 59132,
+      "sha256": "65da127e173b8d1b9e39332e66276fec805285121c09ecc1d452ebe0af371a43"
     },
     {
       "path": "fixtures/automizer-charts-mit/roundtrip-repeat-visual-audit.json",
@@ -2996,7 +3000,7 @@
     {
       "path": "fixtures/automizer-tables-mit/edit-report.json",
       "byteLength": 651,
-      "sha256": "42ec5f778af3fdf7b50600d3fff5c06423fbc7b03bfa5e9504042e83e7b2270a"
+      "sha256": "95991d5658a27d4a827f5ca675271925245f932d4cd91f3860bc5a8f304766f6"
     },
     {
       "path": "fixtures/automizer-tables-mit/edited.pptx",
@@ -3026,7 +3030,7 @@
     {
       "path": "fixtures/automizer-tables-mit/negative-controls.json",
       "byteLength": 9412,
-      "sha256": "f05adf53c6e391bb1b24f50a1f46df6f2a665538b41e3106b3b434aee060ba90"
+      "sha256": "0f4331798ec7b02071f80e49a36570cb39cc4d013011ffcc544464f15f5bcaa4"
     },
     {
       "path": "fixtures/automizer-tables-mit/negative-controls/chrome-geometry-drift.json",
@@ -3116,12 +3120,12 @@
     {
       "path": "fixtures/automizer-tables-mit/negative-controls/unexpected-package-part.json",
       "byteLength": 4631,
-      "sha256": "9b84c5b09e61ade2c4d17e479915a214701cc8c315d649e8b6158c48a7b21ddb"
+      "sha256": "273f4190cdfbf59a97bb33dc1c6bf80eeb8999c32404b682753ad306d58fdee7"
     },
     {
       "path": "fixtures/automizer-tables-mit/negative-controls/unexpected-package-part.pptx",
       "byteLength": 42277,
-      "sha256": "109361224a54e734c468ee20062abb073443f8d77a9106cebe867c1ecc39a50e"
+      "sha256": "f3d42f7fdbc7fcb6e5b1e6de22899af54663d75f8eedaf537364a01c313a7a29"
     },
     {
       "path": "fixtures/automizer-tables-mit/negative-controls/visible-geometry-drift.json",
@@ -3146,22 +3150,22 @@
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-ownership-repeat.json",
       "byteLength": 1305,
-      "sha256": "fe88fda04ae1b2997fda3a9c6464c0be50fba102757716fce74106ed9859b4c1"
+      "sha256": "ba27587e14d7662702946795c1a85c39780cf0d1c2b8e26921b2b64789eef315"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-ownership.json",
       "byteLength": 1291,
-      "sha256": "74ca2eb4e77a719a070823edcc72ac24341740bbfeb5790a4df772bf43f55a01"
+      "sha256": "d484ee0b433de34f8ee0cd9c90bdec099a1701741134b78b1b9b3aa3fb727c96"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat.json",
       "byteLength": 1708480,
-      "sha256": "2c9b334151de11e722cf3cd939a0c32cfe429d5a2337bfb0053ced1bf50a9149"
+      "sha256": "2f9af10bc990669847cc8eceb198115c2e8326fbc55f1676b37e586aa66e5c56"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat.pptx",
       "byteLength": 44535,
-      "sha256": "dc7597b3b3760cce81f7d82d310d15ffd1d53cbb77f9639d3bb57d7973bfd8ee"
+      "sha256": "f52951ad90fb3b06b56579057ce71249c97f8f5ed33deb96bd805345e9bd83d4"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat/slide-1.png",
@@ -3181,12 +3185,12 @@
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip.json",
       "byteLength": 1708459,
-      "sha256": "aa60c5c71b6e0240302f0f1435ef000b269fe7799ccaa0927f8ed915e7fd6036"
+      "sha256": "4f899aec7a0441cd046e911a8fba7a7caf5df96c8cd181a45da3684dc99f2330"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip.pptx",
       "byteLength": 44535,
-      "sha256": "023a6a9bef406eaa281920f06df4b41dcb84639010f11f274d59d8926d7978c6"
+      "sha256": "e83a47a94c9672384c39490fb05948fc8d94487864dce34bc69c19652c6854b3"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip/slide-1.png",
@@ -3206,27 +3210,27 @@
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-semantic-audit-repeat.json",
       "byteLength": 3998,
-      "sha256": "1d188aab887791b1beb0acb787e98faafc1188aa2143394dccf19d1218207409"
+      "sha256": "6ad5a9ce284b118fe97d53a4a4e00d9d4812ccc05e6eb11a379cb20859de0bd9"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-semantic-audit.json",
       "byteLength": 3991,
-      "sha256": "d43b74134aedc701aacaa12342c716295aae3bee03b57734656f354dba5628d2"
+      "sha256": "aa59b3df54311feaa0905ef540036a2261e089db38b71b507054560ad009c8d4"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-semantic-controls.json",
       "byteLength": 1385,
-      "sha256": "9878fed4f66bbbff56c6439f8b6cee0bfc206246b967dfabfd87ee9de4930b9c"
+      "sha256": "796c5a560af609ecb08c7c5265d3e81b23505f7ca1cc1093b3bc0fd764659b71"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-semantic-controls/native-object-editability-drift.pptx",
       "byteLength": 42179,
-      "sha256": "a67523f104fcdae3b2313459c27e68c82ea1cc19a947fbe6569fcf24dda82409"
+      "sha256": "a8b2e3aba8886972c430432e03eb68bca4ce61009dcdbce47c5839a632b1b53d"
     },
     {
       "path": "fixtures/automizer-tables-mit/powerpoint-semantic-controls/table-cell-drift.pptx",
       "byteLength": 42163,
-      "sha256": "c955e19254f38310781f957a6fba85d816797157be4e78b5678d87b881b589f5"
+      "sha256": "cf3d9ba993bbd96a99a65030979664ad50875cc1ae7efd96062f29e34b336e57"
     },
     {
       "path": "fixtures/automizer-tables-mit/roundtrip-repeat-visual-audit.json",
@@ -3376,7 +3380,7 @@
     {
       "path": "fixtures/cats-cc0-sanitized/edit-report.json",
       "byteLength": 643,
-      "sha256": "bf4cf42162ce8f687cb68e3f35ad9b3f5b3c2bb69c9adeb4992c87b11b102ceb"
+      "sha256": "076b67b37b009c039a1e489f34ab30a06858962b85b2a278150f430ac45174d9"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/edited.pptx",
@@ -3556,7 +3560,7 @@
     {
       "path": "fixtures/cats-cc0-sanitized/negative-controls.json",
       "byteLength": 7799,
-      "sha256": "819b8ae47bddd6e1d2df9ae2341957afd7dd8505fa9b4bb49931e5a3d3b2d1f5"
+      "sha256": "c2ca52fc805369bb79bcd27406d9152aadd8f67f72ea71280bce397b85b016b0"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/negative-controls/chrome-geometry-drift.json",
@@ -3631,12 +3635,12 @@
     {
       "path": "fixtures/cats-cc0-sanitized/negative-controls/unexpected-package-part.json",
       "byteLength": 11799,
-      "sha256": "c4d2ae1bf6199268ae3de54cb2e8d6b3f4fa769e6104c64c8629c43fba49ce2f"
+      "sha256": "7f672d5f590787341ae94c11f356a297b4246cf8c17f36fb24bb297d897dbfdf"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/negative-controls/unexpected-package-part.pptx",
       "byteLength": 6982254,
-      "sha256": "6ce52f707d990ff30529458a1223e980d3da9afb49cf8399a8e0baac37068cb2"
+      "sha256": "1f32334213daf7454c2a428313725d824a831d7ff8ca728566539c6ccf389130"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/negative-controls/visible-geometry-drift.json",
@@ -3661,22 +3665,22 @@
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-ownership-repeat.json",
       "byteLength": 1299,
-      "sha256": "18e8d867bf8e131e8bc880b4fda53871a0ea831fdc602ce17f1423d8c585be28"
+      "sha256": "01f3215a719048173dc43ef65ffcbd4cb07f10f6148a7112ac23675d54fe9df9"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-ownership.json",
       "byteLength": 1285,
-      "sha256": "e8a7502799b2511dd08458b6f0869e26426e75bb27cd813ca64799d9c5e8aef7"
+      "sha256": "afa7bcfabb43456bccc640c83262345a063a57f1a4c98fb75fc5a93b3e89aaa1"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat.json",
       "byteLength": 3567407,
-      "sha256": "ced929a2862d39c85b8a232d7e690bf702948025c9ad21a50b98ae0ad04a1656"
+      "sha256": "7bd3904b1b9939b47b1fc5ae065fa9c97919a684ede4cb7dae837a9263d118af"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat.pptx",
-      "byteLength": 6536286,
-      "sha256": "cf73855235c78355965330e7aed081c9da320160d61bcefa31c356ee783479f0"
+      "byteLength": 6536287,
+      "sha256": "391dce897d38adae9220972289b9da1a29bd58bc5f2a7d5dd9f5f2f1a1e8b24f"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-1.png",
@@ -3846,12 +3850,12 @@
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip.json",
       "byteLength": 3567386,
-      "sha256": "6dc56a032b36e3521fda67515b1c4a18e982186833d287708fb2fc24a874cd82"
+      "sha256": "993afc274420dbc39a8b38d26494d155bd94775bbae831cae9a555a616fbda0c"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip.pptx",
-      "byteLength": 6536287,
-      "sha256": "c99f7a7c3f7e5f055727ba0ca2fb04e1b591bb9959ae3f2b8773f5150561e8a4"
+      "byteLength": 6536286,
+      "sha256": "2052ee6fc3b514c49e40319cac3ef78677d43f40ba2aeb0da14103abf99d7321"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-1.png",
@@ -4021,27 +4025,27 @@
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-semantic-audit-repeat.json",
       "byteLength": 6675,
-      "sha256": "beeb9c249e7e30f9b57aaf4f086b54b89da7cc22fe1dc51b29d1a18a93e3a443"
+      "sha256": "b470b6e97631eb4ace83af1c24fd1aad55348d4c6fe3b865d24659038d43837a"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-semantic-audit.json",
       "byteLength": 6668,
-      "sha256": "db627aa2048dba6b7c4f322e23252fa5e78fed30a760eaf3b62e4842fe831325"
+      "sha256": "46ae77671e70b06a2cfdbf04b47748f2fa963459b03d67f6bd2d80f7632f410a"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-semantic-controls.json",
       "byteLength": 1444,
-      "sha256": "85f755595c6214711b4cae64fe5886ecb7576c6cc01d40c1994e74d1b90e5757"
+      "sha256": "fb212687a29d122a1d428fa5d546be0e49b4c3bc502b3569d67eeb7bba779e14"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-semantic-controls/hyperlink-target-drift.pptx",
-      "byteLength": 6533090,
-      "sha256": "439fb6d78171f684519cb70c91e522d11a8ec3a18dc84d74110b65e456913364"
+      "byteLength": 6533089,
+      "sha256": "d8d8fd3b7a0508786ba1985d5d9ec0915a1fe64d6c95827d9d84d1a1f6c0ed6b"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/powerpoint-semantic-controls/media-byte-drift.pptx",
-      "byteLength": 6533076,
-      "sha256": "8b2a146aead3966fcd009970b7ef2d37c5b3d4649cafe8d9e0c59bad5b8f8d34"
+      "byteLength": 6533075,
+      "sha256": "4346e6956d787b642870945676ba00e028a880cb13fb06358c5953f0bf049bfd"
     },
     {
       "path": "fixtures/cats-cc0-sanitized/roundtrip-repeat-visual-audit.json",
@@ -5081,7 +5085,7 @@
     {
       "path": "fixtures/martin-mit/edit-report.json",
       "byteLength": 661,
-      "sha256": "9cca0d3454852e199ee9bc80783dee58b19eea4208ce73e7abf1f7d06eb7a2ae"
+      "sha256": "4cb4247b2a72aa337dcb14a135f1557f48e0f922917bcfe00925caff475b1572"
     },
     {
       "path": "fixtures/martin-mit/edited.pptx",
@@ -5101,7 +5105,7 @@
     {
       "path": "fixtures/martin-mit/negative-controls.json",
       "byteLength": 10985,
-      "sha256": "90d9aa7eeaf273ae3f34bf580af18d91a7ddf96b31f9b04d0310f25fa21523f5"
+      "sha256": "17dd0acc308049d99499a5dc1230438851e0df54ac2be896f70143145ddb7a09"
     },
     {
       "path": "fixtures/martin-mit/negative-controls/chrome-geometry-drift.json",
@@ -5206,12 +5210,12 @@
     {
       "path": "fixtures/martin-mit/negative-controls/unexpected-package-part.json",
       "byteLength": 4589,
-      "sha256": "f286b1b8dbddd1692906c0352811410ce96c3916a596cea03f573c16dafeb676"
+      "sha256": "3422f69c7a266088ca17252433eb4745a22c00c32739b5f4ece284af8ed77430"
     },
     {
       "path": "fixtures/martin-mit/negative-controls/unexpected-package-part.pptx",
       "byteLength": 31534,
-      "sha256": "cb7dcb9a53584f4a5ea1e248eec6db0d89d601d4b6b93991552d31ac3fff82b5"
+      "sha256": "d280d5fae63460d39a7a376c94e2b1dfcfb0dc4f80a7dbc15c57b3422307889a"
     },
     {
       "path": "fixtures/martin-mit/negative-controls/visible-geometry-drift.json",
@@ -5235,23 +5239,23 @@
     },
     {
       "path": "fixtures/martin-mit/powerpoint-ownership-repeat.json",
-      "byteLength": 1275,
-      "sha256": "b5d016e5055702ca3dd9ed6d9b42e2e9388a837f31e00c53f9c79eaffc98885b"
+      "byteLength": 1274,
+      "sha256": "24b5ea71feb9fcafae1e9d342dcdbaccb99c9d0d0ff581f6c5084c213d4bd096"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-ownership.json",
       "byteLength": 1261,
-      "sha256": "b06a39b4e9b24496bbb0896e6f093eb114968192bbcf4ff99ba545e121c78ea1"
+      "sha256": "ab7a6fc3f3eef509a0a21975e303e3950cdd7305612fa839fd6e34a3719db317"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip-repeat.json",
-      "byteLength": 1670131,
-      "sha256": "8d19bc729b2d7368e6657759448c6e148153ffaa7570b1b4548d185a150ab3aa"
+      "byteLength": 1670130,
+      "sha256": "db8f423fde09659161279b3328731ba7cb29c334385c069c06174ea521940d8b"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip-repeat.pptx",
-      "byteLength": 33856,
-      "sha256": "689ce80d64b34737be846ebaa3ab3f7a0e28353b99c7f812df1f69bfc271de96"
+      "byteLength": 33859,
+      "sha256": "1a06fb93cc6aa28d659dcb8c0d53da6f287f64e846607a7e943fcba7ff8543b2"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip-repeat/slide-1.png",
@@ -5261,12 +5265,12 @@
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip.json",
       "byteLength": 1670110,
-      "sha256": "9c90bf5b70b9e9581a67701f246c2e2074cb846de365924c4ee7f8aed372389f"
+      "sha256": "8a819ff1f7f5e9ae1e641ca3652a64c9d659a6b60fe9c1d5a4d38a0ea43c51c2"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip.pptx",
       "byteLength": 33859,
-      "sha256": "f97398cb4a89865deff0289514db1622a7c3880883ba11d74e7e75fb31470c63"
+      "sha256": "4b9c2d34084fb72c876b67f2e15dde0bb86a5dfd2f2c7f474ab3edff90f902b7"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-roundtrip/slide-1.png",
@@ -5276,17 +5280,17 @@
     {
       "path": "fixtures/martin-mit/powerpoint-semantic-audit-repeat.json",
       "byteLength": 4065,
-      "sha256": "c411722d2b70f81a27e8b49676c57f689e8f3a78fe14ad44d8f1e931437433f9"
+      "sha256": "f30e972bbd9806b4e055eb32dbc3995c2c69c7a94494be2cfaed20d97a6f91af"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-semantic-audit.json",
       "byteLength": 4058,
-      "sha256": "665f2b370dae6f5dba077a9ef1eb91bf2a322206b67163730156471e5ab9688d"
+      "sha256": "459e8491bfdde5b74c09bcf467dd5a899c10eaab7ece0f968d032cf1b174a124"
     },
     {
       "path": "fixtures/martin-mit/powerpoint-semantic-controls.json",
       "byteLength": 1102,
-      "sha256": "48b804fc08784095357fa78605e9e9b4c9f545e5d01bf5bbc347bb6c1e2b79ca"
+      "sha256": "faaa2ccde759166a679d6ef11edf748ac8b074badb8e52da76f6f3673d148ce2"
     },
     {
       "path": "fixtures/martin-mit/roundtrip-repeat-visual-audit.json",
@@ -5364,5 +5368,5 @@
       "sha256": "a9d922ea94475d2ef49e38fc565e9c9b7ad1d91810fc31b8832ac496060c6c7d"
     }
   ],
-  "scorecardHash": "36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d"
+  "scorecardHash": "8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be"
 }

@@ -1,18 +1,18 @@
 {
   "schemaVersion": "slidewright-c10-public-evidence/v1",
   "valid": true,
-  "scorecardHash": "36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d",
-  "reviewHash": "d0eb2e3e28ec919d94046c0d5408886b94e2ca4fe022bd03e494d106a2b63911",
-  "run": "runs/36fdfe92e13027b593def072e4220ca3e4b1f37c77de342b56a6b0cef9d60e7d",
-  "review": "reviews/d0eb2e3e28ec919d94046c0d5408886b94e2ca4fe022bd03e494d106a2b63911.json",
+  "scorecardHash": "8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
+  "reviewHash": "56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1",
+  "run": "runs/8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be",
+  "review": "reviews/56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1.json",
   "files": {
     "scorecard": {
-      "byteLength": 204666,
-      "sha256": "299a3f8335ddb242eb303f59c705c71c8410fa20592e7a986908de20c6ee9574"
+      "byteLength": 204799,
+      "sha256": "baafa4bd3e4d09c5658d1b96d30a8489d690fb413622d7c773ea343963cbf15e"
     },
     "review": {
-      "byteLength": 61540,
-      "sha256": "818bde252f17579f429ba5b05647b958f7b38d12e712170bcb8e656feddc9484"
+      "byteLength": 61534,
+      "sha256": "e94b173c04e8b3c153e764a62388fd53dbac0ac2cc7d55d81804cd94ccd5dafd"
     }
   },
   "scope": {
@@ -23,5 +23,5 @@
     "verificationCommand": "npm run template:matrix:verify:published",
     "limitation": "The public snapshot contains all artifact paths, byte lengths, SHA-256 receipts, machine decisions, and human review bindings; generated PPTX and PNG bodies remain ignored and are regenerated on a PowerPoint-capable host."
   },
-  "pointerHash": "17ea9b7fb313d3258f184370aeb0588d343a9f2d51d315dfd41fb2c5ceb36e5e"
+  "pointerHash": "3e1f1a027ad16f67b4fa183d92d51583dcdb435386f181cbf3529ad64d7b9e63"
 }

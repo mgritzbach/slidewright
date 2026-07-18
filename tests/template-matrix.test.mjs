@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { expectedTemplateMatrixClosurePaths, loadValidatedRejectedSources, validateTemplateMatrixManifest } from "../scripts/lib/template-matrix-evidence.mjs";
+import { expectedTemplateMatrixClosurePaths, loadValidatedRejectedSources, sha256File, sha256ImplementationFile, validateTemplateMatrixManifest } from "../scripts/lib/template-matrix-evidence.mjs";
 import { verifyPublishedTemplateMatrixEvidence } from "../scripts/lib/template-matrix-public-evidence.mjs";
 
 const root = process.cwd();
@@ -57,6 +57,17 @@ test("C10 evidence closure re-derives sanitizers, upstreams, licenses, plans, an
     "fixtures/template/c10-v1/keith/LICENSE.txt",
   ]) assert.ok(closure.includes(required), required);
   assert.deepEqual((await loadValidatedRejectedSources(root, manifest)).map((item) => item.id), ["triple-cc-by-4.0", "keith-cc0-powerpoint-incompatible"]);
+});
+
+test("C10 implementation hashing is invariant to Git LF and Windows CRLF checkouts", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c10-line-endings-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const lf = path.join(directory, "lf.txt");
+  const crlf = path.join(directory, "crlf.txt");
+  await fs.writeFile(lf, "alpha\nbeta\n", "utf8");
+  await fs.writeFile(crlf, "alpha\r\nbeta\r\n", "utf8");
+  assert.notEqual(await sha256File(lf), await sha256File(crlf));
+  assert.equal(await sha256ImplementationFile(lf), await sha256ImplementationFile(crlf));
 });
 
 test("C10 native-chart fixture is a deterministic overlap-free derivative of its pinned upstream", async (t) => {
