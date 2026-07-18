@@ -20,7 +20,7 @@ Slidewright treats presentation generation like a build pipeline. Codex translat
 
 The independent opaque-image benchmark reconstructs an original invitation as 13 native text objects and 10 native shapes with zero pictures or embedded source raster. It scores 0.95102 global similarity, 0.93510 foreground similarity, 0.89922 background-normalized similarity, and 0.79492 edge F1. A text-erased adversarial control retains strong flat-color scores but fails the edge gate, proving the metric cannot be gamed by deleting the words.
 
-The template benchmark makes exact copy edits in two named native placeholders while preserving every other byte outside the authorized slide part. A full-slide allowlist audit, five tamper controls, and a real PowerPoint `SaveAs`/reopen/render round trip prove that the master, 11 layouts, theme, relationships, footer, slide number, and preserve-only slide survive. This is deliberately claimed as a narrow copy-edit path, not general PPTX import.
+The template-preservation matrix covers four licensed families and 39 slides with native charts and workbooks, native tables, image-heavy repeated layouts, and a multi-layout branded deck. Source-object identities, complete package inventories, semantic object audits, destructive controls, two real PowerPoint `SaveAs`/reopen cycles, and 195 hash-bound full-size reviews prove that masters, layouts, themes, placeholders, notes, hyperlinks, media, spacing, and recurring chrome survive. The claim stays bounded to those licensed fixtures and declared edits; arbitrary third-party structural ingestion remains a separate goal.
 
 Slidewright makes the editable artifact—not the screenshot—the product.
 
@@ -31,7 +31,7 @@ Slidewright makes the editable artifact—not the screenshot—the product.
 - anti-circular image ingestion with quarantined source geometry;
 - exact object-level formatting and OOXML package audits;
 - missing-font and dense-copy fail-safe behavior;
-- surgical source-template edits with whole-slide allowlisting;
+- source-bound template preservation across four licensed fixture families;
 - real PowerPoint group and template serialization round trips;
 - adversarial controls and one-command evidence generation.
 

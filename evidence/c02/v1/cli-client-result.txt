@@ -1,0 +1,3 @@
+skill_name=slidewright
+first_workflow_step=Define the communication job in one sentence: audience, intended outcome, and central takeaway.
+complaint_contract_sha256=77061cc020612b2279d5f6bb844c7813a134b811b217b1a4571d2682e8509663

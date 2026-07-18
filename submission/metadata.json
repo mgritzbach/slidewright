@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.2.1",
   "projectName": "Slidewright",
   "category": "Work & Productivity",
   "repositoryUrl": "https://github.com/mgritzbach/slidewright",
@@ -12,5 +12,5 @@
   "gpt56UsageVerified": false,
   "gpt56UsageStatement": null,
   "joinedDevpost": false,
-  "judgeAccessConfirmed": false
+  "judgeAccessConfirmed": true
 }

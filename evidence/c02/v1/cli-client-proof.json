@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "slidewright-c02-client-proof/v1",
+  "valid": true,
+  "surface": "codex-cli",
+  "repository": "mgritzbach/slidewright",
+  "sourceRef": "main",
+  "sourceCommit": "89750e2c8197041a756177859b5294b00b426555",
+  "installation": {
+    "method": "skill-installer-public-github",
+    "path": "plugins/slidewright/skills/slidewright",
+    "installedSkillNormalizedSha256": "b91dd98ab729edd3ccb0012cede43004cf66d112e4d5c8e500a5909f6ddc4f7f",
+    "validatorPassed": true,
+    "cleanWorkspaceBootstrapPassed": true,
+    "cleanWorkspacePreflightPassed": true,
+    "requiredCapabilityFailures": 0
+  },
+  "client": {
+    "name": "OpenAI Codex CLI",
+    "version": "0.118.0",
+    "model": "gpt-5.4",
+    "sandbox": "read-only",
+    "ephemeral": true,
+    "exitCode": 0
+  },
+  "probe": {
+    "promptNamedSkillButDidNotRevealFilesystemPath": true,
+    "requiredReference": "references/complaint-contract.md",
+    "referenceSha256": "77061cc020612b2279d5f6bb844c7813a134b811b217b1a4571d2682e8509663",
+    "resultFile": "cli-client-result.txt",
+    "resultFileSha256": "66c3080ed992d38b77f2c6a2ea86109f354e4c191228ee900828c21ca0b7cc9b",
+    "rawClientOutputSha256": "521c828ffd2d9f68aaf4422ca1fb18168108b17a2ba1907e42273ba9d4ab7c8c"
+  },
+  "limitations": [
+    "This proves public GitHub installation, runtime bootstrap, preflight, and client-originated use on the Codex CLI surface only.",
+    "Codex Desktop and VS Code client-originated proofs remain required before C02 can advance to 1.",
+    "The older CLI emitted unrelated stale-plugin and model-cache warnings; the Slidewright skill probe itself completed successfully."
+  ]
+}

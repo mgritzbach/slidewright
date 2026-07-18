@@ -30,9 +30,9 @@ The exact clone → `npm ci` → runtime setup → preflight → demo → ingest
 npm run release:check
 ```
 
-This runs preflight, 31 unit/negative tests, the demo, six-slide controlled fidelity benchmark, PowerPoint group round trip, -25%/+25% copy mutation, font/density repair controls, independent opaque-image ingestion, erased-text adversarial control, and the golden-template/PowerPoint round trip.
+This runs preflight, the current 253-test unit/destructive-control suite, the demo, universal design contracts, controlled fidelity, PowerPoint group round trip, copy mutation and continuation resilience, repair-free package validation, independent opaque-image ingestion, four-family template preservation, geometric/readability defects, fine-grained iteration, design-profile reuse, feedback contracts, prompt robustness, semantic-surface preservation, native-object mutation, and public-evidence verification.
 
-On the verified Windows host, the complete path takes about seven minutes. Platform-specific capabilities and exact dependencies are documented in `docs/PLATFORM_MATRIX.md`.
+On the verified Windows host, the complete release path takes roughly one hour because it performs repeated real-PowerPoint save/reopen sessions and regenerates all evidence producers. The five-minute quick path above is the intended judge smoke test. Platform-specific capabilities and exact dependencies are documented in `docs/PLATFORM_MATRIX.md`.
 
 ## Install as a Codex skill or plugin
 

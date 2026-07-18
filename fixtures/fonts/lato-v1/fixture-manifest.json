@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "slidewright-font-integrity-lato-v1",
+  "family": "Slidewright Fixture Sans",
+  "license": {
+    "spdx": "OFL-1.1",
+    "file": "OFL.txt",
+    "sha256": "74ba064d03f1f1c4a952da936c3eb71866c34404916734de3cae73b34357e59e"
+  },
+  "upstream": {
+    "project": "Lato",
+    "repository": "https://github.com/google/fonts/tree/main/ofl/lato",
+    "retrieved": "2026-07-18",
+    "files": [
+      {
+        "name": "Lato-Regular.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Regular.ttf",
+        "sha256": "d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251"
+      },
+      {
+        "name": "Lato-Bold.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Bold.ttf",
+        "sha256": "8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1"
+      },
+      {
+        "name": "Lato-Italic.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-Italic.ttf",
+        "sha256": "e399c44efe1387100531d26c7e4800c5d12251b890d6654a3098c7c679cb1786"
+      },
+      {
+        "name": "Lato-BoldItalic.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/lato/Lato-BoldItalic.ttf",
+        "sha256": "62c1b7f0d2e74b45960154c3520efc337b553db0961bfdc950d5618334596cc8"
+      }
+    ]
+  },
+  "modification": "Only OpenType name records were changed so the benchmark has a collision-resistant family identity. Glyph outlines, metrics, hinting, OpenType behavior, and embedding permissions are unchanged.",
+  "fonts": [
+    {
+      "style": "regular",
+      "file": "SWFixture-Regular.ttf",
+      "sha256": "563f823a0c51df581158829f1edb3f86d558a8c0affff9494fe5ff62bcebe363"
+    },
+    {
+      "style": "bold",
+      "file": "SWFixture-Bold.ttf",
+      "sha256": "c128409d44082a538e675933e2d1817f22938df4e6653a8f0d2fb948e7512556"
+    },
+    {
+      "style": "italic",
+      "file": "SWFixture-Italic.ttf",
+      "sha256": "f85bfb8ab8921413edf458e594f0babb9a1029ac1de20fa07b46e93be3c4f695"
+    },
+    {
+      "style": "boldItalic",
+      "file": "SWFixture-BoldItalic.ttf",
+      "sha256": "f16015abf891e810f4a66140278a3569c865aa54f8d2156339ac5ede6879ff67"
+    }
+  ],
+  "expectedEmbeddingPermission": "installable",
+  "expectedFsType": 0
+}

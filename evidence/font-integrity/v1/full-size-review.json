@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "benchmarkId": "C11-font-integrity-v1",
+  "reviewedAt": "2026-07-18T04:46:31-07:00",
+  "reviewer": "Codex independent root visual QA",
+  "method": "Each unique 1600x900 render was opened individually at original size. Source, roundtrip 1, and roundtrip 2 are covered because each state has byte-identical slide renders.",
+  "slides": [
+    {
+      "slide": 1,
+      "sha256": "03808f47c3f66c9fa5d3e8696c51aa5406ca4d894bfd9cebceffa063b1a0a8b7",
+      "passed": true,
+      "observations": "Title, subtitle, regular/bold/italic/bold-italic runs, native group text, integer-size callout, symmetric-inset callout, layout label, and master footer are fully visible with no overlap, clipping, or unintended wrap."
+    },
+    {
+      "slide": 2,
+      "sha256": "175b9c59f74d5e9b8b775fb3211de788ab62ee67ccc0cc0921e0069ba241ea8e",
+      "passed": true,
+      "observations": "The native table, three column headings, all body cells, mixed emphasis, and release-blocking note are fully visible with consistent typography and no overlap, clipping, or unintended wrap."
+    }
+  ],
+  "statesCovered": [
+    "source",
+    "roundtrip1",
+    "roundtrip2"
+  ],
+  "result": "pass"
+}

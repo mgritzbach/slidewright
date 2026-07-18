@@ -23,7 +23,13 @@ These are deck-wide contracts, not demo-specific styling. Schema `0.2` resolves 
 
 ### Install in Codex
 
-Add the public Slidewright marketplace and install the plugin from a terminal:
+The simplest path is the standalone skill. Ask Codex:
+
+> Install the Slidewright skill from https://github.com/mgritzbach/slidewright/tree/main/plugins/slidewright/skills/slidewright
+
+Start a new task after installation so `$slidewright` is discovered. The public-main install has been validated, bootstrapped in a clean workspace, and invoked by a fresh Codex CLI client without relying on marketplace UI.
+
+On newer Codex builds that expose plugin management, install the complete plugin from the public marketplace:
 
 ```powershell
 codex plugin marketplace add mgritzbach/slidewright
@@ -68,7 +74,7 @@ Supported local overrides are `SLIDEWRIGHT_CODEX_RUNTIME_ROOT` and `SLIDEWRIGHT_
 npm run runtime:benchmark
 ```
 
-The public CI matrix runs the same contract on native Windows, macOS, and Linux hosts, uploads semantically verified raw command receipts, and aggregates the three scorecards only when their implementation and contract hashes match. Genuine WSL execution remains an explicit uncredited requirement; a Linux runner with injected WSL variables is not accepted as proof.
+The public CI matrix runs the same contract on native Windows, macOS, and Linux hosts, uploads semantically verified raw command receipts, and aggregates the three scorecards only when their implementation and contract hashes match. The credited C03 release additionally binds a genuine WSL2 profile with Microsoft kernel/filesystem evidence; a Linux runner with injected WSL variables is still rejected.
 
 The installed skill has the same self-contained bootstrap as `node <slidewright-skill>/scripts/slidewright.mjs bootstrap`; it links the already bundled Codex runtime into the active workspace and does not download or silently switch renderers. Slidewright's clean-home installation benchmark verifies real CLI installation plus Desktop- and VS Code-identified **app-server backend discovery** without relying on marketplace UI clicks; it does not claim to launch either GUI client. The pinned harness is isolated under `tools/installation/` and runs with `npm ci --prefix tools/installation` followed by `node scripts/run-installation-benchmark.mjs`. If an older Codex build does not expose `codex plugin`, update Codex before installing Slidewright.
 
@@ -110,6 +116,15 @@ npm run repair
 
 The command proves that missing fonts and content outside the bounded adaptive layouts or configured slide ceiling block export with actionable diagnostics; no silent fallback or tiny-text PPTX is emitted.
 
+For the licensed embedded-font round-trip proof, run:
+
+```powershell
+npm run font-integrity
+npm run font-integrity:verify
+```
+
+The C11 fixture uses an OFL-licensed four-style family, native mixed-emphasis text, an editable group, a native table, and a real master/layout. The gate requires all four embedded payloads and the exact visible style fingerprint to survive two Microsoft PowerPoint save/reopen cycles, while missing-family, removed-payload, truncated-payload, and visible-substitution controls must fail. This qualifies preservation of the licensed fixture; Slidewright does not silently embed or redistribute arbitrary user fonts.
+
 For the release-level repair-free gate on Windows with Microsoft PowerPoint installed, run:
 
 ```powershell
@@ -134,6 +149,26 @@ The matrix covers canvas and parent clipping, text overflow, unintended overlap 
 `npm run template` exercises the deliberately narrow existing-deck path on an MIT-licensed, PowerPoint-authored golden fixture. The editor changes only declared text nodes in two uniquely named native placeholders and refuses stale source hashes, unexpected source text, or ambiguous shapes. The audit proves that every other package part, relationship, master, layout, theme, and preserve-only slide is unchanged, then PowerPoint serializes a new file with `SaveAs`, opens it again, and rerenders the result. Five destructive controls prove that theme drift, control-slide drift, same-slide non-target drift, extra package parts, and stale edit contracts are rejected.
 
 This is evidence for exact named-placeholder copy edits, not a claim of general PowerPoint import or arbitrary deck restructuring. The generated deviation log is written to `outputs/template/deviation-log.json`.
+
+For the broader preservation matrix, run `npm run template:matrix`. Four licensed template families cover native charts with workbooks, native tables, image-heavy repeated layouts, and a multi-layout branded deck. The matrix verifies 39 slides through source, authorized edit, PowerPoint round trip, repeated PowerPoint round trip, and visible-negative states; audits source-object identity, masters, layouts, placeholders, themes, relationships, notes, hyperlinks, media, charts, workbooks, tables, spacing, and recurring chrome; and binds 195 individual full-size review decisions to exact render hashes. Use `npm run template:matrix:verify:published` to verify the compact committed C10 evidence without rerunning PowerPoint.
+
+This qualifies preservation for the four licensed fixture families and their declared edit contracts. It still does not claim arbitrary structural import or unrestricted editing of every third-party deck; that remains the separate C17 scope.
+
+## Lossless structural PPTX ingestion
+
+When an existing native deck must enter the workflow without flattening its contents, run the structural importer and its release evidence gate:
+
+```powershell
+python plugins/slidewright/skills/slidewright/scripts/structural_ingestion/import_structural.py import source.pptx imported.pptx --manifest structural-manifest.json
+npm run structural-ingestion
+npm run structural-ingestion:verify
+```
+
+The C17 matrix uses four licensed decks and independently checks the complete OPC part inventory plus slide-to-layout-to-master-to-theme hierarchy, exact native text runs, tables, charts, diagrams, notes, and recursive semantic reading order. Eight destructive controls prove that loss in any named surface is rejected. The importer is a lossless preservation boundary: it does not claim unrestricted editing or semantic reconstruction of every imported Office object.
+
+## Cross-suite interoperability status
+
+Run `npm run interoperability:status` to see which of the six target application suites are callable and which have real evidence. The command deliberately exits nonzero until exact-deck, clean-commit, automation-trace, native-edit, re-export, semantic-inventory, and rendered-slide evidence has been imported for PowerPoint Windows, PowerPoint macOS, Google Slides, Keynote, LibreOffice, and Canva. Capability detection alone never counts. See [the C19 evidence contract](docs/C19_INTEROPERABILITY.md).
 
 ## Optional direct PowerPoint adapter
 
@@ -161,11 +196,11 @@ Run the complete evidence bundle with `npm run iteration`.
 
 Run `npm run semantic-surface` to build and audit a controlled four-slide deck containing nested real PowerPoint groups, horizontal and vertical native Office charts, a native table, attached connectors, a declared raster visual asset with alt text, and meaningful speaker notes.
 
-The suite freezes the exact object inventory, text-bearing shape hashes, recursive group paths, z-order, cached chart data and orientation, table-cell matrix, connector endpoints, media relationship/hash/alt text, reading order, and notes. Three exports must be byte-identical. Nine destructive controls must reject flattening, relationship drift, detached connectors, stripped notes, hierarchy drift, and undeclared objects. On Windows, newly owned, time-bounded Microsoft PowerPoint workers must SaveAs/reopen the deck with the same frozen semantic fields and exact source/round-trip slide renders. The historical scorecard `c37f1786955eb2454bd430df72563c042f559a417f6897b2a2987db8637081ac` was retired after process-safety hardening; C08 remains uncredited until the hardened runner emits and publishes a fresh full scorecard.
+The suite freezes the exact object inventory, text-bearing shape hashes, recursive group paths, z-order, cached chart data and orientation, table-cell matrix, connector endpoints, media relationship/hash/alt text, reading order, and notes. Three exports must be byte-identical. Nine destructive controls must reject flattening, relationship drift, detached connectors, stripped notes, hierarchy drift, and undeclared objects. On Windows, newly owned, time-bounded Microsoft PowerPoint workers must SaveAs/reopen the deck with the same frozen semantic fields and exact source/round-trip slide renders. The current credited C08 release evidence is versioned and content-addressed; `npm run semantic-surface` regenerates it and the verifier refuses dirty, stale, incomplete, or process-unsafe runs.
 
-This is the bounded C08 proof of complete semantic representation and preservation. It does not claim chart-data editing, table-cell editing, general third-party PPTX ingestion, or arbitrary mutation/readability guarantees for every Office chart, table, or diagram; those remain separate C17 and C18 goals.
+This is the bounded C08 proof of complete semantic representation and preservation. It does not claim general third-party PPTX ingestion or arbitrary mutation/readability guarantees for every Office chart, table, or diagram; C17 remains separate, while C18 qualifies only the five declared mutation operations below.
 
-For the bounded C18 mutation suite, first publish a fresh hardened C08 baseline, then run `npm run semantic-mutation`. Five isolated real-PowerPoint cases edit horizontal and vertical chart data, one table cell, one diagram node with its label, and one connector style. The runner requires exact before/mutated/reopened state, full collateral-package preservation outside operation-specific masks, exact connector sites, chart-label and table-fit readability, six four-slide render sets, and nine destructive controls. It publishes machine evidence only; C18 remains incomplete until every one of the 24 full-size review images is inspected and a scorecard-bound decision file is finalized with `npm run semantic-mutation:review -- --input <review-decisions.json>`.
+For the bounded C18 mutation suite, first publish a fresh hardened C08 baseline, then run `npm run semantic-mutation`. Five isolated real-PowerPoint cases edit horizontal and vertical chart data, one table cell, one diagram node with its label, and one connector style. The runner requires exact before/mutated/reopened state, full collateral-package preservation outside operation-specific masks, exact connector sites, chart-label and table-fit readability, six four-slide render sets, and nine destructive controls. The credited release also binds 24/24 individual full-size review decisions through `npm run semantic-mutation:review -- --input <review-decisions.json>`; no broader native-object claim is implied.
 
 ## Existing-deck design profiles
 

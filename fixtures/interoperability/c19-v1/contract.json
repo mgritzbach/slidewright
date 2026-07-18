@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "slidewright-c19-contract/v1",
+  "id": "c19-cross-suite-interoperability-v1",
+  "requiredSuites": [
+    {
+      "id": "powerpoint-windows",
+      "application": "Microsoft PowerPoint",
+      "proofMode": "desktop-automation",
+      "platform": "windows",
+      "automationProtocol": "com"
+    },
+    {
+      "id": "powerpoint-macos",
+      "application": "Microsoft PowerPoint",
+      "proofMode": "desktop-automation",
+      "platform": "macos",
+      "automationProtocol": "applescript"
+    },
+    {
+      "id": "google-slides",
+      "application": "Google Slides",
+      "proofMode": "browser-automation",
+      "platform": "web",
+      "serviceOrigin": "https://docs.google.com"
+    },
+    {
+      "id": "keynote-macos",
+      "application": "Apple Keynote",
+      "proofMode": "desktop-automation",
+      "platform": "macos",
+      "automationProtocol": "applescript"
+    },
+    {
+      "id": "libreoffice",
+      "application": "LibreOffice Impress",
+      "proofMode": "desktop-automation",
+      "platform": "any-desktop",
+      "automationProtocol": "uno"
+    },
+    {
+      "id": "canva",
+      "application": "Canva",
+      "proofMode": "browser-automation",
+      "platform": "web",
+      "serviceOrigin": "https://www.canva.com"
+    }
+  ],
+  "coreSemanticChecks": [
+    "slide-count",
+    "native-visible-text",
+    "sentinel-edit-roundtrip",
+    "no-full-slide-raster",
+    "reading-order"
+  ],
+  "advancedSemanticChecks": [
+    "mixed-emphasis",
+    "native-table",
+    "native-chart",
+    "native-group",
+    "attached-connectors"
+  ],
+  "allowedAdvancedOutcomes": [
+    "preserved",
+    "changed",
+    "unsupported"
+  ],
+  "minimumFixtureInventory": {
+    "slides": 2,
+    "nativeTextObjects": 4,
+    "mixedEmphasisObjects": 1,
+    "tables": 1,
+    "charts": 1,
+    "groups": 1,
+    "connectors": 1
+  },
+  "renderContract": {
+    "minimumWidthPixels": 960,
+    "minimumHeightPixels": 540,
+    "requiredPerSlideChecks": [
+      "readable",
+      "not-clipped",
+      "not-blank"
+    ]
+  },
+  "publication": {
+    "requiresAllSuites": true,
+    "requiresOneExactSourceDeckAcrossSuites": true,
+    "requiresExactCleanSourceCommit": true,
+    "requiresAuthenticatedArtifactMetadata": true,
+    "artifactBodiesCommitted": false
+  }
+}

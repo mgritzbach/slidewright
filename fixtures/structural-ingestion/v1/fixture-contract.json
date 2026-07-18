@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "slidewright-structural-ingestion-contract/v1",
+  "scope": "Lossless OPC structural import/export with a machine-readable semantic manifest. SmartArt authoring and arbitrary semantic reconstruction are outside this contract.",
+  "fixtures": [
+    {
+      "id": "automizer-charts-mit",
+      "source": "fixtures/template/c10-v1/automizer-charts/template.pptx",
+      "sourceSha256": "7b4d6833c93229377c160359f6764811a29728c57446ea39b7734eca5189101c",
+      "license": "fixtures/template/c10-v1/automizer-charts/LICENSE.txt",
+      "licenseSha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2",
+      "spdx": "MIT",
+      "minimums": { "slides": 2, "masters": 1, "layouts": 11, "textRuns": 4, "charts": 2 }
+    },
+    {
+      "id": "automizer-tables-mit",
+      "source": "fixtures/template/c10-v1/automizer-tables/template.pptx",
+      "sourceSha256": "c23ed32ac8e7aed1e3b3f985f5d50ff396547bd7e3fe43d04805a13438a0272e",
+      "license": "fixtures/template/c10-v1/automizer-tables/LICENSE.txt",
+      "licenseSha256": "93a4bfe57f16dbf797c5c763ced6ea661b47098c41b5ea4288a76a0655bcf2d2",
+      "spdx": "MIT",
+      "minimums": { "slides": 3, "masters": 1, "layouts": 11, "textRuns": 40, "tables": 8 }
+    },
+    {
+      "id": "keith-cc0-notes",
+      "source": "fixtures/template/c10-v1/keith/template.pptx",
+      "sourceSha256": "56dffe7f7babd625f297dee0955e43f5f546ff6330bd3e8129915f2bce1cf0ed",
+      "license": "fixtures/template/c10-v1/keith/LICENSE.txt",
+      "licenseSha256": "f0bd0466b5844cb86eaac202a69faa37e9f2b34aaca15f594c2c38a8779f6945",
+      "spdx": "CC0-1.0",
+      "packageOnly": true,
+      "knownLimitation": "This structurally valid source is excluded from PowerPoint automation because the tested application exits during SaveAs; C17 exercises only its OOXML package.",
+      "minimums": { "slides": 3, "masters": 1, "layouts": 18, "textRuns": 40, "charts": 2, "tables": 1, "notes": 3 }
+    },
+    {
+      "id": "martin-native-diagram-mit",
+      "source": "fixtures/template/c10-v1/martin/template.pptx",
+      "sourceSha256": "4f278a0558f90a5db089235464af4f5746e738579754866acd704cab704a56e4",
+      "license": "fixtures/template/c10-v1/martin/LICENSE.txt",
+      "licenseSha256": "1730adecb68ceb0fc0abfb6c9d07cb89bd66e75ae0b46cfa07792e72dbaa7bf5",
+      "derivation": "append-editable-native-shape-diagram",
+      "derivedSha256": "119d39451f0afd9b0e29921758767b9ec805b1f23cf487415638a17089636e65",
+      "spdx": "MIT",
+      "minimums": { "slides": 1, "masters": 1, "layouts": 11, "textRuns": 2, "diagrams": 1 }
+    }
+  ],
+  "requiredCoverage": ["slideMasterHierarchy", "textRuns", "tables", "nativeDiagrams", "charts", "notes", "semanticReadingOrder"],
+  "controls": [
+    { "id": "slide-layout-binding", "fixture": "automizer-charts-mit", "expectedFailure": "SI_HIERARCHY" },
+    { "id": "layout-master-binding", "fixture": "automizer-charts-mit", "expectedFailure": "SI_HIERARCHY" },
+    { "id": "text-run-formatting", "fixture": "automizer-charts-mit", "expectedFailure": "SI_TEXT_RUNS" },
+    { "id": "table-cell", "fixture": "automizer-tables-mit", "expectedFailure": "SI_TABLES" },
+    { "id": "chart-cache", "fixture": "automizer-charts-mit", "expectedFailure": "SI_CHARTS" },
+    { "id": "speaker-notes", "fixture": "keith-cc0-notes", "expectedFailure": "SI_NOTES" },
+    { "id": "reading-order", "fixture": "automizer-charts-mit", "expectedFailure": "SI_READING_ORDER" },
+    { "id": "native-diagram", "fixture": "martin-native-diagram-mit", "expectedFailure": "SI_DIAGRAMS" }
+  ]
+}
