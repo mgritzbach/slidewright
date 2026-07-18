@@ -2,7 +2,7 @@
 
 Status is binary: `1` means the stated evidence exists and was checked; `0` means it does not. Progress notes never change the binary definition.
 
-Current credited status: **35/36 product goals**, **16/22 complaint-derived goals**, **51/58 total**. G09 remains the only uncredited product goal.
+Current credited status: **35/36 product goals**, **17/22 complaint-derived goals**, **52/58 total**. G09 remains the only uncredited product goal.
 
 | ID | Goal | Status | Required evidence |
 | --- | --- | ---: | --- |
@@ -58,7 +58,7 @@ These goals come from the public complaint inventory in `docs/COMPLAINT_LEDGER.m
 | C07 | Native editable visible text | 1 | Controlled six-slide audit finds every expected string in native named text objects with zero pictures |
 | C08 | Complete semantic object coverage | 1 | Fresh hardened real-PowerPoint scorecard proves the complete frozen semantic surface, exact owned-process cleanup, immutable implementation/input closure, and source/round-trip full-size review |
 | C09 | No text-as-image or full-slide raster fallback | 1 | Controlled benchmark has zero `p:pic` objects and 129 native editable elements |
-| C10 | Template, master, layout, and brand preservation | 0 | Licensed golden templates retain masters, layouts, placeholders, theme relationships, palette, spacing, and chrome with explicit deviation report |
+| C10 | Template, master, layout, and brand preservation | 1 | Licensed golden templates retain masters, layouts, placeholders, theme relationships, palette, spacing, and chrome with explicit deviation report |
 | C11 | Font and advanced-format integrity | 0 | Missing/substituted fonts fail visibly; licensed embedding and complex template/font fixtures pass PowerPoint round trips |
 | C12 | Prompt-robust workflow | 1 | Minimal, verbose, conflicting, and adversarial prompt matrix cannot bypass compile/lint/render/audit or degrade below quality gates |
 | C13 | Professional visual quality | 0 | Blind expert review and five target users meet defined first-open acceptance and cleanup-time thresholds across 20+ independent designs |
@@ -75,6 +75,8 @@ These goals come from the public complaint inventory in `docs/COMPLAINT_LEDGER.m
 ## Evidence register
 
 Append dated evidence here. Do not replace the goal definitions with looser substitutes.
+
+- 2026-07-18: C10 advanced to `1` on exact source commit `8429ed065f23bdba43f36a571020f21b781b6ae7`. Compact public scorecard `8fcd553235e1a20156abe642794288546031b3d42e216d58a876c3a0558284be` and bound review `56d208968faac1d1ef1b404c228730f5234c5c9f32be5e8567a887ede577d0c1` independently verify four licensed template families, 39 slides, 542 exact artifact receipts, 48 implementation files, and 195/195 full-size reviewed source/edited/PowerPoint-roundtrip/repeat/visible-negative renders. The matrix retains exact masters, layouts, placeholders, theme relationships, palette, spacing, chrome, notes and native complex objects, uses source-object identities for every ordinary edit, passes two real-PowerPoint serialization cycles, and rejects chart, workbook, table, hyperlink, media, native-object, source-identity, render-inventory, implementation-closure, and visible-geometry destructive controls. `npm run template:matrix:verify:published`, 253/253 repository tests, plugin validation, skill validation, 26/26 repair-free fixtures, and 13 repair-free controls all passed. Public Core CI push run `29642280222` passed every job on the same source commit. Its GitHub-authenticated Linux artifact `8428977418` (`sha256:c2b67de62b9b56447c0f2ef7005a97e9c395e264d17ca357f8c82b9964918342`), Windows artifact `8428983109` (`sha256:0e6e83cc8a0959c4d61a24d8e44ae44b049d792ac48988e1e073f0b4bacf9c32`), and aggregate artifact `8428985242` (`sha256:3582440362f7a3cf23c5ba4b5a97a6970c2f080444073f0c996d459d227c4757`) were downloaded and imported. Default `npm run evidence:verify` then passed in replicated release mode with manifest `f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc`, aggregate `b3082b4d740d649b7faefa47ed53235c1a006e00e65da8668d03acecc3e91215`, and portable result `bd13f658eefa06b9d8845bf72222d0720565371a6c4ae4ad841eb69bb012ec1c`.
 
 - 2026-07-17: C10 remains `0`. Independent review invalidated the earlier candidate because the PowerPoint round trip had only shallow native chart/table checks, ordinary edits did not require complete source-object identity, render comparators had vacuous inventory paths, negative-control summaries and the implementation closure were verifier-trusted, and published G22/G23 evidence had drifted. The branch now has complete source identity binding, exact render inventories and dimensions, a static edited-package-versus-PowerPoint semantic audit, chart/workbook/table/hyperlink/media/native-object destructive controls, reproducible hash-pinned sanitizers, and a verifier-derived closure. Credit stays at zero until a fresh matrix, complete hash-bound full-size review, public-evidence refresh, and all release gates pass on the final implementation.
 

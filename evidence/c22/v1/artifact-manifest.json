@@ -2,50 +2,50 @@
   "schemaVersion": "slidewright-c22-artifact-manifest/v1",
   "valid": true,
   "repository": "mgritzbach/slidewright",
-  "runId": "29634753744",
-  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29634753744",
-  "sourceCommit": "537215dbe34866d8e8c7351e11a0b23fd40d775a",
+  "runId": "29642280222",
+  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29642280222",
+  "sourceCommit": "8429ed065f23bdba43f36a571020f21b781b6ae7",
   "artifacts": [
     {
-      "id": 8426720163,
-      "name": "slidewright-cross-platform-replication-537215dbe34866d8e8c7351e11a0b23fd40d775a",
-      "sizeInBytes": 2250,
-      "digest": "sha256:8a3148194f81f8d38393004146f14bee9434cf2a7b05eaea9d9d66afabd82abc"
+      "id": 8428985242,
+      "name": "slidewright-cross-platform-replication-8429ed065f23bdba43f36a571020f21b781b6ae7",
+      "sizeInBytes": 2246,
+      "digest": "sha256:3582440362f7a3cf23c5ba4b5a97a6970c2f080444073f0c996d459d227c4757"
     },
     {
-      "id": 8426711424,
-      "name": "slidewright-public-evidence-Linux-537215dbe34866d8e8c7351e11a0b23fd40d775a",
-      "sizeInBytes": 15380,
-      "digest": "sha256:88bcfab01ef750bd5e7ddb0d3eea26164c91cb66ab710f20d1b3aa9b29cf98c7"
+      "id": 8428977418,
+      "name": "slidewright-public-evidence-Linux-8429ed065f23bdba43f36a571020f21b781b6ae7",
+      "sizeInBytes": 15424,
+      "digest": "sha256:c2b67de62b9b56447c0f2ef7005a97e9c395e264d17ca357f8c82b9964918342"
     },
     {
-      "id": 8426717279,
-      "name": "slidewright-public-evidence-Windows-537215dbe34866d8e8c7351e11a0b23fd40d775a",
-      "sizeInBytes": 14978,
-      "digest": "sha256:d9507f7ecc4f378547187e9b164a5539ef84faab7e964d61a06af2c51eaf953c"
+      "id": 8428983109,
+      "name": "slidewright-public-evidence-Windows-8429ed065f23bdba43f36a571020f21b781b6ae7",
+      "sizeInBytes": 15086,
+      "digest": "sha256:0e6e83cc8a0959c4d61a24d8e44ae44b049d792ac48988e1e073f0b4bacf9c32"
     }
   ],
   "files": [
     {
       "path": "c22/v1/linux-fresh-host-scorecard.json",
-      "bytes": 4037,
-      "sha256": "29c3a368b31d5761107133685c08d35880a79f15297f1be072e2c32d5abfa0f6"
+      "bytes": 4036,
+      "sha256": "de5af4ecc67d2d36ee327780446d77ee58ceb77b4f8be7d910198f264323b933"
     },
     {
       "path": "c22/v1/windows-fresh-host-scorecard.json",
       "bytes": 4041,
-      "sha256": "74b2ae5a53e4fc0e6e1e180d7573a0f17a8ccfa738c25f55a54f1862133caf95"
+      "sha256": "613c3643c47bb83c4a94bd957fe4a54492d00e0235d7367eb99e88e079a9af59"
     },
     {
       "path": "c22/v1/aggregate-scorecard.json",
       "bytes": 4728,
-      "sha256": "a38cbaecd75462a6ebefa059b22ddd45ed6a427f1e07234f6ced527c24bd0fed"
+      "sha256": "4e5b2e9076ed01559b116e0c7a24225219fb41c3a90aa9b5206731bc746f8a06"
     },
     {
       "path": "c22/v1/FRESH_MACHINE_REPLICATION.md",
       "bytes": 1007,
-      "sha256": "9d5732413f63e4a49c9131651f520f32f87c76a069ddac43ade4a92ef97acc53"
+      "sha256": "a5c5b5bec2e525f847aacc49224aec2068acee4b0f8a34d7053b4a73c42a46ac"
     }
   ],
-  "manifestHash": "c7ec65916e93b2be5084a3ea1b068f822f94a020ca445d7f6ce05b418fa46794"
+  "manifestHash": "cd3ba26697d56d5c3140275e540a24cbb14f35dc9e409f74d3fa13c26fdc31fb"
 }

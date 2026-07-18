@@ -2,11 +2,11 @@
   "schemaVersion": "slidewright-cross-platform-replication/v1",
   "valid": true,
   "repository": "mgritzbach/slidewright",
-  "runId": "29634753744",
-  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29634753744",
-  "gitSha": "537215dbe34866d8e8c7351e11a0b23fd40d775a",
-  "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
-  "portableResultHash": "1c74eaaba19b799ae715331d6f2737159741469fb598f88985d8427f0fb5beac",
+  "runId": "29642280222",
+  "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29642280222",
+  "gitSha": "8429ed065f23bdba43f36a571020f21b781b6ae7",
+  "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
+  "portableResultHash": "bd13f658eefa06b9d8845bf72222d0720565371a6c4ae4ad841eb69bb012ec1c",
   "platforms": [
     {
       "platform": "Linux",
@@ -14,10 +14,10 @@
       "architecture": "x64",
       "node": "v22.23.1",
       "python": "Python 3.12.13",
-      "scorecardHash": "a39927e5df78afd71baa4efcffa5372db5d005cd2d2273311a24fe0e8fcaa6b0",
+      "scorecardHash": "9649d0a55cb70848131339ece1785f09fbb0512fbf49ff48f5685600e05dbce6",
       "tests": {
-        "total": 251,
-        "passed": 242,
+        "total": 253,
+        "passed": 244,
         "failed": 0,
         "cancelled": 0,
         "skipped": 9,
@@ -42,7 +42,7 @@
         "missingRequiredTests": []
       },
       "portableResult": {
-        "testsTotal": 251,
+        "testsTotal": 253,
         "testsFailed": 0,
         "testsCancelled": 0,
         "minimumTests": 75,
@@ -51,7 +51,7 @@
         "demoSlides": 3,
         "errors": 0,
         "warnings": 0,
-        "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+        "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
         "scorecardsVerified": 3
       }
     },
@@ -61,10 +61,10 @@
       "architecture": "x64",
       "node": "v22.23.1",
       "python": "Python 3.12.10",
-      "scorecardHash": "32404097b40b773b220f0a5f6d2fa2a1b1ebbeb046229ac2729826952599126a",
+      "scorecardHash": "627d1726c495b6485539bcd9c13aff86ba7948949907bb63537b81e1a9bfa27c",
       "tests": {
-        "total": 251,
-        "passed": 250,
+        "total": 253,
+        "passed": 252,
         "failed": 0,
         "cancelled": 0,
         "skipped": 1,
@@ -89,7 +89,7 @@
         "missingRequiredTests": []
       },
       "portableResult": {
-        "testsTotal": 251,
+        "testsTotal": 253,
         "testsFailed": 0,
         "testsCancelled": 0,
         "minimumTests": 75,
@@ -98,7 +98,7 @@
         "demoSlides": 3,
         "errors": 0,
         "warnings": 0,
-        "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+        "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
         "scorecardsVerified": 3
       }
     }
@@ -108,5 +108,5 @@
     "reproducedOnBothHosts": "Portable compiler, linter, unit/destructive-control tests, and committed public-evidence integrity.",
     "capableHostSnapshots": "PowerPoint/Codex-runtime scorecards are content-addressed snapshots with exact regeneration commands; they are not re-executed on GitHub runners."
   },
-  "aggregateHash": "fa9b0a6c5008b9d4bb4bc4db586dd8a132dcba9f52fac192311f6deff569a089"
+  "aggregateHash": "b3082b4d740d649b7faefa47ed53235c1a006e00e65da8668d03acecc3e91215"
 }

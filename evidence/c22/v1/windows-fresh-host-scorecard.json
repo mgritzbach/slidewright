@@ -7,13 +7,13 @@
     "architecture": "x64",
     "node": "v22.23.1",
     "python": "Python 3.12.10",
-    "gitSha": "537215dbe34866d8e8c7351e11a0b23fd40d775a",
-    "githubRunId": "29634753744",
+    "gitSha": "8429ed065f23bdba43f36a571020f21b781b6ae7",
+    "githubRunId": "29642280222",
     "repository": "mgritzbach/slidewright",
-    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29634753744"
+    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29642280222"
   },
   "portableResult": {
-    "testsTotal": 251,
+    "testsTotal": 253,
     "testsFailed": 0,
     "testsCancelled": 0,
     "minimumTests": 75,
@@ -22,13 +22,13 @@
     "demoSlides": 3,
     "errors": 0,
     "warnings": 0,
-    "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+    "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
     "scorecardsVerified": 3
   },
-  "portableResultHash": "1c74eaaba19b799ae715331d6f2737159741469fb598f88985d8427f0fb5beac",
+  "portableResultHash": "bd13f658eefa06b9d8845bf72222d0720565371a6c4ae4ad841eb69bb012ec1c",
   "tests": {
-    "total": 251,
-    "passed": 250,
+    "total": 253,
+    "passed": 252,
     "failed": 0,
     "cancelled": 0,
     "skipped": 1,
@@ -58,7 +58,7 @@
     "warnings": 0
   },
   "publicEvidence": {
-    "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
+    "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc",
     "scorecards": 3
   },
   "commands": [
@@ -68,10 +68,10 @@
       "exitCode": 0,
       "signal": null,
       "error": null,
-      "durationMs": 20048,
+      "durationMs": 28315,
       "logFile": "tests.log",
-      "logBytes": 52114,
-      "logSha256": "dbf6f026fb66def82b2ede7e0381c0a26ac3549277e7dbc0f7d33aa3eb2a848a"
+      "logBytes": 52587,
+      "logSha256": "a4b5aa3337fc142da4f417baf2763cba2747a673cf02e7c8769d6bd3bdce1d67"
     },
     {
       "id": "demo-compile",
@@ -79,7 +79,7 @@
       "exitCode": 0,
       "signal": null,
       "error": null,
-      "durationMs": 223,
+      "durationMs": 291,
       "logFile": "demo-compile.log",
       "logBytes": 188,
       "logSha256": "5c12d9d9026c9e31f571a45897b23af22dab6a2c2993799e53b145dd11dc6266"
@@ -90,7 +90,7 @@
       "exitCode": 0,
       "signal": null,
       "error": null,
-      "durationMs": 223,
+      "durationMs": 298,
       "logFile": "demo-lint.log",
       "logBytes": 177,
       "logSha256": "ae7c8fec8801d259a0d326b3dae476364142b32a404035bcd628ea1f4cc2560a"
@@ -101,15 +101,15 @@
       "exitCode": 0,
       "signal": null,
       "error": null,
-      "durationMs": 55,
+      "durationMs": 71,
       "logFile": "public-evidence.log",
       "logBytes": 854,
-      "logSha256": "bb580a662e9157a422d580fe846df536a029c934e179a4ebe255fdbdb597b53c"
+      "logSha256": "f590845d5331580b78fb6f4ea10c047fcf4cef272f180d6802f1561b948a5aed"
     }
   ],
   "limitations": [
     "This fresh-host job reproduces the portable compiler, linter, unit/destructive-control tests, and public-evidence integrity checks.",
     "PowerPoint-only and Codex-runtime rendering scorecards are verified as content-addressed curated evidence; they require the documented capable-host commands to regenerate."
   ],
-  "scorecardHash": "32404097b40b773b220f0a5f6d2fa2a1b1ebbeb046229ac2729826952599126a"
+  "scorecardHash": "627d1726c495b6485539bcd9c13aff86ba7948949907bb63537b81e1a9bfa27c"
 }
