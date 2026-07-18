@@ -16,8 +16,8 @@
       "file": "scorecards/v1/c14-geometric-readability.json",
       "sourceOutput": "outputs/defects/scorecard.json",
       "command": "npm run defects",
-      "publishedHash": "a559877a6938ac15cafc0a81f4b3a3f412ec446304b24f80162a33a0ef2bdc35",
-      "fileSha256": "e41ef04eb05fbdf0a85eea815654cb846a0d58eb8127ca91aad8fa0d5b94f93d"
+      "publishedHash": "ef6c68d24941a26c37bac91cf9cfc70c014d1f0c5dadc41c9282298a9ca86902",
+      "fileSha256": "b3e7450cf613beb6d1a6b6360b4a057e35280098fdf98e6910858a423c9a6404"
     },
     {
       "id": "g22-g23-design-profile",
@@ -36,5 +36,5 @@
       "fileSha256": "fa62be04aea23fc089939cc4d691420eee9ec7fa9d5ad3e1378ceb52f58f2cd2"
     }
   ],
-  "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd"
+  "manifestHash": "f348e6b6e273146579e1cd6d30f3266437712f755c78e7e15941839b6df6e3dc"
 }
