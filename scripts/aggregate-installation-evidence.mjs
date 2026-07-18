@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { aggregateInstallationScorecards, assertInstallReleaseVersions, computeInstallImplementationBinding } from "./lib/install-evidence.mjs";
+import { aggregateInstallationScorecards, assertDeclaredCheckoutSha, assertInstallReleaseVersions, computeInstallImplementationBinding } from "./lib/install-evidence.mjs";
 import { sha256 } from "./public-evidence-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,9 +28,7 @@ if (output !== ownedOutput) throw new Error(`Refusing any output except the owne
 const gitResult = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
 const checkoutHead = gitResult.status === 0 ? gitResult.stdout.trim() : null;
 if (!/^[a-f0-9]{40}$/.test(checkoutHead ?? "")) throw new Error("Could not resolve the checked-out exact Git commit.");
-if (process.env.GITHUB_SHA && process.env.GITHUB_SHA !== checkoutHead) {
-  throw new Error("GITHUB_SHA does not match the checked-out exact Git commit.");
-}
+assertDeclaredCheckoutSha(checkoutHead);
 
 async function findScorecards(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });

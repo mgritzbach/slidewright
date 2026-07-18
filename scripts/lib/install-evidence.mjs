@@ -35,6 +35,15 @@ export function assertInstallReleaseVersions(contract, { packageJson, packageLoc
   return versions;
 }
 
+export function assertDeclaredCheckoutSha(checkoutHead, environment = process.env) {
+  const declared = environment.SLIDEWRIGHT_CHECKOUT_SHA || environment.GITHUB_SHA || null;
+  if (declared && declared !== checkoutHead) {
+    const source = environment.SLIDEWRIGHT_CHECKOUT_SHA ? "SLIDEWRIGHT_CHECKOUT_SHA" : "GITHUB_SHA";
+    throw new Error(`${source} does not match the checked-out exact Git commit.`);
+  }
+  return declared;
+}
+
 export async function exists(candidate) {
   try { await fs.access(candidate); return true; } catch { return false; }
 }

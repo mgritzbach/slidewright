@@ -9,6 +9,7 @@ import { closeAppServerClients, CodexAppServerClient } from "../scripts/lib/code
 import {
   INSTALL_IMPLEMENTATION_FILES,
   aggregateInstallationScorecards,
+  assertDeclaredCheckoutSha,
   assertInstallReleaseVersions,
   assertInstallScorecard,
   finalizeInstallScorecard,
@@ -98,6 +99,19 @@ test("C02 release version is identical across the contract, package, lockfile, a
   assert.throws(
     () => assertInstallReleaseVersions(contract, { packageJson, packageLock, pluginManifest: { ...pluginManifest, version: "9.9.9" } }),
     /Install release version drift:.*plugin=9\.9\.9/u,
+  );
+});
+
+test("C02 exact-checkout binding supports GitHub pull-request head commits without trusting the synthetic merge SHA", () => {
+  assert.equal(assertDeclaredCheckoutSha(testGitSha, { GITHUB_SHA: testGitSha }), testGitSha);
+  assert.equal(assertDeclaredCheckoutSha(testGitSha, { GITHUB_SHA: "b".repeat(40), SLIDEWRIGHT_CHECKOUT_SHA: testGitSha }), testGitSha);
+  assert.throws(
+    () => assertDeclaredCheckoutSha(testGitSha, { GITHUB_SHA: "b".repeat(40) }),
+    /GITHUB_SHA does not match the checked-out exact Git commit/u,
+  );
+  assert.throws(
+    () => assertDeclaredCheckoutSha(testGitSha, { GITHUB_SHA: testGitSha, SLIDEWRIGHT_CHECKOUT_SHA: "b".repeat(40) }),
+    /SLIDEWRIGHT_CHECKOUT_SHA does not match the checked-out exact Git commit/u,
   );
 });
 

@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { closeAppServerClients, CodexAppServerClient } from "./lib/codex-app-server-client.mjs";
 import {
+  assertDeclaredCheckoutSha,
   assertInstallReleaseVersions,
   assertInstallScorecard,
   computeInstallImplementationBinding,
@@ -40,7 +41,7 @@ if (requestedOutput !== ownedOutput) {
 const gitResult = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
 const checkoutHead = gitResult.status === 0 ? gitResult.stdout.trim() : null;
 if (!/^[a-f0-9]{40}$/.test(checkoutHead ?? "")) throw new Error("Could not resolve the checked-out exact Git commit.");
-if (process.env.GITHUB_SHA && process.env.GITHUB_SHA !== checkoutHead) throw new Error("GITHUB_SHA does not match the checked-out exact Git commit.");
+assertDeclaredCheckoutSha(checkoutHead);
 if (requestedMarketplaceSource && marketplaceRef !== checkoutHead) throw new Error("Remote marketplace installation must use the checked-out exact Git commit as --ref.");
 
 await fs.rm(output, { recursive: true, force: true });
