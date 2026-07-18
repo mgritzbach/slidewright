@@ -6,6 +6,18 @@ import { lintRenderedLayouts } from "../plugins/slidewright/skills/slidewright/s
 import { buildFeedbackSpec } from "../plugins/slidewright/skills/slidewright/scripts/benchmark/feedback_suite.mjs";
 import fs from "node:fs";
 
+const feedbackPowerPointWorker = fs.readFileSync(new URL("../plugins/slidewright/skills/slidewright/scripts/benchmark/powerpoint_feedback_roundtrip.ps1", import.meta.url), "utf8");
+
+test("feedback PowerPoint worker retries COM startup and never force-kills Office", () => {
+  assert.match(feedbackPowerPointWorker, /New-PowerPointApplicationWithRetry/u);
+  assert.match(feedbackPowerPointWorker, /Find-NewHeadlessAutomationPowerPoint/u);
+  assert.match(feedbackPowerPointWorker, /processStartTime|ExpectedStart/u);
+  assert.match(feedbackPowerPointWorker, /\/AUTOMATION/u);
+  assert.match(feedbackPowerPointWorker, /PostThreadMessage/u);
+  assert.match(feedbackPowerPointWorker, /MainWindowHandle -ne 0/u);
+  assert.doesNotMatch(feedbackPowerPointWorker, /Stop-Process|taskkill|\.Kill\s*\(/iu);
+});
+
 function topicSpec() {
   return {
     version: "0.1",

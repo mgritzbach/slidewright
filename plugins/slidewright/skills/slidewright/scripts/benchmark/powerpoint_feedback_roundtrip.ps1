@@ -80,19 +80,63 @@ using System.Runtime.InteropServices;
 public static class SlidewrightFeedbackNativeMethods {
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool PostThreadMessage(uint threadId, uint message, IntPtr wParam, IntPtr lParam);
 }
 "@
 
+$workerStartedUtc = (Get-Date).ToUniversalTime()
 $existingIds = @((Get-Process POWERPNT -ErrorAction SilentlyContinue).Id)
 $powerPoint = $null
 $presentation = $null
 $ownedProcess = $null
 $ownedStart = $null
+$startupCandidate = $null
 $sharedStart = $null
 $ownsProcess = $false
 $sharedProcess = $false
+
+function Find-NewHeadlessAutomationPowerPoint {
+    $candidates = @()
+    foreach ($processInfo in @(Get-CimInstance Win32_Process -Filter "Name = 'POWERPNT.EXE'" -ErrorAction SilentlyContinue)) {
+        if ($existingIds -contains [int]$processInfo.ProcessId) { continue }
+        if ([string]$processInfo.CommandLine -notmatch '(?i)(?:^|\s)/AUTOMATION(?:\s|$)') { continue }
+        $process = Get-Process -Id ([int]$processInfo.ProcessId) -ErrorAction SilentlyContinue
+        if (-not $process -or $process.MainWindowHandle -ne 0 -or $process.StartTime.ToUniversalTime() -lt $workerStartedUtc.AddSeconds(-2)) { continue }
+        $candidates += $process
+    }
+    if ($candidates.Count -eq 1) { return $candidates[0] }
+    return $null
+}
+
+function New-PowerPointApplicationWithRetry([int]$Attempts = 6) {
+    $lastError = $null
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try { return New-Object -ComObject PowerPoint.Application } catch {
+            $lastError = $_
+            $candidate = Find-NewHeadlessAutomationPowerPoint
+            if ($candidate) { $script:startupCandidate = $candidate }
+            if ($attempt -lt $Attempts) { Start-Sleep -Milliseconds (500 * $attempt) }
+        }
+    }
+    throw $lastError
+}
+
+function Request-ExactHeadlessExit($Process, $ExpectedStart) {
+    if (-not $Process -or -not $ExpectedStart) { return $true }
+    $live = Get-Process -Id ([int]$Process.Id) -ErrorAction SilentlyContinue
+    if (-not $live) { return $true }
+    $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($live.Id)" -ErrorAction SilentlyContinue
+    if (-not $processInfo -or [string]$live.ProcessName -ne 'POWERPNT' -or $live.StartTime -ne $ExpectedStart -or
+        $live.MainWindowHandle -ne 0 -or [string]$processInfo.CommandLine -notmatch '(?i)(?:^|\s)/AUTOMATION(?:\s|$)') { return $false }
+    foreach ($thread in @($live.Threads)) {
+        [void][SlidewrightFeedbackNativeMethods]::PostThreadMessage([uint32]$thread.Id, 0x0012, [IntPtr]::Zero, [IntPtr]::Zero)
+    }
+    return $live.WaitForExit(45000)
+}
+
 try {
-    $powerPoint = New-Object -ComObject PowerPoint.Application
+    $powerPoint = New-PowerPointApplicationWithRetry
     if (-not $powerPoint) { throw "PowerPoint COM application could not be created." }
     Start-Sleep -Milliseconds 1000
     [uint32]$processId = 0
@@ -146,13 +190,18 @@ try {
     if ($presentation) { try { $presentation.Close() } catch { } }
     if ($powerPoint) {
         if ($ownsProcess) {
-            try { Retry { $powerPoint.Quit() } | Out-Null } catch {
-                $process = Get-Process -Id $ownedProcess.Id -ErrorAction SilentlyContinue
-                if ($process -and $process.StartTime -eq $ownedStart) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
-            }
+            try { Retry { $powerPoint.Quit() } 8 | Out-Null } catch { }
         }
         [void][Runtime.InteropServices.Marshal]::ReleaseComObject($powerPoint)
+        $powerPoint = $null
     }
     [GC]::Collect()
     [GC]::WaitForPendingFinalizers()
+    if ($ownsProcess -and -not (Request-ExactHeadlessExit $ownedProcess $ownedStart)) {
+        throw "Owned PowerPoint process did not exit after safe exact-identity cleanup."
+    }
+    if ($startupCandidate -and (-not $ownedProcess -or $startupCandidate.Id -ne $ownedProcess.Id) -and
+        -not (Request-ExactHeadlessExit $startupCandidate $startupCandidate.StartTime)) {
+        throw "Transient PowerPoint startup process did not exit after safe exact-identity cleanup."
+    }
 }
