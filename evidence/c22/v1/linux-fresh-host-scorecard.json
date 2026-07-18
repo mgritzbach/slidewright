@@ -7,25 +7,31 @@
     "architecture": "x64",
     "node": "v22.23.1",
     "python": "Python 3.12.13",
-    "gitSha": "bdcb6c94beb5c0bd206d789bf63b5c23d96f2830",
-    "githubRunId": "29530184850",
+    "gitSha": "537215dbe34866d8e8c7351e11a0b23fd40d775a",
+    "githubRunId": "29634753744",
     "repository": "mgritzbach/slidewright",
-    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29530184850"
+    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29634753744"
   },
   "portableResult": {
-    "testsPassed": 80,
+    "testsTotal": 251,
+    "testsFailed": 0,
+    "testsCancelled": 0,
     "minimumTests": 75,
     "requiredTestsVerified": 15,
     "requiredTestsExpected": 15,
     "demoSlides": 3,
     "errors": 0,
     "warnings": 0,
-    "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+    "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
     "scorecardsVerified": 3
   },
-  "portableResultHash": "d6e16366a868e7e558f45f95ea28b1f32932b5450a6be3fe5d67d69ce9984753",
+  "portableResultHash": "1c74eaaba19b799ae715331d6f2737159741469fb598f88985d8427f0fb5beac",
   "tests": {
-    "passed": 80,
+    "total": 251,
+    "passed": 242,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 9,
     "minimum": 75,
     "required": [
       "G24 rejects text overlap even when a generic waiver is present",
@@ -52,7 +58,7 @@
     "warnings": 0
   },
   "publicEvidence": {
-    "manifestHash": "6d0ae8df8eb04d190235868e458c43957dc477b00dee10fd0764bf1a3636d01d",
+    "manifestHash": "01826ce3844288184ef09864731b74c95669365ef3df283136232d61847742cd",
     "scorecards": 3
   },
   "commands": [
@@ -60,30 +66,50 @@
       "id": "tests",
       "command": "npm test",
       "exitCode": 0,
-      "durationMs": 862
+      "signal": null,
+      "error": null,
+      "durationMs": 11664,
+      "logFile": "tests.log",
+      "logBytes": 52911,
+      "logSha256": "41a938f092e416bd822c35631e15f37c339df873164c0ed58d43706781b69c5f"
     },
     {
       "id": "demo-compile",
       "command": "npm run demo:compile",
       "exitCode": 0,
-      "durationMs": 156
+      "signal": null,
+      "error": null,
+      "durationMs": 170,
+      "logFile": "demo-compile.log",
+      "logBytes": 188,
+      "logSha256": "5c12d9d9026c9e31f571a45897b23af22dab6a2c2993799e53b145dd11dc6266"
     },
     {
       "id": "demo-lint",
       "command": "npm run demo:lint",
       "exitCode": 0,
-      "durationMs": 151
+      "signal": null,
+      "error": null,
+      "durationMs": 168,
+      "logFile": "demo-lint.log",
+      "logBytes": 177,
+      "logSha256": "ae7c8fec8801d259a0d326b3dae476364142b32a404035bcd628ea1f4cc2560a"
     },
     {
       "id": "public-evidence",
-      "command": "node scripts/verify-public-evidence.mjs --out outputs/public-evidence/linux/verified-evidence.json",
+      "command": "node scripts/verify-public-evidence.mjs --portable-source --out outputs/public-evidence/linux/verified-evidence.json",
       "exitCode": 0,
-      "durationMs": 39
+      "signal": null,
+      "error": null,
+      "durationMs": 42,
+      "logFile": "public-evidence.log",
+      "logBytes": 854,
+      "logSha256": "bb580a662e9157a422d580fe846df536a029c934e179a4ebe255fdbdb597b53c"
     }
   ],
   "limitations": [
     "This fresh-host job reproduces the portable compiler, linter, unit/destructive-control tests, and public-evidence integrity checks.",
     "PowerPoint-only and Codex-runtime rendering scorecards are verified as content-addressed curated evidence; they require the documented capable-host commands to regenerate."
   ],
-  "scorecardHash": "7c864f086665198bd9d7763f5127797b502dc6b39a42467e150c238a02cb45e2"
+  "scorecardHash": "a39927e5df78afd71baa4efcffa5372db5d005cd2d2273311a24fe0e8fcaa6b0"
 }
