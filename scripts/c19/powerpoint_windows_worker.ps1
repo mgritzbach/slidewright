@@ -71,24 +71,37 @@ try {
   $replacement = $ReplacementText
   $target.TextFrame2.TextRange.Text = $replacement
   Retry { $presentation.SaveAs($outputPath, 24) } | Out-Null
-  $presentation.Close(); $presentation = $null
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($target)
+  $target = $null
+  $presentation.Close()
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($presentation)
+  $presentation = $null
 
   $reopened = Retry { $powerPoint.Presentations.Open($outputPath, $true, $false, $false) }
   $proof = $reopened.Slides.Item(1).Shapes.Item($TargetName)
   $afterText = [string]$proof.TextFrame2.TextRange.Text
   if ($afterText -ne $replacement) { throw 'C19 native sentinel text did not survive save and reopen.' }
   $slideCount = [int]$reopened.Slides.Count
-  $reopened.Close(); $reopened = $null
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($proof)
+  $proof = $null
+  $reopened.Close()
+  [void][Runtime.InteropServices.Marshal]::ReleaseComObject($reopened)
+  $reopened = $null
 
   $renders = @()
   for ($slideIndex = 1; $slideIndex -le $slideCount; $slideIndex++) {
     $renderPresentation = $null
+    $renderSlide = $null
     $file = Join-Path $outputRoot ("slide-{0:D2}.png" -f $slideIndex)
     try {
       $renderPresentation = Retry { $powerPoint.Presentations.Open($outputPath, $true, $false, $false) }
-      Retry { $renderPresentation.Slides.Item($slideIndex).Export($file, 'PNG', 1600, 900) } | Out-Null
+      $renderSlide = $renderPresentation.Slides.Item($slideIndex)
+      Retry { $renderSlide.Export($file, 'PNG', 1600, 900) } | Out-Null
     } finally {
+      if ($renderSlide) { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($renderSlide); $renderSlide = $null }
       if ($renderPresentation) { $renderPresentation.Close() }
+      if ($renderPresentation -and [Runtime.InteropServices.Marshal]::IsComObject($renderPresentation)) { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($renderPresentation) }
+      $renderPresentation = $null
     }
     if (-not (Test-Path -LiteralPath $file)) { throw "C19 PowerPoint did not render slide $slideIndex." }
     $renders += [ordered]@{ slide = $slideIndex; file = [IO.Path]::GetFileName($file); width = 1600; height = 900; sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $file).Hash.ToLowerInvariant() }
@@ -122,7 +135,7 @@ try {
 } finally {
   if ($reopened) { try { $reopened.Close() } catch { } }
   if ($presentation) { try { $presentation.Close() } catch { } }
-  foreach ($item in @($reopened, $presentation)) {
+  foreach ($item in @($proof, $target, $reopened, $presentation)) {
     if ($item -and [Runtime.InteropServices.Marshal]::IsComObject($item)) { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($item) }
   }
   if ($powerPoint) {

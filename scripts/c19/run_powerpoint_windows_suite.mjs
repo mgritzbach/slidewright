@@ -75,8 +75,11 @@ const sourceInventoryFile = path.join(receipts, "source-inventory.json");
 const resultInventoryFile = path.join(receipts, "result-inventory.json");
 const workerReportFile = path.join(receipts, "automation-trace.json");
 const applicationLogFile = path.join(receipts, "application.log");
-const worker = run("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(scripts, "powerpoint_windows_worker.ps1"), "-InputPptx", sourceDeck, "-OutputPptx", resultDeck, "-OutputDir", renders, "-ReportJson", workerReportFile], { capture: true });
+const workerArguments = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(scripts, "powerpoint_windows_worker.ps1"), "-InputPptx", sourceDeck, "-OutputPptx", resultDeck, "-OutputDir", renders, "-ReportJson", workerReportFile];
+const worker = spawnSync("powershell", workerArguments, { cwd: root, encoding: "utf8", windowsHide: true, maxBuffer: 64 * 1024 * 1024, stdio: "pipe" });
 await fs.writeFile(applicationLogFile, `${worker.stdout}\n${worker.stderr}\n`, "utf8");
+if (worker.error) throw worker.error;
+if (worker.status !== 0) throw new Error(`PowerPoint Windows worker failed with ${worker.status}: ${worker.stderr || worker.stdout}`);
 const workerReport = JSON.parse((await fs.readFile(workerReportFile, "utf8")).replace(/^\uFEFF/u, ""));
 if (workerReport.valid !== true || workerReport.processOwned !== true || workerReport.reopenedNativeTextMatched !== true) throw new Error("PowerPoint worker proof is incomplete.");
 
