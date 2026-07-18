@@ -92,7 +92,19 @@ async function runCli(args, expectedStatus, env = process.env) {
     await cleanOwnedRetryOutput(args);
     process.stdout.write(`C12 bounded retry after native renderer status ${result.status}.\n`);
   }
-  if (result.status !== expectedStatus) throw new Error(`slidewright ${args.join(" ")} returned ${result.status}; expected ${expectedStatus}.\n${result.stderr || result.stdout}`);
+  if (result.status !== expectedStatus) {
+    const outIndex = args.indexOf("--out");
+    const runPath = outIndex >= 0 && args[outIndex + 1] ? path.join(args[outIndex + 1], "run.json") : null;
+    let failedRun = null;
+    if (runPath) {
+      try { failedRun = JSON.parse(await fs.readFile(runPath, "utf8")); } catch { /* no published request-run evidence */ }
+    }
+    const failedStage = failedRun?.stages?.findLast((stage) => stage.status === "failed");
+    const evidence = failedStage
+      ? `\nPublished failed-run evidence: stage=${failedStage.name}; error=${failedStage.error}`
+      : "";
+    throw new Error(`slidewright ${args.join(" ")} returned ${result.status}; expected ${expectedStatus}.${evidence}\n${result.stderr || result.stdout}`);
+  }
   return { exitCode: result.status, stdout: (result.stdout ?? "").trim(), stderr: (result.stderr ?? "").trim() };
 }
 
