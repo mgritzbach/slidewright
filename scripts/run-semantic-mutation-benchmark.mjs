@@ -67,8 +67,16 @@ async function captureOwnedPowerPointRuntime(ownershipRecordPath, receiptPath, p
   let ownership;
   try { ownership = await readJson(ownershipRecordPath); } catch { return null; }
   const expected = { processId: ownership.processId, processName: ownership.processName, processStartTime: ownership.processStartTime };
+  const acknowledge = async (receipt) => {
+    await writeJson(`${ownershipRecordPath}.runtime-captured`, {
+      schemaVersion: "slidewright-runtime-capture-ack/v1",
+      ...expected,
+      runtimeReceiptSha256: await sha256File(receiptPath),
+    });
+    return receipt;
+  };
   if (processes.some((item) => item.processId === expected.processId && item.processName === expected.processName && item.processStartTime === expected.processStartTime)) {
-    return { schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes };
+    return acknowledge({ schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes });
   }
   const liveBefore = captureWorkerIdentity(expected.processId);
   if (!liveBefore || liveBefore.processName !== expected.processName || liveBefore.processStartTime !== expected.processStartTime) return null;
@@ -86,7 +94,7 @@ async function captureOwnedPowerPointRuntime(ownershipRecordPath, receiptPath, p
   };
   const receipt = { schemaVersion: "slidewright-owned-powerpoint-runtime/v1", processes: [...processes, processReceipt] };
   await writeJson(receiptPath, receipt);
-  return receipt;
+  return acknowledge(receipt);
 }
 
 function cleanupForSignal(signal) {
@@ -205,6 +213,7 @@ function run(command, args, {
       settled = true;
       clearRunTimers();
       if (child.pid) activeWorkers.delete(child.pid);
+      if (ownershipRecordPath && powerPointRuntimeReceiptPath) await fs.rm(`${ownershipRecordPath}.runtime-captured`, { force: true }).catch(() => {});
       try { await appendCommandReceipt({ command, args, exitCode: null, error: error.message, stdout, stderr }); reject(error); }
       catch (receiptError) { reject(receiptError); }
     });
@@ -215,6 +224,7 @@ function run(command, args, {
       if (child.pid) activeWorkers.delete(child.pid);
       if (runtimeCaptureInFlight) await runtimeCaptureInFlight;
       if (powerPointRuntimeReceiptPath) await attemptRuntimeCapture();
+      if (ownershipRecordPath && powerPointRuntimeReceiptPath) await fs.rm(`${ownershipRecordPath}.runtime-captured`, { force: true }).catch(() => {});
       let finalOwnership = null;
       try { if (ownershipRecordPath) finalOwnership = await readJson(ownershipRecordPath); } catch { /* fail below */ }
       const finalIdentityCaptured = finalOwnership && powerPointRuntimeProcesses.some((item) => item.processId === finalOwnership.processId

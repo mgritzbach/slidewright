@@ -28,6 +28,7 @@ import {
 
 const contractPath = new URL("../fixtures/semantic-surface/v1/mutation-contract.json", import.meta.url);
 const mutationWorkerPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_semantic_mutation.ps1", import.meta.url);
+const renderWorkerPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/powerpoint_render_isolated.ps1", import.meta.url);
 const mutationAuditPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_semantic_mutation.py", import.meta.url);
 const renderedHeaderAuditPath = path.resolve("plugins/slidewright/skills/slidewright/scripts/semantic_surface/audit_rendered_headers.py");
 const negativeControlsPath = new URL("../plugins/slidewright/skills/slidewright/scripts/semantic_surface/semantic_mutation_negative_controls.py", import.meta.url);
@@ -254,6 +255,22 @@ test("C18 runner renders before measuring, auditing, and destructive controls", 
   assert.match(source, /refusing to publish evidence against a superseded baseline/);
   assert.match(source, /slidewright-semantic-surface-scorecard\/v2/);
   assert.match(source, /verifySemanticSurfaceEvidence/);
+});
+
+test("C18 runtime capture uses an exact ownership handshake instead of a timing sleep", async () => {
+  const [runner, mutationWorker, renderWorker] = await Promise.all([
+    fs.readFile(runnerPath, "utf8"),
+    fs.readFile(mutationWorkerPath, "utf8"),
+    fs.readFile(renderWorkerPath, "utf8"),
+  ]);
+  assert.match(runner, /slidewright-runtime-capture-ack\/v1/u);
+  assert.match(runner, /runtimeReceiptSha256/u);
+  assert.match(runner, /\$\{ownershipRecordPath\}\.runtime-captured/u);
+  for (const worker of [mutationWorker, renderWorker]) {
+    assert.match(worker, /slidewright-runtime-capture-ack\/v1/u);
+    assert.match(worker, /processStartTime -eq \[string\]\$record\.processStartTime/u);
+    assert.match(worker, /Timed out waiting for runtime capture of owned PowerPoint process/u);
+  }
 });
 
 test("C18 receipt inventory is exact and rejects additions or removals", async () => {

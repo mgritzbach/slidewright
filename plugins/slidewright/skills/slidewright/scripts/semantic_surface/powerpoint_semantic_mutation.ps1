@@ -355,6 +355,8 @@ function Set-ConnectorStyle($Shape, [double]$WeightPoints, [int]$DashStyle) {
 }
 
 function Write-OwnershipRecord($Process, [string[]]$OwnedPresentationPaths, [string]$Version, [string]$Build) {
+  $captureAcknowledgementPath = "$ownershipPath.runtime-captured"
+  if (Test-Path -LiteralPath $captureAcknowledgementPath) { Remove-Item -Force -LiteralPath $captureAcknowledgementPath }
   $record = [ordered]@{
     schemaVersion = 'slidewright-owned-powerpoint/v1'
     processName = 'POWERPNT'
@@ -372,6 +374,24 @@ function Write-OwnershipRecord($Process, [string[]]$OwnedPresentationPaths, [str
   $temporary = "$ownershipPath.tmp"
   $record | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 -LiteralPath $temporary
   Move-Item -Force -LiteralPath $temporary -Destination $ownershipPath
+  $deadline = [DateTimeOffset]::UtcNow.AddSeconds(30)
+  while ([DateTimeOffset]::UtcNow -lt $deadline) {
+    if (Test-Path -LiteralPath $captureAcknowledgementPath) {
+      try {
+        $acknowledgement = Get-Content -Raw -LiteralPath $captureAcknowledgementPath | ConvertFrom-Json
+        if ([string]$acknowledgement.schemaVersion -eq 'slidewright-runtime-capture-ack/v1' -and
+            [int]$acknowledgement.processId -eq [int]$record.processId -and
+            [string]$acknowledgement.processName -eq [string]$record.processName -and
+            [string]$acknowledgement.processStartTime -eq [string]$record.processStartTime -and
+            [string]$acknowledgement.runtimeReceiptSha256 -match '^[a-f0-9]{64}$') {
+          Remove-Item -Force -LiteralPath $captureAcknowledgementPath
+          return
+        }
+      } catch { }
+    }
+    Start-Sleep -Milliseconds 100
+  }
+  throw "Timed out waiting for runtime capture of owned PowerPoint process $($record.processId)."
 }
 
 function Test-EmptyHiddenApplication($Application) {
