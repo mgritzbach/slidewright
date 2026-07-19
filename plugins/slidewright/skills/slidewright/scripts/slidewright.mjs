@@ -23,7 +23,7 @@ function usage() {
 
 Usage:
   slidewright bootstrap
-  slidewright request <request.json> --out <run-directory>
+  slidewright request <request.json> --out <run-directory> [--reference-profile <profile.json>]
   slidewright request-verify <run-directory> --out <report.json>
   slidewright adapt <spec.json> --out <adapted-spec.json> --manifest <adaptation.json>
   slidewright compile <spec.json> --out <plan.json>
@@ -75,7 +75,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   if (!input) throw new Error(`An input file is required for '${command}'.`);
   if (command === "request") {
-    const result = await runRequestBuild({ requestPath: input, outputDir: out });
+    const result = await runRequestBuild({ requestPath: input, outputDir: out, referenceProfilePath: option(args, "--reference-profile") });
     process.stdout.write(`Request ${result.run.outcome}: ${result.run.requestId ?? "<invalid>"} -> ${result.outputDir}\n`);
     return result.run.valid ? 0 : 2;
   }

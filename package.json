@@ -1,6 +1,6 @@
 {
   "name": "slidewright-build-week",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Formatting-safe, editable PowerPoint generation for Codex",

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildDeliveryManifest } from "../plugins/slidewright/skills/slidewright/scripts/lib/delivery.mjs";
-import { buildPreflightReport } from "../plugins/slidewright/skills/slidewright/scripts/lib/preflight.mjs";
+import { buildPreflightReport, evaluateCachedPluginIdentity } from "../plugins/slidewright/skills/slidewright/scripts/lib/preflight.mjs";
 
 function healthyProbes() {
   return {
@@ -52,6 +52,35 @@ test("preflight reports optional PowerPoint absence without blocking generation"
   assert.equal(report.valid, true);
   assert.equal(report.checks.find((check) => check.id === "powerpoint").ok, false);
   assert.match(report.checks.find((check) => check.id === "powerpoint").remediation, /PowerPoint/);
+});
+
+test("preflight exposes loaded plugin identity and warns on same-version cache drift", () => {
+  const probes = healthyProbes();
+  probes.pluginIdentity = {
+    loaded: { skillPath: "C:/cache/slidewright/SKILL.md", version: "0.2.1", skillSha256: "a".repeat(64) },
+    repository: { skillPath: "C:/repo/plugins/slidewright/skills/slidewright/SKILL.md", version: "0.2.1", skillSha256: "b".repeat(64), commit: "c".repeat(40) },
+    cacheMismatch: true,
+    versionCollision: true,
+    buildIdentifier: "c".repeat(40),
+    warning: "Loaded cache differs while both claim the same version.",
+  };
+  const report = buildPreflightReport(probes);
+  assert.equal(report.valid, true);
+  assert.equal(report.pluginIdentity.versionCollision, true);
+  assert.equal(report.checks.find((check) => check.id === "plugin-identity").ok, false);
+  assert.equal(report.warnings.length, 1);
+});
+
+test("preflight cache identity accepts a matching current package alongside retained older versions", () => {
+  const currentHash = "a".repeat(64);
+  const evaluation = evaluateCachedPluginIdentity([
+    { version: "0.2.1", skillSha256: "b".repeat(64), pluginRoot: "C:/cache/0.2.1" },
+    { version: "0.3.0", skillSha256: currentHash, pluginRoot: "C:/cache/0.3.0" },
+  ], "0.3.0", currentHash);
+  assert.equal(evaluation.installedCacheMismatch, false);
+  assert.equal(evaluation.versionCollision, false);
+  assert.equal(evaluation.matchingCachedPackages.length, 1);
+  assert.deepEqual(evaluation.staleCachedPackages, []);
 });
 
 test("delivery manifest requires a real nonempty PowerPoint package", () => {

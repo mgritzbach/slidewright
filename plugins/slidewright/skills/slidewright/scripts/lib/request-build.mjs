@@ -12,6 +12,7 @@ import { lintRenderedLayouts } from "./rendered-linter.mjs";
 import { evaluateRequestPolicy, IMMUTABLE_REQUEST_STAGES, REQUEST_QUALITY_CONTRACT } from "./request-policy.mjs";
 import { parseStrictJson } from "./strict-json.mjs";
 import { buildExecutiveReview, REVIEW_MODE_OFF, REVIEW_MODE_OVERLAY } from "./executive-review.mjs";
+import { groundPlanWithReference, validateDesignProvenance } from "./reference-grounding.mjs";
 
 const RUN_SCHEMA_VERSION = "slidewright-request-run/v1";
 const AUDIT_PATH = fileURLToPath(new URL("../audit_pptx.py", import.meta.url));
@@ -27,6 +28,7 @@ const IMPLEMENTATION_PATHS = Object.freeze([
   fileURLToPath(new URL("./rendered-linter.mjs", import.meta.url)),
   fileURLToPath(new URL("./renderer.mjs", import.meta.url)),
   fileURLToPath(new URL("./executive-review.mjs", import.meta.url)),
+  fileURLToPath(new URL("./reference-grounding.mjs", import.meta.url)),
   fileURLToPath(new URL("./delivery.mjs", import.meta.url)),
   AUDIT_PATH,
   PLAN_AUDIT_PATH,
@@ -166,7 +168,7 @@ async function finalizeRun(staging, outputDir, run) {
   return { outputDir, run };
 }
 
-export async function runRequestBuild({ requestPath, outputDir }) {
+export async function runRequestBuild({ requestPath, outputDir, referenceProfilePath = null }) {
   const absoluteOutput = path.resolve(outputDir);
   if (await pathExists(absoluteOutput)) throw new Error(`Request output already exists: ${absoluteOutput}`);
   await fs.mkdir(path.dirname(absoluteOutput), { recursive: true });
@@ -183,6 +185,19 @@ export async function runRequestBuild({ requestPath, outputDir }) {
   const promptSha256 = sha256Bytes(Buffer.from(typeof request.prompt === "string" ? request.prompt : "", "utf8"));
   const specSha256 = sha256Bytes(Buffer.from(stableJson(request.spec ?? null), "utf8"));
   const policy = evaluateRequestPolicy(request);
+  let referenceProfile = null;
+  let referenceProfileBytes = null;
+  if (referenceProfilePath) {
+    referenceProfileBytes = await fs.readFile(referenceProfilePath);
+    if (referenceProfileBytes.length > 100 * 1024 * 1024) {
+      await fs.rm(staging, { recursive: true, force: true });
+      throw new Error("Reference profile exceeds the 100 MiB artifact limit.");
+    }
+    try { referenceProfile = parseStrictJson(referenceProfileBytes, { maxBytes: 100 * 1024 * 1024 }); } catch (error) {
+      await fs.rm(staging, { recursive: true, force: true });
+      throw new Error(`Reference profile is not valid JSON: ${error.message}`, { cause: error });
+    }
+  }
   const implementationHash = await implementationSha256();
   const contractSha256 = sha256Bytes(Buffer.from(stableJson(REQUEST_QUALITY_CONTRACT), "utf8"));
   await writeJson(path.join(staging, "policy.json"), policy);
@@ -200,6 +215,11 @@ export async function runRequestBuild({ requestPath, outputDir }) {
     contractSha256,
     implementationSha256: implementationHash,
     immutableStages: [...IMMUTABLE_REQUEST_STAGES],
+    referenceGrounding: {
+      enabled: Boolean(referenceProfile),
+      profileFileSha256: referenceProfileBytes ? sha256Bytes(referenceProfileBytes) : null,
+      profileSha256: referenceProfile?.profileSha256 ?? null,
+    },
     stages: [{
       name: "policy",
       status: policy.valid ? "passed" : "rejected",
@@ -215,14 +235,31 @@ export async function runRequestBuild({ requestPath, outputDir }) {
   try {
     faultAfter("policy");
     const adaptation = adaptDeckCopyToFit(request.spec);
-    const plan = adaptation.plan;
+    let plan = adaptation.plan;
+    let provenance = null;
+    if (referenceProfile) {
+      const grounded = groundPlanWithReference(plan, referenceProfile);
+      plan = grounded.plan;
+      provenance = grounded.provenance;
+      await fs.writeFile(path.join(staging, "reference-profile.json"), referenceProfileBytes);
+      await writeJson(path.join(staging, "design-provenance.json"), provenance);
+    }
     await writeJson(path.join(staging, "adapted-spec.json"), adaptation.spec);
     await writeJson(path.join(staging, "adaptation.json"), adaptation.manifest);
     await writeJson(path.join(staging, "plan.json"), plan);
     const adaptedSpecSha256 = await sha256File(path.join(staging, "adapted-spec.json"));
     const adaptationSha256 = await sha256File(path.join(staging, "adaptation.json"));
     const planSha256 = await sha256File(path.join(staging, "plan.json"));
-    run.stages.push({ name: "compile", status: "passed", inputSha256: specSha256, adaptedSpecSha256, adaptationSha256, outputSha256: planSha256 });
+    run.stages.push({
+      name: "compile",
+      status: "passed",
+      inputSha256: specSha256,
+      adaptedSpecSha256,
+      adaptationSha256,
+      outputSha256: planSha256,
+      referenceProfileSha256: referenceProfile ? await sha256File(path.join(staging, "reference-profile.json")) : null,
+      designProvenanceSha256: provenance ? await sha256File(path.join(staging, "design-provenance.json")) : null,
+    });
     faultAfter("compile");
 
     const fonts = inspectPlanFonts(plan);
@@ -376,6 +413,7 @@ export async function runRequestBuild({ requestPath, outputDir }) {
     faultAfter("delivery");
 
     const quality = planQuality(plan);
+    const designProvenanceValid = !referenceProfile || validateDesignProvenance(provenance, plan, referenceProfile).valid;
     run.quality = {
       ...quality,
       zeroWarnings: lint.counts.warning === 0 && rendered.renderedLint.counts.warning === 0,
@@ -392,6 +430,8 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       executiveReviewFindingCount: executiveReview.counts.findings,
       canonicalExecutiveReviewOverlayCount: cleanReviewAudit.actualOverlayCount,
       executiveReviewCopyValid: reviewMode === REVIEW_MODE_OFF || Boolean(reviewDeckAudit?.valid && reviewOverlayAudit?.valid && reviewRendered?.renderedLint?.valid),
+      referenceGroundingEnabled: Boolean(referenceProfile),
+      designProvenanceValid,
     };
     run.valid = Object.values(quality).every((value) => typeof value !== "boolean" || value)
       && run.quality.zeroWarnings
@@ -402,6 +442,7 @@ export async function runRequestBuild({ requestPath, outputDir }) {
       && delivery.valid
       && run.quality.canonicalExecutiveReviewOverlayCount === 0
       && run.quality.executiveReviewCopyValid
+      && run.quality.designProvenanceValid
       && run.stages.map((stage) => stage.name).join("|") === IMMUTABLE_REQUEST_STAGES.join("|")
       && run.stages.every((stage) => stage.status === "passed");
     run.outcome = run.valid ? "built" : "failed";
@@ -475,7 +516,7 @@ export async function verifyRequestRun(runDir) {
   if (run.outcome === "rejected") {
     if (policy?.valid !== false || !policy?.diagnostics?.length) diagnostics.push("Rejected run lacks policy diagnostics.");
     if (!sameJson(run.stages.map((stage) => stage.name), ["policy"]) || run.stages[0]?.status !== "rejected") diagnostics.push("Rejected run executed or claimed extra stages.");
-    const forbidden = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "executive-review.json", "executive-review-clean-audit.json", "deck.executive-review.pptx", "executive-review-deck-audit.json", "executive-review-overlay-audit.json", "executive-review-previews", "delivery.json", "DELIVERY.md", "previews"];
+    const forbidden = ["adapted-spec.json", "adaptation.json", "plan.json", "reference-profile.json", "design-provenance.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "executive-review.json", "executive-review-clean-audit.json", "deck.executive-review.pptx", "executive-review-deck-audit.json", "executive-review-overlay-audit.json", "executive-review-previews", "delivery.json", "DELIVERY.md", "previews"];
     for (const item of forbidden) if (files.some((file) => file === item || file.startsWith(`${item}/`))) diagnostics.push(`Rejected run published forbidden artifact '${item}'.`);
     if (run.valid !== false) diagnostics.push("Rejected run cannot be marked valid.");
     return { valid: diagnostics.length === 0, outcome: run.outcome, diagnostics };
@@ -485,6 +526,8 @@ export async function verifyRequestRun(runDir) {
   if (!sameJson(run.stages.map((stage) => stage.name), IMMUTABLE_REQUEST_STAGES)) diagnostics.push("Accepted run did not execute the exact immutable stage sequence.");
   if (!run.stages?.every((stage) => stage.status === "passed")) diagnostics.push("One or more mandatory stages did not pass.");
   const required = ["adapted-spec.json", "adaptation.json", "plan.json", "font-report.json", "lint-report.json", "deck.pptx", "audit.json", "plan-audit.json", "executive-review.json", "executive-review-clean-audit.json", "delivery.json", "DELIVERY.md", "previews/rendered-lint-report.json"];
+  if (run.referenceGrounding?.enabled) required.push("reference-profile.json", "design-provenance.json");
+  else if (files.includes("reference-profile.json") || files.includes("design-provenance.json")) diagnostics.push("Reference artifacts exist while reference grounding is disabled.");
   for (const item of required) if (!files.includes(item)) diagnostics.push(`Accepted run is missing '${item}'.`);
   if (!diagnostics.length) {
     const [adaptedSpec, adaptationManifest, plan, fonts, lint, audit, planAudit, executiveReview, cleanReviewAudit, delivery, renderedLint] = await Promise.all([
@@ -501,7 +544,19 @@ export async function verifyRequestRun(runDir) {
       readJson(path.join(runDir, "previews", "rendered-lint-report.json")),
     ]);
     const recomputedAdaptation = adaptDeckCopyToFit(request.spec);
-    const recomputedPlan = recomputedAdaptation.plan;
+    let recomputedPlan = recomputedAdaptation.plan;
+    let provenance = null;
+    if (run.referenceGrounding?.enabled) {
+      const referenceProfilePath = path.join(runDir, "reference-profile.json");
+      const referenceProfile = await readJson(referenceProfilePath);
+      provenance = await readJson(path.join(runDir, "design-provenance.json"));
+      const grounded = groundPlanWithReference(recomputedPlan, referenceProfile);
+      recomputedPlan = grounded.plan;
+      if (!sameJson(provenance, grounded.provenance)) diagnostics.push("Design provenance does not match an independent reference-grounding recomputation.");
+      const provenanceValidation = validateDesignProvenance(provenance, plan, referenceProfile);
+      if (!provenanceValidation.valid) diagnostics.push(`Design provenance validation failed: ${provenanceValidation.diagnostics.join(", ")}.`);
+      if (run.referenceGrounding.profileFileSha256 !== await sha256File(referenceProfilePath) || run.referenceGrounding.profileSha256 !== referenceProfile.profileSha256) diagnostics.push("Reference-profile run binding mismatch.");
+    } else if (run.referenceGrounding?.profileFileSha256 != null || run.referenceGrounding?.profileSha256 != null) diagnostics.push("Disabled reference grounding claims profile hashes.");
     const reviewMode = request.reviewMode ?? REVIEW_MODE_OFF;
     const recomputedExecutiveReview = buildExecutiveReview(recomputedPlan, reviewMode);
     if (!sameJson(adaptedSpec, recomputedAdaptation.spec)) diagnostics.push("Adapted specification does not match the bound request specification.");
@@ -559,6 +614,12 @@ export async function verifyRequestRun(runDir) {
       await fs.rm(auditTemp, { recursive: true, force: true });
     }
     const quality = planQuality(plan);
+    let designProvenanceValid = true;
+    if (run.referenceGrounding?.enabled) {
+      const referenceProfile = await readJson(path.join(runDir, "reference-profile.json"));
+      designProvenanceValid = validateDesignProvenance(provenance, plan, referenceProfile).valid;
+      if (!designProvenanceValid) diagnostics.push("Design-provenance quality closure failed.");
+    }
     if (!fonts.valid || fonts.substitutionApplied !== false || fonts.diagnostics.length) diagnostics.push("Font audit quality closure failed.");
     if (!lint.valid || lint.counts.error !== 0 || lint.counts.warning !== 0) diagnostics.push("Plan lint quality closure failed.");
     if (!renderedLint.valid || renderedLint.counts.error !== 0 || renderedLint.counts.warning !== 0) diagnostics.push("Rendered lint quality closure failed.");
@@ -591,12 +652,16 @@ export async function verifyRequestRun(runDir) {
       executiveReviewFindingCount: executiveReview.counts.findings,
       canonicalExecutiveReviewOverlayCount: cleanReviewAudit.actualOverlayCount,
       executiveReviewCopyValid: reviewMode === REVIEW_MODE_OFF || files.includes("deck.executive-review.pptx"),
+      referenceGroundingEnabled: Boolean(run.referenceGrounding?.enabled),
+      designProvenanceValid,
     })) diagnostics.push("Recorded quality closure does not match artifacts.");
 
     const stage = Object.fromEntries(run.stages.map((item) => [item.name, item]));
     const hashes = Object.fromEntries(run.artifacts.map((item) => [item.path, item.sha256]));
     if (stage.policy.inputSha256 !== run.requestSha256 || stage.policy.outputSha256 !== hashes["policy.json"]) diagnostics.push("Policy stage binding mismatch.");
-    if (stage.compile.inputSha256 !== run.specSha256 || stage.compile.adaptedSpecSha256 !== hashes["adapted-spec.json"] || stage.compile.adaptationSha256 !== hashes["adaptation.json"] || stage.compile.outputSha256 !== hashes["plan.json"]) diagnostics.push("Compile stage binding mismatch.");
+    if (stage.compile.inputSha256 !== run.specSha256 || stage.compile.adaptedSpecSha256 !== hashes["adapted-spec.json"] || stage.compile.adaptationSha256 !== hashes["adaptation.json"] || stage.compile.outputSha256 !== hashes["plan.json"]
+      || stage.compile.referenceProfileSha256 !== (run.referenceGrounding?.enabled ? hashes["reference-profile.json"] : null)
+      || stage.compile.designProvenanceSha256 !== (run.referenceGrounding?.enabled ? hashes["design-provenance.json"] : null)) diagnostics.push("Compile stage binding mismatch.");
     if (stage.fonts.inputSha256 !== hashes["plan.json"] || stage.fonts.outputSha256 !== hashes["font-report.json"]) diagnostics.push("Font stage binding mismatch.");
     if (stage.lint.inputSha256 !== hashes["plan.json"] || stage.lint.outputSha256 !== hashes["lint-report.json"]) diagnostics.push("Lint stage binding mismatch.");
     if (stage.render.inputSha256 !== hashes["plan.json"] || stage.render.outputSha256 !== hashes["deck.pptx"] || stage.render.renderedLintSha256 !== hashes["previews/rendered-lint-report.json"]) diagnostics.push("Render stage binding mismatch.");

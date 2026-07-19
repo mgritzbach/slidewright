@@ -97,6 +97,20 @@ test("unknown request controls and plan-policy fields fail closed", async () => 
   assert.ok(policy.diagnostics.some((item) => item.ruleId === "SWP009"));
 });
 
+test("strict policy permits only the declared domain-independent executive-review relationships", async () => {
+  const request = await requestFor(manifest.cases.find((fixture) => fixture.id === "minimal-demo"));
+  request.spec.slides[0].reviewIntent = { relationship: "crosswalk" };
+  assert.equal(evaluateRequestPolicy(request).valid, true);
+  request.spec.slides[0].reviewIntent.relationship = "fixture-specific-comment";
+  const invalidRelationship = evaluateRequestPolicy(request);
+  assert.equal(invalidRelationship.valid, false);
+  assert.ok(invalidRelationship.diagnostics.some((item) => item.ruleId === "SWP009" && /reviewIntent\.relationship/u.test(item.message)));
+  request.spec.slides[0].reviewIntent = { relationship: "crosswalk", overrideQualityGate: true };
+  const unknownControl = evaluateRequestPolicy(request);
+  assert.equal(unknownControl.valid, false);
+  assert.ok(unknownControl.diagnostics.some((item) => item.ruleId === "SWP009" && /overrideQualityGate/u.test(item.message)));
+});
+
 test("a rejected request atomically publishes only inert evidence and cannot create a deck", async () => {
   const fixture = manifest.cases.find((item) => item.id === "adversarial-command-path");
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c12-reject-"));

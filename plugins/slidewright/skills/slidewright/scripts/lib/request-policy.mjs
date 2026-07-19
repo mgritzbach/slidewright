@@ -3,6 +3,7 @@ const ZERO_WIDTH_OR_DIRECTIONAL = /[\u061c\u200b-\u200f\u202a-\u202e\u2060-\u206
 export const REQUEST_SCHEMA_VERSION = "slidewright-request/v1";
 export const REQUEST_POLICY_VERSION = "slidewright-request-policy/v1";
 export const IMMUTABLE_REQUEST_STAGES = Object.freeze(["policy", "compile", "fonts", "lint", "render", "audit", "executive-review", "delivery"]);
+const REVIEW_RELATIONSHIPS = new Set(["comparison-selection", "crosswalk", "role-boundary", "sequence-handoff", "decision-ownership", "category-trigger", "application-trigger", "evidence-rule"]);
 export const REQUEST_QUALITY_CONTRACT = Object.freeze({
   schemaVersion: "slidewright-request-quality/v2",
   geometryTolerancePx: 1,
@@ -240,7 +241,7 @@ function specStructureDiagnostics(spec) {
   if (Array.isArray(spec.slides)) spec.slides.forEach((slide, index) => {
     const objectPath = `spec.slides[${index}]`;
     if (!slide || typeof slide !== "object" || Array.isArray(slide)) return;
-    const shared = ["id", "layout", "topicId", "coverageRole", "headlineSplit"];
+    const shared = ["id", "layout", "topicId", "coverageRole", "headlineSplit", "reviewIntent"];
     if (slide.layout === "hero") {
       unknownKeys(slide, [...shared, "eyebrow", "title", "body", "callout"], objectPath, diagnostics);
       inspectText(slide.title, `${objectPath}.title`, diagnostics);
@@ -277,6 +278,13 @@ function specStructureDiagnostics(spec) {
       });
     }
     unknownKeys(slide.headlineSplit, ["ratio", "side"], `${objectPath}.headlineSplit`, diagnostics);
+    unknownKeys(slide.reviewIntent, ["relationship"], `${objectPath}.reviewIntent`, diagnostics);
+    if (slide.reviewIntent != null && !REVIEW_RELATIONSHIPS.has(slide.reviewIntent?.relationship)) diagnostics.push({
+      ruleId: "SWP009",
+      severity: "error",
+      message: `${objectPath}.reviewIntent.relationship is not a supported executive-review relationship.`,
+      remediation: `Use one of: ${[...REVIEW_RELATIONSHIPS].join(" | ")}.`,
+    });
   });
   return diagnostics;
 }

@@ -29,7 +29,7 @@ COLOR_TRANSFORMS = {
     "lumMod", "lumOff", "red", "redMod", "redOff", "sat", "satMod", "satOff", "shade", "tint",
 }
 VALUELESS_COLOR_TRANSFORMS = {"comp", "gamma", "gray", "inv", "invGamma"}
-FILL_MODELS = {"solidFill", "noFill", "grpFill"}
+FILL_MODELS = {"solidFill", "noFill", "grpFill", "gradFill"}
 
 
 class ProfileError(ValueError):
@@ -58,7 +58,16 @@ def portable_integrity_projection(value: Any) -> Any:
     if isinstance(value, bool) or value is None or isinstance(value, str):
         return value
     if isinstance(value, (int, float)):
-        rendered = format(value, ".15g") if isinstance(value, float) and not value.is_integer() else str(int(value))
+        if isinstance(value, float) and not value.is_integer():
+            rendered = format(value, ".15g")
+            if "e" in rendered and 1e-6 <= abs(value) < 1e21:
+                rendered = format(value, ".15f").rstrip("0").rstrip(".")
+            elif "e" in rendered:
+                mantissa, exponent = rendered.split("e", 1)
+                exponent_value = int(exponent)
+                rendered = f"{mantissa}e{'+' if exponent_value >= 0 else ''}{exponent_value}"
+        else:
+            rendered = str(int(value))
         return {"$number": rendered}
     if isinstance(value, list):
         return [portable_integrity_projection(item) for item in value]
@@ -199,7 +208,49 @@ def fill(node: ET.Element | None, context: str) -> dict[str, Any]:
     kind = lname(selected.tag)
     if kind not in FILL_MODELS:
         raise ProfileError(f"Unsupported v1 fill {kind} in {context}.")
-    return {"kind": kind, "color": color(selected, context)} if kind == "solidFill" else {"kind": kind}
+    if kind == "solidFill":
+        return {"kind": kind, "color": color(selected, context)}
+    if kind != "gradFill":
+        return {"kind": kind}
+
+    stops = []
+    stop_list = child(selected, "gsLst")
+    if stop_list is not None:
+        for index, stop in enumerate(item for item in stop_list if lname(item.tag) == "gs"):
+            position = number(stop.get("pos"))
+            if not 0 <= position <= 100000:
+                raise ProfileError(f"Gradient stop position {position} is outside 0..100000 in {context}.")
+            stops.append({
+                "position": position,
+                "color": color(stop, f"{context}/gradient-stop-{index}"),
+            })
+    linear = child(selected, "lin")
+    path_gradient = child(selected, "path")
+    fill_to_rect = child(path_gradient, "fillToRect") if path_gradient is not None else None
+    tile_rect = child(selected, "tileRect")
+    normalized = {
+        "kind": kind,
+        "flip": selected.get("flip", ""),
+        "rotateWithShape": selected.get("rotWithShape", "") in {"1", "true"},
+        "stops": stops,
+        "mode": (
+            {"kind": "linear", "angle": number(linear.get("ang")), "scaled": linear.get("scaled", "") in {"1", "true"}}
+            if linear is not None
+            else {
+                "kind": "path",
+                "path": path_gradient.get("path", ""),
+                "fillToRect": attrs(fill_to_rect),
+            }
+            if path_gradient is not None
+            else {"kind": "unspecified"}
+        ),
+        "tileRect": attrs(tile_rect),
+        "xmlSha256": sha(ET.tostring(selected, encoding="utf-8")),
+        "reconstructable": bool(stops) and (linear is not None or path_gradient is not None),
+    }
+    if not normalized["reconstructable"]:
+        normalized["fidelityWarning"] = "Gradient was normalized losslessly but is not yet guaranteed reconstructable by the native renderer."
+    return normalized
 
 
 def line(node: ET.Element | None, context: str) -> dict[str, Any]:
@@ -353,6 +404,14 @@ def object_records(parts: dict[str, bytes]) -> list[dict[str, Any]]:
                         "title": "" if non_visual is None else non_visual.get("title", ""),
                         "description": "" if non_visual is None else non_visual.get("descr", ""),
                         "geometry": geometry(item),
+                        "presetGeometry": next(
+                            (
+                                value.get("prst", "custom")
+                                for value in item.iter()
+                                if lname(value.tag) in {"prstGeom", "custGeom"}
+                            ),
+                            "",
+                        ),
                         "fill": fill(properties, context),
                         "line": line(properties, context),
                         "text": text,
@@ -413,7 +472,7 @@ def spacing_records(parts: dict[str, bytes]) -> list[dict[str, Any]]:
 
 def inheritance_chains(parts: dict[str, bytes]) -> list[dict[str, str]]:
     chains = []
-    for slide in sorted(name for name in parts if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)):
+    for slide in presentation_slide_parts(parts):
         layout = slide_layout(parts, slide)
         layout_relationships = rel_map(parts, layout) if layout else {}
         master = next(
@@ -496,8 +555,8 @@ def guides(parts: dict[str, bytes]) -> list[dict[str, Any]]:
         values = attrs(item)
         position = values.get("pos", values.get("position", ""))
         raw_position = number(position) if position != "" else None
-        if raw_position is not None and (raw_position * 12700) % 8 != 0:
-            raise ProfileError(f"PowerPoint guide position {raw_position} cannot be represented exactly in EMU.")
+        position_numerator = None if raw_position is None else raw_position * 12700
+        exact_emu = raw_position is None or position_numerator % 8 == 0
         raw_orientation = values.get("orient", values.get("orientation", ""))
         result.append(
             {
@@ -505,7 +564,9 @@ def guides(parts: dict[str, bytes]) -> list[dict[str, Any]]:
                 "orientation": "horizontal" if raw_orientation in {"horz", "horizontal"} else "vertical",
                 "rawPosition": raw_position,
                 "positionPt": None if raw_position is None else raw_position / 8,
-                "positionEmu": None if raw_position is None else (raw_position * 12700) // 8,
+                "positionEmu": None if raw_position is None else (position_numerator + 4) // 8,
+                "exactEmu": exact_emu,
+                "emuRemainderEighths": None if raw_position is None else position_numerator % 8,
                 "attributes": values,
             }
         )
@@ -523,13 +584,46 @@ def slide_layout(parts: dict[str, bytes], part: str) -> str:
     return ""
 
 
+def slide_number(part: str) -> int:
+    match = re.search(r"slide(\d+)\.xml$", part)
+    return int(match.group(1)) if match else 0
+
+
+def presentation_slide_parts(parts: dict[str, bytes]) -> list[str]:
+    """Return slide parts in the display order declared by p:sldIdLst.
+
+    Package part names are allocation identifiers, not presentation ordinals.  A
+    deck can legally display slide9.xml before slide2.xml, so any user-facing
+    sourceSlide value must follow the relationship sequence in presentation.xml.
+    """
+    root = ET.fromstring(parts["ppt/presentation.xml"])
+    slide_list = next((item for item in root if lname(item.tag) == "sldIdLst"), None)
+    if slide_list is None:
+        return []
+    relationships = rel_map(parts, "ppt/presentation.xml")
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for index, slide_id in enumerate(item for item in slide_list if lname(item.tag) == "sldId"):
+        relationship_id = slide_id.get(f"{{{R}}}id", "")
+        part = relationships.get(relationship_id, "")
+        if not relationship_id or not re.fullmatch(r"ppt/slides/slide\d+\.xml", part):
+            raise ProfileError(
+                f"Presentation slide entry {index + 1} has no valid internal slide relationship."
+            )
+        if part in seen:
+            raise ProfileError(f"Presentation slide list references {part} more than once.")
+        seen.add(part)
+        ordered.append(part)
+    return ordered
+
+
 def archetypes(parts: dict[str, bytes], objects: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     by_part: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in objects:
         if item["part"].startswith("ppt/slides/"):
             by_part[item["part"]].append(item)
     slides, counts, bases = [], Counter(), {}
-    for part in sorted(name for name in parts if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)):
+    for part in presentation_slide_parts(parts):
         basis = {
             "layoutPart": slide_layout(parts, part),
             "objects": [
@@ -541,6 +635,645 @@ def archetypes(parts: dict[str, bytes], objects: list[dict[str, Any]]) -> tuple[
         counts[key], bases[key] = counts[key] + 1, basis
         slides.append({"part": part, "layoutPart": basis["layoutPart"], "archetypeId": key})
     return slides, [{"id": key, "count": counts[key], **bases[key]} for key in sorted(counts)]
+
+
+def _plain_text(item: dict[str, Any]) -> str:
+    return "" if item.get("text") is None else str(item["text"].get("plainText", "")).strip()
+
+
+def _concept_title(items: list[dict[str, Any]], height: int) -> str:
+    candidates = []
+    for item in items:
+        text = _plain_text(item)
+        geometry_value = item.get("geometry")
+        if not text:
+            continue
+        sizes = item.get("text", {}).get("fontSizesPt", [])
+        maximum_size = max(sizes) if sizes else 0
+        if geometry_value is None:
+            if (item.get("placeholder") or {}).get("type") != "title":
+                continue
+            top_ratio = 0.0
+        else:
+            top_ratio = geometry_value["yEmu"] / max(1, height)
+        candidates.append((top_ratio > 0.32, top_ratio, -maximum_size, item["order"], text))
+    if not candidates:
+        return ""
+    return sorted(candidates)[0][-1].replace("\n", " ").strip()
+
+
+def _box(item: dict[str, Any], size: dict[str, Any]) -> dict[str, float] | None:
+    geometry_value = item.get("geometry")
+    if geometry_value is None:
+        return None
+    width, height = max(1, size["widthEmu"]), max(1, size["heightEmu"])
+    left = geometry_value["xEmu"] / width
+    top = geometry_value["yEmu"] / height
+    box_width = geometry_value["widthEmu"] / width
+    box_height = geometry_value["heightEmu"] / height
+    return {
+        "left": left,
+        "top": top,
+        "width": box_width,
+        "height": box_height,
+        "right": left + box_width,
+        "bottom": top + box_height,
+        "centerX": left + box_width / 2,
+        "centerY": top + box_height / 2,
+        "area": max(0.0, box_width) * max(0.0, box_height),
+    }
+
+
+def _cluster_count(values: list[float], gap: float) -> int:
+    if not values:
+        return 0
+    count, previous = 1, sorted(values)[0]
+    for value in sorted(values)[1:]:
+        if value - previous > gap:
+            count += 1
+        previous = value
+    return count
+
+
+def _content_text_items(items: list[dict[str, Any]], size: dict[str, Any]) -> list[dict[str, Any]]:
+    result = []
+    for item in items:
+        box = _box(item, size)
+        if (
+            item.get("semanticKind") not in {"sp", "grpSp"}
+            or not _plain_text(item)
+            or box is None
+            or box["area"] < 0.001
+        ):
+            continue
+        placeholder_type = (item.get("placeholder") or {}).get("type", "")
+        if placeholder_type == "title" or (box["top"] < 0.17 and box["height"] < 0.18):
+            continue
+        result.append(item)
+    return result
+
+
+def _nontext_shapes(items: list[dict[str, Any]], size: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        item for item in items
+        if item.get("semanticKind") in {"sp", "grpSp", "cxnSp"}
+        and not _plain_text(item)
+        and (box := _box(item, size)) is not None
+        and box["area"] >= 0.001
+    ]
+
+
+def _stair_step_shapes(items: list[dict[str, Any]], size: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = []
+    for item in _nontext_shapes(items, size):
+        box = _box(item, size)
+        if (
+            item.get("presetGeometry") in {"rect", "roundRect", ""}
+            and box is not None
+            and 0.08 <= box["width"] <= 0.32
+            and 0.01 <= box["height"] <= 0.2
+        ):
+            candidates.append(item)
+    candidates.sort(key=lambda item: _box(item, size)["left"])
+    for count in range(min(8, len(candidates)), 2, -1):
+        for start in range(len(candidates) - count + 1):
+            group = candidates[start:start + count]
+            boxes = [_box(item, size) for item in group]
+            widths = [value["width"] for value in boxes]
+            gaps = [boxes[index + 1]["left"] - boxes[index]["left"] for index in range(count - 1)]
+            tops = [value["top"] for value in boxes]
+            heights = [value["height"] for value in boxes]
+            if (
+                max(widths) - min(widths) <= 0.03
+                and gaps and min(gaps) >= widths[0] * 0.7
+                and all(tops[index + 1] <= tops[index] + 0.005 for index in range(count - 1))
+                and all(heights[index + 1] >= heights[index] - 0.005 for index in range(count - 1))
+                and (tops[0] - tops[-1] >= 0.04 or heights[-1] - heights[0] >= 0.04)
+            ):
+                return group
+    return []
+
+
+def _quadrant_structure(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    central = []
+    for item in _nontext_shapes(items, size):
+        box = _box(item, size)
+        if (
+            item.get("presetGeometry") in {"rect", "roundRect", "custom"}
+            and box is not None
+            and 0.27 <= box["centerX"] <= 0.73
+            and 0.25 <= box["centerY"] <= 0.78
+            and 0.05 <= box["width"] <= 0.26
+            and 0.07 <= box["height"] <= 0.34
+        ):
+            central.append(box)
+    if not 4 <= len(central) <= 6:
+        return False
+    return _cluster_count([value["centerX"] for value in central], 0.08) >= 2 and _cluster_count(
+        [value["centerY"] for value in central], 0.1
+    ) >= 2 and len(_content_text_items(items, size)) >= 4
+
+
+def _triangular_structure(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    central_custom = []
+    for item in _nontext_shapes(items, size):
+        box = _box(item, size)
+        if (
+            item.get("presetGeometry") in {"custom", "triangle", "rtTriangle"}
+            and box is not None
+            and 0.25 <= box["centerX"] <= 0.75
+            and 0.18 <= box["centerY"] <= 0.78
+        ):
+            central_custom.append(box)
+    text_boxes = [_box(item, size) for item in _content_text_items(items, size)]
+    exterior = [
+        value for value in text_boxes
+        if value["centerX"] < 0.36 or value["centerX"] > 0.64 or value["centerY"] > 0.68
+    ]
+    enclosing_group = any(
+        item.get("semanticKind") == "grpSp"
+        and item.get("presetGeometry") in {"custom", "triangle", "rtTriangle"}
+        and (value := _box(item, size)) is not None
+        and value["area"] >= 0.08
+        and 0.3 <= value["centerX"] <= 0.7
+        for item in items
+    )
+    return enclosing_group and 3 <= len(central_custom) <= 6 and len(exterior) >= 3
+
+
+def _four_callout_structure(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    text_boxes = [
+        value for item in _content_text_items(items, size)
+        if (value := _box(item, size)) is not None
+        and 0.12 <= value["width"] <= 0.38
+        and value["height"] >= 0.05
+    ]
+    left = [value for value in text_boxes if value["right"] <= 0.43]
+    right = [value for value in text_boxes if value["left"] >= 0.57]
+    central_visual = any(
+        (value := _box(item, size)) is not None
+        and not _plain_text(item)
+        and item.get("presetGeometry") in {"diamond", "ellipse", "circle", "custom"}
+        and 0.35 <= value["centerX"] <= 0.65
+        and 0.35 <= value["centerY"] <= 0.75
+        and value["area"] >= 0.02
+        for item in items
+    )
+    return (
+        central_visual
+        and len(left) >= 2
+        and len(right) >= 2
+        and _cluster_count([value["centerY"] for value in left], 0.13) >= 2
+        and _cluster_count([value["centerY"] for value in right], 0.13) >= 2
+    )
+
+
+def _paired_columns(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    text_boxes = [_box(item, size) for item in _content_text_items(items, size)]
+    major = [value for value in text_boxes if value["width"] >= 0.18 and value["height"] >= 0.12]
+    if len(major) != 2:
+        return False
+    left, right = sorted(major, key=lambda value: value["centerX"])
+    return (
+        left["centerX"] < 0.5 < right["centerX"]
+        and abs(left["top"] - right["top"]) <= 0.06
+        and abs(left["width"] - right["width"]) <= 0.08
+        and abs(left["height"] - right["height"]) <= 0.12
+    )
+
+
+def _table_side_panel_structure(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    tables = [item for item in items if item.get("semanticKind") == "table" and _box(item, size)]
+    if len(tables) != 1:
+        return False
+    table_box = _box(tables[0], size)
+    if table_box["width"] > 0.72 or table_box["height"] < 0.3:
+        return False
+    matching_panels = []
+    for item in _content_text_items(items, size):
+        value = _box(item, size)
+        horizontally_separate = value["left"] >= table_box["right"] - 0.02 or value["right"] <= table_box["left"] + 0.02
+        if (
+            horizontally_separate
+            and value["width"] >= 0.2
+            and abs(value["top"] - table_box["top"]) <= 0.06
+            and abs(value["height"] - table_box["height"]) <= 0.12
+        ):
+            matching_panels.append(item)
+    return len(matching_panels) == 1
+
+
+def _grid_structure(items: list[dict[str, Any]], size: dict[str, Any]) -> bool:
+    connectors = [_box(item, size) for item in items if item.get("semanticKind") == "cxnSp" and _box(item, size)]
+    text_boxes = [_box(item, size) for item in _content_text_items(items, size)]
+    axis_aligned = sum(1 for value in connectors if value["width"] < 0.003 or value["height"] < 0.003)
+    return (
+        len(connectors) >= 8
+        and axis_aligned / len(connectors) >= 0.9
+        and len(text_boxes) >= 12
+        and _cluster_count([value["centerX"] for value in text_boxes], 0.08) >= 3
+        and _cluster_count([value["centerY"] for value in text_boxes], 0.08) >= 3
+    )
+
+
+def _composition_model(
+    title: str,
+    items: list[dict[str, Any]],
+    size: dict[str, Any],
+    all_items: list[dict[str, Any]] | None = None,
+) -> tuple[str, list[str], float]:
+    """Classify composition from native object topology, never fixture wording."""
+    structural_items = all_items if all_items is not None else items
+    semantic_kinds = Counter(item.get("semanticKind", "unknown") for item in structural_items)
+    width, height = size["widthEmu"], size["heightEmu"]
+    large_pictures = sum(
+        1 for item in structural_items
+        if item.get("semanticKind") == "pic" and item.get("geometry")
+        and item["geometry"]["widthEmu"] * item["geometry"]["heightEmu"] >= width * height * 0.18
+    )
+    preset_counts = Counter(item.get("presetGeometry", "") for item in structural_items)
+    if _stair_step_shapes(structural_items, size):
+        return "process-flow", ["sequence", "implementation"], 0.94
+    if _triangular_structure(structural_items, size):
+        return "layered-diagram", ["hierarchy", "prioritization"], 0.93
+    if preset_counts["trapezoid"] >= 3:
+        return "layered-diagram", ["hierarchy", "prioritization"], 0.9
+    if semantic_kinds["table"] >= 2:
+        return "comparison", ["choice", "trade-off"], 0.9
+    if semantic_kinds["table"]:
+        if preset_counts["chevron"] + preset_counts["homePlate"] >= 2 or (
+            _table_side_panel_structure(structural_items, size)
+        ):
+            return "process-flow", ["sequence", "implementation"], 0.88
+        return "table-matrix", ["structured-data", "comparison"], 0.92
+    if _quadrant_structure(structural_items, size) or _four_callout_structure(structural_items, size):
+        return "radial-diagram", ["relationship", "system"], 0.93
+    if _paired_columns(structural_items, size):
+        return "comparison", ["choice", "trade-off"], 0.9
+    if _grid_structure(structural_items, size):
+        return "table-matrix", ["structured-data", "comparison"], 0.9
+    if semantic_kinds["chart"]:
+        return "chart-led", ["evidence", "trend"], 0.9
+    if large_pictures:
+        return "image-editorial", ["evidence", "storytelling"], 0.88
+
+    connector_count = semantic_kinds["cxnSp"]
+    if preset_counts["chevron"] + preset_counts["homePlate"] >= 2 or connector_count >= 4:
+        return "process-flow", ["sequence", "implementation"], 0.88
+    if preset_counts["ellipse"] >= 3 or preset_counts["circle"] >= 3:
+        return "radial-diagram", ["relationship", "system"], 0.84
+    if sum(1 for item in structural_items if item.get("type") == "grpSp") >= 3 or preset_counts["custom"] >= 4:
+        return "radial-diagram", ["relationship", "system"], 0.8
+    if connector_count >= 2:
+        return "process-flow", ["sequence", "implementation"], 0.86
+
+    major = [
+        item for item in _content_text_items(structural_items, size)
+        if (value := _box(item, size)) is not None and value["area"] >= 0.02
+    ]
+    centers = [_box(item, size)["centerX"] for item in major]
+    band_count = _cluster_count(centers, 0.14)
+    if 3 <= band_count <= 5 and len(major) >= band_count:
+        return "column-cards", ["categorization", "overview"], 0.78
+    if len(items) <= 4 and sum(len(_plain_text(item)) for item in items) <= 180:
+        return "statement", ["opening", "transition"], 0.7
+    return "structured-content", ["explanation", "evidence"], 0.62
+
+
+def _count_hint(title: str) -> int | None:
+    normalized = re.sub(r"\s+", " ", title.lower())
+    words = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+        "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    }
+    count_nouns = r"steps?|stages?|phases?|parts?|segments?|columns?|boxes|cards?|nodes?|elements?|features?|options?|chevrons?|circles?|items?"
+    for expression in (
+        r"\b(\d{1,2})\s*(?:[-x\u00d7]\s*\d+\s*)?(?:" + count_nouns + r")\b",
+        r"\b(" + "|".join(words) + r")[- ](?:" + count_nouns + r")\b",
+    ):
+        match = re.search(expression, normalized)
+        if match:
+            value = match.group(1)
+            return int(value) if value.isdigit() else words[value]
+    return None
+
+
+def _table_header_band_count(items: list[dict[str, Any]], size: dict[str, Any]) -> int:
+    tables = [item for item in items if item.get("semanticKind") == "table" and _box(item, size) is not None]
+    if len(tables) != 1:
+        return 0
+    table_box = _box(tables[0], size)
+    headers = []
+    for item in _content_text_items(items, size):
+        value = _box(item, size)
+        if (
+            value is not None
+            and table_box["top"] - 0.11 <= value["top"] <= table_box["top"] + 0.02
+            and 0.08 <= value["width"] <= 0.34
+            and value["height"] <= 0.12
+        ):
+            headers.append(value)
+    return _cluster_count([value["centerX"] for value in headers], 0.12)
+
+
+def _table_option_markers(items: list[dict[str, Any]], size: dict[str, Any]) -> int:
+    tables = [item for item in items if item.get("semanticKind") == "table" and _box(item, size) is not None]
+    if len(tables) != 1:
+        return 0
+    table_box = _box(tables[0], size)
+    markers = []
+    for item in _nontext_shapes(items, size):
+        value = _box(item, size)
+        if (
+            value is not None
+            and item.get("presetGeometry") == "custom"
+            and value["width"] <= 0.08
+            and value["height"] <= 0.04
+            and table_box["left"] <= value["centerX"] <= table_box["right"]
+            and table_box["top"] <= value["centerY"] <= table_box["bottom"]
+        ):
+            markers.append(value)
+    return _cluster_count([value["centerX"] for value in markers], 0.07) if len(markers) >= 3 else 0
+
+
+def _composition_variant(
+    model: str,
+    title: str,
+    item_count: int,
+    items: list[dict[str, Any]],
+    size: dict[str, Any] | None = None,
+) -> str:
+    """Resolve a visible native variant from geometry and object kinds."""
+    if model in {"cover", "statement"}:
+        return "centered-color-field"
+    if model == "table-matrix":
+        if size is not None and _table_option_markers(items, size) >= 3:
+            return "option-matrix"
+        if size is not None and _table_header_band_count(items, size) == 3:
+            return "numbered-three-column-grid"
+        if size is not None and any(
+            item.get("semanticKind") == "pic"
+            and (value := _box(item, size)) is not None
+            and value["area"] >= 0.03
+            for item in items
+        ):
+            return "media-caption-grid"
+        return "banded-matrix"
+    if model == "comparison":
+        tables = [item for item in items if item.get("semanticKind") == "table"]
+        return "dual-rail" if len(tables) >= 2 else "split-highlight"
+    if model == "process-flow":
+        if size is not None and _stair_step_shapes(items, size):
+            return "stair-step"
+        preset_counts = Counter(item.get("presetGeometry", "") for item in items)
+        if preset_counts["chevron"] + preset_counts["homePlate"] >= 2:
+            return "chevron-steps"
+        if sum(1 for item in items if item.get("semanticKind") == "cxnSp") >= 2:
+            return "connected-timeline"
+        if size is not None and _table_side_panel_structure(items, size):
+            return "horizontal-steps-impact"
+        return "numbered-steps" if item_count > 0 else "sequential-bands"
+    if model == "layered-diagram":
+        if size is not None and _triangular_structure(items, size):
+            return "triangular-cycle"
+        presets = Counter(item.get("presetGeometry", "") for item in items)
+        if presets["cylinder"] or presets["can"]:
+            return "stacked-cylinder"
+        if presets["trapezoid"] + presets["triangle"] + presets["rtTriangle"] >= 2:
+            return "layered-pyramid"
+        return "stacked-layers"
+    if model == "radial-diagram":
+        presets = Counter(item.get("presetGeometry", "") for item in items)
+        groups = sum(1 for item in items if item.get("type") == "grpSp")
+        if presets["custom"] >= 8:
+            return "four-part-venn" if item_count == 4 else "venn-system"
+        if groups >= 3:
+            return "puzzle-system"
+        if size is not None and (_quadrant_structure(items, size) or _four_callout_structure(items, size)):
+            return "four-callout-quadrant"
+        ellipses = presets["ellipse"] + presets["circle"]
+        if ellipses >= 3:
+            return "hub-spoke" if item_count == 3 and ellipses >= 5 else (
+                "four-part-venn" if item_count == 4 else "venn-system"
+            )
+        return "radial-system"
+    if model == "column-cards":
+        if item_count == 4:
+            return "four-column-cards"
+        if item_count == 3:
+            return "three-column-cards"
+        return "parallel-cards"
+    if model == "image-editorial":
+        return "media-editorial"
+    return "structured-content"
+
+
+def _concept_item_count(
+    model: str,
+    title: str,
+    regions: list[dict[str, Any]],
+    items: list[dict[str, Any]] | None = None,
+    size: dict[str, Any] | None = None,
+) -> int:
+    structural_items = [] if items is None else items
+    if size is not None:
+        stair = _stair_step_shapes(structural_items, size)
+        if stair:
+            return len(stair)
+        if _triangular_structure(structural_items, size):
+            return 3
+        if _quadrant_structure(structural_items, size) or _four_callout_structure(structural_items, size):
+            return 4
+    if model in {"cover", "statement", "chart-led", "image-editorial"}:
+        return 1
+    if model == "comparison":
+        return 2
+    if size is not None and model == "column-cards":
+        centers = [
+            value["centerX"] for item in _content_text_items(structural_items, size)
+            if (value := _box(item, size)) is not None and value["width"] >= 0.12
+        ]
+        bands = _cluster_count(centers, 0.14)
+        if 2 <= bands <= 12:
+            return bands
+    if size is not None and model == "radial-diagram":
+        exterior = [
+            value for item in _content_text_items(structural_items, size)
+            if (value := _box(item, size)) is not None
+            and (value["centerX"] < 0.35 or value["centerX"] > 0.65 or value["centerY"] > 0.68)
+        ]
+        if 2 <= len(exterior) <= 12:
+            return len(exterior)
+    if size is not None and model == "table-matrix":
+        # Native tables do not always expose usable cell text in the generic
+        # object record. Recover their semantic column topology from visible
+        # option markers or the aligned header band above the table. A zero
+        # count must never become a wildcard for grounded reconstruction.
+        option_columns = _table_option_markers(structural_items, size)
+        header_columns = _table_header_band_count(structural_items, size)
+        semantic_columns = option_columns or header_columns
+        if 2 <= semantic_columns <= 12:
+            return semantic_columns
+    hinted = _count_hint(title)
+    if hinted is not None:
+        return hinted
+    if model in {"table-matrix", "map-chart", "structured-content", "exercise-sidebar"}:
+        return 0
+    candidates = [
+        region for region in regions
+        if region["normalized"]["top"] >= 0.18 and region["normalized"]["width"] <= 0.5
+    ]
+    return max(1, min(12, len(candidates) or len(regions)))
+
+
+def _communication_purpose(model: str, title: str) -> str:
+    purposes = {
+        "cover": "Open a narrative with one dominant proposition.",
+        "statement": "Create emphasis or transition with a concise statement.",
+        "table-matrix": "Compare structured facts, choices, or performance across dimensions.",
+        "layered-diagram": "Explain hierarchy, progression, or narrowing choices.",
+        "radial-diagram": "Show a system of related elements around a shared center.",
+        "process-flow": "Explain sequence, ownership, milestones, or implementation flow.",
+        "comparison": "Contrast alternatives and make a decision boundary explicit.",
+        "map-chart": "Communicate geographic distribution or portfolio location.",
+        "column-cards": "Organize parallel categories into a scan-friendly framework.",
+        "image-editorial": "Pair visual evidence with concise explanatory copy.",
+        "exercise-sidebar": "Guide an audience through an activity or facilitated decision.",
+        "chart-led": "Lead with quantitative evidence and its implication.",
+        "structured-content": "Explain a structured argument with supporting evidence.",
+    }
+    purpose = purposes.get(model, purposes["structured-content"])
+    return purpose if not title else f"{purpose} Source framing: {title[:120]}"
+
+
+def semantic_concept_inventory(objects: list[dict[str, Any]], slides: list[dict[str, Any]], size: dict[str, Any]) -> dict[str, Any]:
+    by_part: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in objects:
+        if item["part"].startswith("ppt/slides/"):
+            by_part[item["part"]].append(item)
+    concepts, slide_inventory = [], []
+    width, height = size["widthEmu"], size["heightEmu"]
+    for ordinal, slide in enumerate(slides, start=1):
+        items = sorted(by_part.get(slide["part"], []), key=lambda item: item["order"])
+        substantive = [
+            item for item in items
+            if (len(_plain_text(item)) >= 3)
+            or item.get("semanticKind") in {"table", "chart"}
+            or (
+                item.get("semanticKind") == "pic" and item.get("geometry")
+                and item["geometry"]["widthEmu"] * item["geometry"]["heightEmu"] >= width * height * 0.04
+            )
+        ]
+        text_characters = sum(len(_plain_text(item)) for item in substantive)
+        viable = bool(substantive) and (text_characters >= 8 or any(item.get("semanticKind") in {"table", "chart", "pic"} for item in substantive))
+        title = _concept_title(substantive, height)
+        entry = {
+            "sourceSlide": ordinal,
+            "slidePart": slide["part"],
+            "viable": viable,
+            "reason": "substantive native content detected" if viable else "blank or chrome-only slide",
+        }
+        slide_inventory.append(entry)
+        if not viable:
+            continue
+        model, tags, confidence = _composition_model(title, substantive, size, items)
+        regions = []
+        for item in substantive:
+            geometry_value = item.get("geometry")
+            if geometry_value is None:
+                continue
+            regions.append({
+                "objectKey": item["objectKey"],
+                "name": item["name"],
+                "kind": item["semanticKind"],
+                "text": _plain_text(item)[:240],
+                "normalized": {
+                    "left": round(geometry_value["xEmu"] / width, 6),
+                    "top": round(geometry_value["yEmu"] / height, 6),
+                    "width": round(geometry_value["widthEmu"] / width, 6),
+                    "height": round(geometry_value["heightEmu"] / height, 6),
+                },
+            })
+        item_count = _concept_item_count(model, title, regions, items, size)
+        variant = _composition_variant(model, title, item_count, items, size)
+        source_objects = []
+        for item in items:
+            geometry_value = item.get("geometry")
+            if geometry_value is None:
+                continue
+            source_objects.append({
+                "objectKey": item["objectKey"],
+                "kind": item.get("semanticKind", "unknown"),
+                "name": item.get("name", ""),
+                "presetGeometry": item.get("presetGeometry", ""),
+                "normalized": {
+                    "left": round(geometry_value["xEmu"] / width, 6),
+                    "top": round(geometry_value["yEmu"] / height, 6),
+                    "width": round(geometry_value["widthEmu"] / width, 6),
+                    "height": round(geometry_value["heightEmu"] / height, 6),
+                },
+                "fillKind": (item.get("fill") or {}).get("kind", "none"),
+                "hasText": bool(_plain_text(item)),
+                "styleFingerprint": item.get("styleFingerprint", ""),
+            })
+        density = "high" if text_characters >= 700 or len(substantive) >= 18 else "medium" if text_characters >= 260 or len(substantive) >= 8 else "low"
+        object_counts = Counter(item.get("semanticKind", "unknown") for item in substantive)
+        concept_basis = {
+            "sourceSlide": ordinal,
+            "slidePart": slide["part"],
+            "title": title,
+            "model": model,
+            "variant": variant,
+            "itemCount": item_count,
+            "regions": regions,
+        }
+        concepts.append({
+            "id": f"concept-{ordinal:02d}-{canonical_hash(concept_basis)[:10]}",
+            "sourceSlide": ordinal,
+            "slidePart": slide["part"],
+            "sourceTitle": title,
+            "communicationPurpose": _communication_purpose(model, title),
+            "composition": {
+                "model": model,
+                "variant": variant,
+                "itemCount": item_count,
+                "hierarchy": "title-first" if title else "visual-first",
+                "primaryFlow": "left-to-right" if model in {"process-flow", "comparison", "column-cards"} else "top-to-bottom",
+                "regions": regions,
+            },
+            "objectTypes": dict(sorted(object_counts.items())),
+            "spatialRelationships": {
+                "regionCount": len(regions),
+                "centralEmphasis": model in {"radial-diagram", "layered-diagram"},
+                "parallelStructure": model in {"comparison", "column-cards", "table-matrix"},
+            },
+            "blueprint": {
+                "variant": variant,
+                "itemCount": item_count,
+                "sourceObjects": source_objects,
+                "sourceObjectCount": len(source_objects),
+                "reconstructableWithNativeObjects": model not in {"image-editorial", "map-chart"},
+            },
+            "density": {"level": density, "textCharacters": text_characters, "substantiveObjects": len(substantive)},
+            "emphasis": {"pattern": model, "titlePresent": bool(title)},
+            "suitability": {
+                "preferredContentTypes": tags,
+                "minimumItems": item_count if item_count > 0 and model in {"comparison", "column-cards", "process-flow", "radial-diagram", "layered-diagram"} else (1 if model in {"cover", "statement", "chart-led", "image-editorial"} else 0),
+                "maximumItems": item_count if item_count > 0 and model in {"comparison", "column-cards", "process-flow", "radial-diagram", "layered-diagram"} else max(1, min(12, len(regions))),
+                "requiresMedia": model == "image-editorial",
+            },
+            "nativeEditable": True,
+            "confidence": confidence,
+            "tags": sorted(set([model, *tags])),
+        })
+    return {
+        "schemaVersion": "slidewright-design-concept-inventory/v1",
+        "slidesTotal": len(slides),
+        "viableSlides": len(concepts),
+        "nonviableSlides": len(slides) - len(concepts),
+        "slideInventory": slide_inventory,
+        "concepts": concepts,
+    }
 
 
 def pair_token(name: str, first: str, second: str, token: str) -> str | None:
@@ -661,7 +1394,9 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
     raw = path.read_bytes()
     parts, relationships = read_package(path)
     source_hash, size, objects = sha(raw), slide_size(parts), object_records(parts)
+    guide_records = guides(parts)
     slides, archetype_values = archetypes(parts, objects)
+    concept_inventory = semantic_concept_inventory(objects, slides, size)
     contracts, declarations = symmetry_contracts(objects, size, source_hash, manifest, enforce_symmetry)
     inventory = [{"part": name, "sha256": sha(parts[name])} for name in sorted(parts)]
     recurring = Counter(
@@ -706,6 +1441,7 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
     profile = {
         "schemaVersion": "slidewright-design-profile/v1",
         "source": {
+            "fileName": path.name,
             "sha256": source_hash,
             "byteLength": len(raw),
             "packageManifestSha256": canonical_hash(inventory),
@@ -719,7 +1455,7 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
         },
         "presentation": {
             "slideSize": size,
-            "guides": guides(parts),
+            "guides": guide_records,
             "inheritanceChains": inheritance_chains(parts),
         },
         "spacing": {"records": spacing_records(parts)},
@@ -748,10 +1484,30 @@ def extract_profile(path: Path, manifest: Path | None = None, *, enforce_symmetr
         },
         "chrome": {"objects": chrome},
         "archetypes": archetype_values,
+        "designConceptInventory": concept_inventory,
         "symmetryContracts": contracts,
         "declaredAsymmetries": declarations,
+        "warnings": [
+            {
+                "code": "SW_PROFILE_GRADIENT_FIDELITY",
+                "severity": "warning",
+                "objectKey": item["objectKey"],
+                "message": item["fill"]["fidelityWarning"],
+            }
+            for item in objects
+            if item.get("fill", {}).get("fidelityWarning")
+        ] + [
+            {
+                "code": "SW_PROFILE_GUIDE_ROUNDED_TO_EMU",
+                "severity": "warning",
+                "guideOrder": guide["order"],
+                "message": "PowerPoint guide position is not exactly representable in whole EMUs; the raw position is preserved and positionEmu is rounded to the nearest EMU.",
+            }
+            for guide in guide_records
+            if guide.get("exactEmu") is False
+        ],
         "unsupported": {
-            "policy": "fail-closed",
+            "policy": "fail-closed-except-normalized-standard-gradients",
             "standardColorTransforms": "captured-losslessly",
             "unknownColorTransforms": "rejected",
             "colorModels": sorted(COLOR_MODELS),

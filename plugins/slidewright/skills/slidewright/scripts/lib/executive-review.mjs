@@ -1,17 +1,26 @@
-const REVIEW_SCHEMA_VERSION = "slidewright-executive-review/v1";
+import { measureText } from "./typography.mjs";
+
+const REVIEW_SCHEMA_VERSION = "slidewright-executive-review/v2";
 const REVIEW_MODE_OFF = "off";
 const REVIEW_MODE_OVERLAY = "executive-overlay";
-const NOTE_WIDTH = 336;
-const NOTE_HEIGHT = 82;
+const NOTE_WIDTH = 470;
+const NOTE_HEIGHT = 230;
 const NOTE_GAP = 12;
 const EDGE_INSET = 24;
+const GENERIC_REVIEW_SENTENCES = new Set([
+  "validate this claim, number, and source",
+  "sharpen this into the slide's decision or takeaway",
+  "consider cutting or splitting this dense passage",
+  "confirm this section advances the overall storyline",
+  "confirm the implication and audience relevance",
+]);
 
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-function shapeText(shape) {
-  if (shape.type === "table") return shape.table.values.flat().join(" ");
+function shapeText(shape = {}) {
+  if (shape.type === "table") return shape.table?.values?.flat().join(" ") ?? "";
   return (shape.text?.paragraphs ?? [])
     .flatMap((paragraph) => paragraph.runs ?? [])
     .map((run) => run.text ?? "")
@@ -24,100 +33,204 @@ function target(slide, predicate, fallback = null) {
   return slide.shapes.find(predicate) ?? fallback ?? slide.shapes.find((shape) => shape.role === "title") ?? slide.shapes[0];
 }
 
-function titleLooksGeneric(text) {
-  const words = text.split(/\s+/u).filter(Boolean);
-  if (words.length > 10) return false;
-  return !/\b(?:is|are|was|were|will|can|could|should|must|drives?|creates?|reduces?|increases?|requires?|enables?|shows?|outperforms?|improves?|declines?|grows?|wins?|loses?)\b/iu.test(text);
+function excerpt(value, maximum = 64) {
+  const normalized = String(value ?? "").replace(/\s+/gu, " ").trim();
+  return normalized.length <= maximum ? normalized : `${normalized.slice(0, maximum - 1).trimEnd()}…`;
+}
+
+function quote(value, maximum = 64) {
+  return `“${excerpt(value, maximum).replace(/[“”]/gu, "\"") || "untitled element"}”`;
+}
+
+function slideTitle(slide) {
+  return shapeText(target(slide, (shape) => shape.role === "title")) || slide.id;
+}
+
+function provenanceClause(slide, targetShape) {
+  const provenance = slide.designProvenance;
+  if (!provenance?.conceptId || !provenance.referenceSlides?.length) return null;
+  return `Ref ${targetShape.id}: slide ${provenance.referenceSlides[0]}, ${quote(provenance.selectedConcept, 18)} (${provenance.compositionModel}).`;
+}
+
+function decisionAnchor(value) {
+  const stop = new Set(["about", "after", "before", "from", "into", "just", "only", "that", "their", "these", "this", "until", "when", "with", "without"]);
+  const tokens = (String(value ?? "").toLowerCase().match(/[a-z0-9]{4,}/gu) ?? []).filter((token) => !stop.has(token)).slice(0, 3);
+  return tokens.length ? `“${tokens.join(" ")}”` : "the decision";
+}
+
+function relationshipIntent(slide, headings, bodies, titleText) {
+  const declared = slide.reviewIntent?.relationship;
+  if (declared) return declared;
+  const headingText = headings.map(shapeText).join(" ").toLowerCase();
+  const bodyText = bodies.map(shapeText).join(" ").toLowerCase();
+  const title = titleText.toLowerCase();
+  const temporal = /\b(?:after|before|follow|handoff|next|phase|stage|step|then|until)\b/u;
+  if (temporal.test(title) && temporal.test(bodyText)) return "sequence-handoff";
+  if (/\b(?:accountable|authority|escalat\w*|own(?:s|ed|ership)?|responsib\w*)\b/u.test(bodyText)) return "role-boundary";
+  if (/\b(?:crosswalk|dimension|lens|map|stakeholder|view)\b/u.test(`${title} ${headingText}`)) return "crosswalk";
+  return "comparison-selection";
+}
+
+function tableRelationshipIntent(slide, headers) {
+  const declared = slide.reviewIntent?.relationship;
+  if (declared) return declared;
+  const normalized = headers.toLowerCase();
+  if (/\b(?:accountable|decision|evidence|owner|threshold)\b/u.test(normalized)) return "decision-ownership";
+  if (/\b(?:action|category|indicator|move|signal|type)\b/u.test(normalized)) return "category-trigger";
+  if (/\b(?:approach|benefit|guardrail|method|risk|why)\b/u.test(normalized)) return "application-trigger";
+  return "evidence-rule";
+}
+
+function groundedFinding({ slide, targetShape, category, subject, diagnosis, impact, recommendation }) {
+  const title = slideTitle(slide);
+  const sourceContext = provenanceClause(slide, targetShape);
+  const exactObject = { shapeId: targetShape.id, excerpt: excerpt(shapeText(targetShape)) };
+  const diagnosisSentence = `Target ${targetShape.id} ${quote(subject, 40)}: ${diagnosis}`;
+  const impactSentence = `Executive risk on ${slide.id} ${quote(title)}: ${impact}`;
+  const recommendationSentence = `Revise ${targetShape.id}: ${recommendation.replace(/[.!?]+$/u, "")}.${sourceContext ? ` ${sourceContext}` : ""}`;
+  return {
+    rank: 100,
+    category,
+    targetShape,
+    exactObject,
+    diagnosis: diagnosisSentence,
+    executiveImpact: impactSentence,
+    recommendation: recommendationSentence,
+    provenanceContext: sourceContext,
+    note: `${diagnosisSentence} ${impactSentence} ${recommendationSentence}`,
+    rationale: `${diagnosisSentence} ${impactSentence}`,
+  };
 }
 
 function reviewCandidates(slide) {
   const titleShape = target(slide, (shape) => shape.role === "title");
-  const titleText = shapeText(titleShape);
-  const textShapes = slide.shapes.filter((shape) => shape.type === "text");
-  const allText = slide.shapes.map(shapeText).join(" ");
-  const candidates = [];
-  const evidenceShape = target(slide, (shape) => shape.type === "table" || /(?:\d|%|\$|€|£)/u.test(shapeText(shape)), titleShape);
-
-  if (/(?:\d|%|\$|€|£)/u.test(allText) || slide.layout === "table") candidates.push({
-    rank: 100,
-    category: "evidence-validation",
-    targetShape: evidenceShape,
-    note: slide.layout === "table" ? "Validate the table's units, definitions, and source." : "Validate this claim, number, and source.",
-    rationale: "Executive readers should be able to trace quantitative claims and tabular evidence to a defensible source.",
-  });
-
-  const dense = [...textShapes]
-    .filter((shape) => ["body", "callout", "subtitle"].includes(shape.role))
-    .sort((left, right) => {
-      const leftRatio = Number(left.fit?.estimatedHeight ?? 0) / Math.max(1, Number(left.fit?.availableHeight ?? left.position.height));
-      const rightRatio = Number(right.fit?.estimatedHeight ?? 0) / Math.max(1, Number(right.fit?.availableHeight ?? right.position.height));
-      return rightRatio - leftRatio;
-    })[0];
-  const densityRatio = dense ? Number(dense.fit?.estimatedHeight ?? 0) / Math.max(1, Number(dense.fit?.availableHeight ?? dense.position.height)) : 0;
-  if (slide.layout !== "section" && dense && (densityRatio >= 0.86 || dense.style?.fontSizePt === dense.fit?.minSizePt)) candidates.push({
-    rank: 90,
-    category: "density-adjustment",
-    targetShape: dense,
-    note: "Consider cutting or splitting this dense passage.",
-    rationale: "The content fits mechanically but is close enough to its capacity that an executive edit may improve scanability.",
-  });
-
-  if (slide.layout !== "section" && (titleText.length > 86 || Number(titleShape?.fit?.lines ?? 1) > 1)) candidates.push({
-    rank: 80,
-    category: "message-clarity",
-    targetShape: titleShape,
-    note: "Tighten this to a one-line executive takeaway.",
-    rationale: "A constrained or multi-line headline should communicate the conclusion before the supporting detail.",
-  });
-  else if (slide.layout !== "section" && titleLooksGeneric(titleText)) candidates.push({
-    rank: 70,
-    category: "message-clarity",
-    targetShape: titleShape,
-    note: "Sharpen this into the slide's decision or takeaway.",
-    rationale: "The headline appears topic-led rather than conclusion-led and merits a human message check.",
-  });
-
-  if (slide.layout === "hero") candidates.push({
-    rank: 65,
-    category: "decision-relevance",
-    targetShape: target(slide, (shape) => shape.role === "callout", titleShape),
-    note: "Confirm the decision owner, threshold, and timing.",
-    rationale: "A decision page should make the accountable owner, success threshold, and decision timing explicit.",
-  });
-  else if (slide.layout === "two-column") candidates.push({
-    rank: 60,
-    category: "decision-relevance",
-    targetShape: target(slide, (shape) => shape.id.endsWith("-left-body"), titleShape),
-    note: "Confirm this comparison is decision-relevant and complete.",
-    rationale: "Paired columns can imply a comparison framework; a human should validate that the dimensions are complete and useful.",
-  });
-  else if (slide.layout === "icon-list") candidates.push({
-    rank: 60,
-    category: "decision-relevance",
-    targetShape: target(slide, (shape) => shape.role === "semantic-card", titleShape),
-    note: "Confirm these are the right distinct priorities for this audience.",
-    rationale: "A repeated-card framework should be mutually distinct and aligned to the audience's decision.",
-  });
-  else if (slide.layout === "section") candidates.push({
-    rank: 50,
-    category: "storyline-validation",
-    targetShape: titleShape,
-    note: "Confirm this section advances the overall storyline.",
-    rationale: "Section transitions need a human check for narrative logic and audience relevance.",
-  });
-  else if (!candidates.length) candidates.push({
-    rank: 40,
-    category: "storyline-validation",
-    targetShape: titleShape,
-    note: "Confirm the implication and audience relevance.",
-    rationale: "A partner-level review should validate the implication even when deterministic layout checks pass.",
-  });
-
-  return candidates
-    .filter((item) => item.targetShape)
-    .sort((left, right) => right.rank - left.rank || left.category.localeCompare(right.category))
-    .filter((item, index, items) => items.findIndex((candidate) => candidate.category === item.category && candidate.targetShape.id === item.targetShape.id) === index)
-    .slice(0, 2);
+  const titleText = slideTitle(slide);
+  if (slide.layout === "table") {
+    const table = target(slide, (shape) => shape.type === "table", titleShape);
+    const headerValues = table.table?.values?.[0] ?? [];
+    const headers = headerValues.join(" / ") || shapeText(table);
+    const rows = Math.max(0, (table.table?.values?.length ?? 1) - 1);
+    const firstSemanticColumn = headerValues[0] === "#" ? 1 : 0;
+    const rowLabels = (table.table?.values ?? []).slice(1).map((row) => row[firstSemanticColumn]).filter(Boolean);
+    const relationship = tableRelationshipIntent(slide, headers);
+    if (relationship === "decision-ownership") return [groundedFinding({
+      slide, targetShape: table, category: "decision-ownership", subject: `${headers} (${rows} rows)`,
+      diagnosis: `${quote(rowLabels.slice(0, 2).join(" / "))} names decisions but assigns no owner or evidence standard.`,
+      impact: "the listed decisions may remain discussion rather than accountable choices.",
+      recommendation: `add an owner/evidence field and validate the threshold for ${quote(rowLabels[0] || headers)}.`,
+    })];
+    if (relationship === "category-trigger") return [groundedFinding({
+      slide, targetShape: table, category: "category-trigger", subject: `${headers} (${rows} rows)`,
+      diagnosis: `${quote(rowLabels.slice(0, 3).join(" / "))} names categories but provides no observable action trigger.`,
+      impact: "leaders can classify the same issue differently and choose conflicting moves.",
+      recommendation: `add one trigger per category, starting with ${quote(rowLabels[0] || headers)}, and test one representative example through the grid.`,
+    })];
+    if (relationship === "application-trigger") return [groundedFinding({
+      slide, targetShape: table, category: "application-trigger", subject: `${headers} (${rows} rows)`,
+      diagnosis: `${quote(rowLabels.slice(0, 2).join(" / "))} explains methods and safeguards but no choice condition.`,
+      impact: "the safeguards limit action without directing which option to use.",
+      recommendation: `add a 'use when' trigger for ${quote(rowLabels[0] || headers)} and test every safeguard before adoption.`,
+    })];
+    return [groundedFinding({
+      slide, targetShape: table, category: "evidence-and-decision-rule", subject: `${headers} (${rows} rows)`,
+      diagnosis: `${quote(rowLabels.slice(0, 2).join(" / "))} is organized, but the rule connecting the ${rows} rows to a decision remains implicit.`,
+      impact: "readers can scan the evidence without knowing what changes the recommended action.",
+      recommendation: "state one governing decision rule above the table and highlight the row that currently controls it.",
+    })];
+  }
+  if (slide.layout === "two-column") {
+    const headings = slide.shapes.filter((shape) => shape.role === "subheading");
+    const bodies = slide.shapes.filter((shape) => shape.role === "body");
+    const primary = headings[0] ?? titleShape;
+    const headingLabels = headings.map(shapeText).filter(Boolean);
+    const leftLabel = headingLabels[0] || "left panel";
+    const rightLabel = headingLabels[1] || "right panel";
+    const rightReference = quote(rightLabel, 20);
+    const labels = headingLabels.join(" versus ");
+    const relationship = relationshipIntent(slide, headings, bodies, titleText);
+    if (relationship === "sequence-handoff") return [groundedFinding({
+      slide, targetShape: primary, category: "sequence-handoff", subject: labels || titleText,
+      diagnosis: `the target must hand off into ${rightReference}, but the panels read as a choice between peers.`,
+      impact: "a reader can complete the first obligation and miss the handoff into the second.",
+      recommendation: `show the target leading to ${rightReference}, with an exit condition, owner, and handoff.`,
+    })];
+    if (relationship === "role-boundary") return [groundedFinding({
+      slide, targetShape: primary, category: "role-boundary", subject: labels || titleText,
+      diagnosis: `the target and ${rightReference} both influence the process, but their authority boundary is absent.`,
+      impact: "the two roles can duplicate actions or leave a disputed decision unowned.",
+      recommendation: `state whether the target or ${rightReference} owns procedure, outcome, escalation, and handoff.`,
+    })];
+    if (relationship === "crosswalk") return [groundedFinding({
+      slide, targetShape: primary, category: "crosswalk-logic", subject: labels || titleText,
+      diagnosis: `no element-to-element mapping from the target to ${rightReference} is shown.`,
+      impact: "readers cannot see how an input in one view changes a criterion in the other.",
+      recommendation: `connect one named target element to its affected condition in ${rightReference}.`,
+    })];
+    return [groundedFinding({
+      slide, targetShape: primary, category: "comparison-decision-rule", subject: labels || titleText,
+      diagnosis: `the condition selecting the target over ${rightReference} is not explicit.`,
+      impact: "readers may combine incompatible approaches or default to personal preference.",
+      recommendation: `add a one-line target-versus-${excerpt(rightLabel, 20)} selection rule tied to ${decisionAnchor(titleText)}, then validate it with one example.`,
+    })];
+  }
+  if (slide.layout === "icon-list") {
+    const labels = slide.shapes.filter((shape) => shape.role === "subheading");
+    const primary = labels[0] ?? titleShape;
+    const labelText = labels.map(shapeText).filter(Boolean).join(" / ");
+    const variant = slide.designProvenance?.compositionVariant;
+    if (variant === "triangular-cycle") return [groundedFinding({
+      slide, targetShape: primary, category: "diagram-relationship", subject: labelText || titleText,
+      diagnosis: "the triangle names three parts, but its center and edges do not define their relationship.",
+      impact: "leaders cannot tell whether this is a cycle, hierarchy, or parallel lenses.",
+      recommendation: "label the edges or center, then validate the intended reading.",
+    })];
+    if (variant === "four-callout-quadrant") return [groundedFinding({
+      slide, targetShape: primary, category: "framework-order", subject: labelText || titleText,
+      diagnosis: `the four callouts beginning with ${quote(shapeText(primary) || titleText)} fit the quadrant, but no visible reading order is defined.`,
+      impact: "a reader cannot tell which action starts the sequence or whether the actions run concurrently.",
+      recommendation: `number the callouts from ${quote(shapeText(primary) || titleText)} onward, or mark them concurrent, then validate the reading order once.`,
+    })];
+    return [groundedFinding({
+      slide, targetShape: primary, category: "framework-distinctness", subject: labelText || titleText,
+      diagnosis: "the framework names peer elements but leaves their priority, sequence, and trade-off logic unstated.",
+      impact: "leaders cannot tell which component controls the next action.",
+      recommendation: "add an explicit order, dependency, or decision criterion to the native diagram.",
+    })];
+  }
+  if (slide.layout === "section") {
+    const subtitle = target(slide, (shape) => shape.role === "subtitle", titleShape);
+    const transitionText = shapeText(subtitle) || titleText;
+    return [groundedFinding({
+      slide, targetShape: subtitle, category: "storyline-transition", subject: transitionText,
+      diagnosis: `the ${decisionAnchor(titleText)} transition states a principle but does not preview the question the section will resolve.`,
+      impact: "the page reads as navigation rather than an argumentative turn.",
+      recommendation: "replace the subtitle with one decision question that the following slides explicitly answer.",
+    })];
+  }
+  if (slide.layout === "hero") {
+    const callout = target(slide, (shape) => shape.role === "callout", titleShape);
+    const calloutText = shapeText(callout);
+    if (/\b(?:strongest|always|never|best|only)\b/iu.test(calloutText)) return [groundedFinding({
+      slide, targetShape: callout, category: "claim-validation", subject: calloutText || titleText,
+      diagnosis: "the callout uses an absolute executive claim without a named principle, example, or boundary condition.",
+      impact: "a skeptical audience can challenge the opening before accepting the proposed approach.",
+      recommendation: `cite evidence for ${decisionAnchor(calloutText || titleText)} or soften the absolute language, then verify it against the source material.`,
+    })];
+    return [groundedFinding({
+      slide, targetShape: callout, category: "claim-operationalization", subject: shapeText(callout) || titleText,
+      diagnosis: "the imperatives are memorable but define neither a trigger nor a decision owner.",
+      impact: "the audience cannot tell when to apply the rule in practice.",
+      recommendation: `write one if-trigger / owner / action rule for ${decisionAnchor(calloutText || titleText)} and test it against one documented example.`,
+    })];
+  }
+  const bodies = slide.shapes.filter((shape) => ["body", "callout", "subtitle"].includes(shape.role));
+  const body = bodies.sort((left, right) => shapeText(right).length - shapeText(left).length)[0] ?? titleShape;
+  return [groundedFinding({
+    slide, targetShape: body, category: "implication-clarity", subject: shapeText(body) || titleText,
+    diagnosis: "the explanation leaves its implication implicit.",
+    impact: "the required action must be inferred.",
+    recommendation: "end the passage with one explicit “therefore” action.",
+  })];
 }
 
 function overlaps(left, right) {
@@ -143,6 +256,56 @@ function overlayPosition({ canvas, targetPosition, noteIndex, occupied }) {
   throw new Error("Executive-review findings cannot be placed without overlapping another review note.");
 }
 
+function normalizedSentence(value) {
+  return value.toLowerCase().replace(/[“”"'`]/gu, "").replace(/[^a-z0-9]+/gu, " ").trim();
+}
+
+function semanticReviewSignature(finding) {
+  const diagnosis = String(finding.diagnosis ?? "").replace(/^Target\s+[^:]+:\s*/u, "");
+  const recommendation = String(finding.recommendation ?? "")
+    .replace(/^Revise\s+[^:]+:\s*/u, "")
+    .replace(/\s+Reference for [^.]+:.*$/u, "");
+  return normalizedSentence(`${diagnosis} ${recommendation}`);
+}
+
+function noteFit(note) {
+  return measureText({
+    text: `PARTNER CHECK\n${note}`,
+    width: NOTE_WIDTH,
+    height: NOTE_HEIGHT,
+    fontSizePt: 12,
+    lineHeight: 1.05,
+    insets: { top: 8, right: 10, bottom: 8, left: 10 },
+    glyphFactor: 0.5,
+    maxLines: 12,
+  });
+}
+
+export function validateExecutiveReviewSpecificity(review, plan) {
+  const diagnostics = [];
+  const sentences = new Map();
+  const semanticBodies = new Map();
+  for (const finding of review.findings ?? []) {
+    const slide = plan.slides?.[finding.slideIndex - 1];
+    const targetShape = slide?.shapes?.find((shape) => shape.id === finding.targetShapeId);
+    if (!slide || !targetShape) diagnostics.push(`${finding.id}:target`);
+    if (!finding.exactObject?.shapeId || finding.exactObject.shapeId !== finding.targetShapeId || !finding.exactObject.excerpt) diagnostics.push(`${finding.id}:exact-object`);
+    for (const field of ["diagnosis", "executiveImpact", "recommendation"]) if (typeof finding[field] !== "string" || finding[field].trim().length < 24) diagnostics.push(`${finding.id}:${field}`);
+    if (!finding.noteFit?.fits) diagnostics.push(`${finding.id}:note-overflow`);
+    if (slide?.designProvenance?.conceptId && (!finding.provenanceContext || !finding.note.includes(String(slide.designProvenance.referenceSlides[0])))) diagnostics.push(`${finding.id}:provenance`);
+    const normalizedNote = normalizedSentence(finding.note);
+    if ([...GENERIC_REVIEW_SENTENCES].some((sentence) => normalizedNote === normalizedSentence(sentence))) diagnostics.push(`${finding.id}:generic`);
+    for (const sentence of finding.note.split(/(?<=[.!?])\s+/u).map(normalizedSentence).filter(Boolean)) {
+      if (sentences.has(sentence)) diagnostics.push(`${finding.id}:duplicate-sentence-${sentence}-with-${sentences.get(sentence)}`);
+      else sentences.set(sentence, finding.id);
+    }
+    const semanticBody = semanticReviewSignature(finding);
+    if (semanticBody && semanticBodies.has(semanticBody)) diagnostics.push(`${finding.id}:duplicate-semantic-body-with-${semanticBodies.get(semanticBody)}`);
+    else if (semanticBody) semanticBodies.set(semanticBody, finding.id);
+  }
+  return { schemaVersion: "slidewright-executive-review-specificity/v1", valid: diagnostics.length === 0, diagnostics };
+}
+
 export function buildExecutiveReview(plan, mode = REVIEW_MODE_OFF) {
   if (![REVIEW_MODE_OFF, REVIEW_MODE_OVERLAY].includes(mode)) throw new Error(`Unsupported executive review mode '${mode}'.`);
   const findings = mode === REVIEW_MODE_OVERLAY
@@ -157,7 +320,13 @@ export function buildExecutiveReview(plan, mode = REVIEW_MODE_OFF) {
           slideIndex: slideIndex + 1,
           targetShapeId: candidate.targetShape.id,
           category: candidate.category,
+          exactObject: candidate.exactObject,
+          diagnosis: candidate.diagnosis,
+          executiveImpact: candidate.executiveImpact,
+          recommendation: candidate.recommendation,
+          provenanceContext: candidate.provenanceContext,
           note: candidate.note,
+          noteFit: noteFit(candidate.note),
           rationale: candidate.rationale,
           targetPosition: structuredClone(candidate.targetShape.position),
           overlayPosition: position,
@@ -167,7 +336,7 @@ export function buildExecutiveReview(plan, mode = REVIEW_MODE_OFF) {
       });
     })
     : [];
-  return {
+  const review = {
     schemaVersion: REVIEW_SCHEMA_VERSION,
     mode,
     canonicalDeckModified: false,
@@ -177,7 +346,7 @@ export function buildExecutiveReview(plan, mode = REVIEW_MODE_OFF) {
       border: "#D6A800",
       text: "#1F2937",
       label: "#7A5C00",
-      fontSizePt: 14,
+      fontSizePt: 12,
       labelSizePt: 12,
     },
     findings,
@@ -187,6 +356,10 @@ export function buildExecutiveReview(plan, mode = REVIEW_MODE_OFF) {
       findings: findings.length,
     },
   };
+  const specificity = validateExecutiveReviewSpecificity(review, plan);
+  if (!specificity.valid) throw new Error(`Executive-review specificity failed: ${specificity.diagnostics.join(", ")}.`);
+  review.specificity = specificity;
+  return review;
 }
 
 export function addExecutiveReviewOverlays(slide, findings, review, typeface) {

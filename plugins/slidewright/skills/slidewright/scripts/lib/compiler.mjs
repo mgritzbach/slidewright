@@ -16,6 +16,16 @@ import { fitText, flattenParagraphs, normalizeParagraphs, textFromRuns } from ".
 
 const VERSION = "0.2";
 const SUPPORTED_INPUT_VERSIONS = new Set(["0.1", VERSION]);
+const REVIEW_RELATIONSHIPS = new Set([
+  "comparison-selection",
+  "crosswalk",
+  "role-boundary",
+  "sequence-handoff",
+  "decision-ownership",
+  "category-trigger",
+  "application-trigger",
+  "evidence-rule",
+]);
 
 function stableHash(value) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);
@@ -56,6 +66,7 @@ export function validateDeckSpec(spec) {
     if (!["hero", "two-column", "section", "continuation", "table", "icon-list"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', 'continuation', 'table', or 'icon-list'.`);
     if (slide.columnGap != null && (!Number.isFinite(slide.columnGap) || slide.columnGap < 16 || slide.columnGap > 96)) throw new Error(`slides[${index}].columnGap must be between 16 and 96.`);
     if (slide.headlineSplit != null && (!slide.headlineSplit || !["center", "two-thirds"].includes(slide.headlineSplit.ratio) || !["left", "right"].includes(slide.headlineSplit.side))) throw new Error(`slides[${index}].headlineSplit must declare ratio center|two-thirds and side left|right.`);
+    if (slide.reviewIntent != null && (!slide.reviewIntent || !REVIEW_RELATIONSHIPS.has(slide.reviewIntent.relationship))) throw new Error(`slides[${index}].reviewIntent.relationship must be one of ${[...REVIEW_RELATIONSHIPS].join(" | ")}.`);
     if (declaredTopics) {
       assertString(slide.topicId, `slides[${index}].topicId`);
       if (!declaredTopics.has(slide.topicId)) throw new Error(`slides[${index}].topicId '${slide.topicId}' is not declared by coverage.topics.`);
@@ -496,6 +507,7 @@ export function compileDeck(input) {
       pageRole: designSystem.archetypes[slide.layout].pageRole,
       typedExceptions: [],
       ...(slide.topicId ? { topicId: slide.topicId, coverageRole: slide.coverageRole } : {}),
+      ...(slide.reviewIntent ? { reviewIntent: structuredClone(slide.reviewIntent) } : {}),
       layoutContract: {
         headline: { shapeId: headlineId, ...(titleSurfaceId ? { containerId: titleSurfaceId } : {}) },
         structuralSplits,

@@ -159,6 +159,104 @@ print(json.dumps({"captured": captured, "unknownRejected": unknown_rejected}, so
   assert.equal(report.unknownRejected, true);
 });
 
+test("profiles sourceSlide in presentation display order rather than slide-part number order", () => {
+  const script = `
+import json, sys
+sys.path.insert(0, ${JSON.stringify(designProfilePython)})
+from design_profile_core import archetypes, semantic_concept_inventory
+P = "http://schemas.openxmlformats.org/presentationml/2006/main"
+R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+PKG = "http://schemas.openxmlformats.org/package/2006/relationships"
+parts = {
+  "ppt/presentation.xml": f'<p:presentation xmlns:p="{P}" xmlns:r="{R}"><p:sldIdLst><p:sldId id="300" r:id="rId9"/><p:sldId id="301" r:id="rId2"/></p:sldIdLst></p:presentation>'.encode(),
+  "ppt/_rels/presentation.xml.rels": f'<Relationships xmlns="{PKG}"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId9" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide9.xml"/></Relationships>'.encode(),
+  "ppt/slides/slide2.xml": f'<p:sld xmlns:p="{P}"/>'.encode(),
+  "ppt/slides/slide9.xml": f'<p:sld xmlns:p="{P}"/>'.encode(),
+}
+def record(part, label):
+  return {
+    "part": part, "order": 0, "type": "sp", "semanticKind": "sp", "name": label,
+    "objectKey": part + "::" + label, "styleFingerprint": label, "presetGeometry": "rect",
+    "geometry": {"xEmu": 100000, "yEmu": 100000, "widthEmu": 4000000, "heightEmu": 600000},
+    "text": {"plainText": label, "fontSizesPt": [24]}, "fill": {"kind": "solidFill"},
+  }
+objects = [record("ppt/slides/slide2.xml", "Second displayed"), record("ppt/slides/slide9.xml", "First displayed")]
+slides, _ = archetypes(parts, objects)
+inventory = semantic_concept_inventory(objects, slides, {"widthEmu": 10000000, "heightEmu": 5625000})
+print(json.dumps({"parts": [item["part"] for item in slides], "concepts": [[item["sourceSlide"], item["slidePart"]] for item in inventory["concepts"]]}))
+`;
+  const result = spawnSync(python, ["-c", script], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.parts, ["ppt/slides/slide9.xml", "ppt/slides/slide2.xml"]);
+  assert.deepEqual(report.concepts, [[1, "ppt/slides/slide9.xml"], [2, "ppt/slides/slide2.xml"]]);
+});
+
+test("classifies topology from native geometry with neutral and non-English titles", () => {
+  const script = `
+import json, sys
+sys.path.insert(0, ${JSON.stringify(designProfilePython)})
+from design_profile_core import _composition_model, _composition_variant, _concept_item_count
+size = {"widthEmu": 10000000, "heightEmu": 6000000}
+def shape(name, left, top, width, height, preset="rect", text=""):
+  return {
+    "name": name, "semanticKind": "sp", "type": "sp", "presetGeometry": preset,
+    "geometry": {"xEmu": int(left * size["widthEmu"]), "yEmu": int(top * size["heightEmu"]), "widthEmu": int(width * size["widthEmu"]), "heightEmu": int(height * size["heightEmu"])},
+    "text": None if not text else {"plainText": text, "fontSizesPt": [18]},
+  }
+items = [
+  shape("triangle-group", .35, .18, .34, .58, preset="custom"),
+  shape("segment-a", .40, .20, .07, .34, preset="custom"),
+  shape("segment-b", .48, .36, .20, .20, preset="custom"),
+  shape("segment-c", .37, .52, .20, .20, preset="custom"),
+  shape("callout-a", .07, .28, .30, .12, text="Alpha"),
+  shape("callout-b", .64, .42, .30, .12, text="Beta"),
+  shape("callout-c", .18, .72, .30, .12, text="Gamma"),
+]
+items[0]["semanticKind"] = "grpSp"
+items[0]["type"] = "grpSp"
+substantive = [item for item in items if item["text"]]
+results = []
+for title in ("Untitled", "関係の構造"):
+  model, _, _ = _composition_model(title, substantive, size, items)
+  count = _concept_item_count(model, title, [], items, size)
+  results.append([model, count, _composition_variant(model, title, count, items, size)])
+print(json.dumps(results, ensure_ascii=False))
+`;
+  const result = spawnSync(python, ["-c", script], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report, [
+    ["layered-diagram", 3, "triangular-cycle"],
+    ["layered-diagram", 3, "triangular-cycle"],
+  ]);
+});
+
+test("derives native table semantic-column topology instead of emitting a zero wildcard", () => {
+  const script = `
+import json, sys
+sys.path.insert(0, ${JSON.stringify(designProfilePython)})
+from design_profile_core import _concept_item_count
+size = {"widthEmu": 10000000, "heightEmu": 6000000}
+def item(kind, name, left, top, width, height, text=""):
+  return {
+    "name": name, "semanticKind": kind, "type": "graphicFrame" if kind == "table" else "sp", "presetGeometry": "rect",
+    "geometry": {"xEmu": int(left * size["widthEmu"]), "yEmu": int(top * size["heightEmu"]), "widthEmu": int(width * size["widthEmu"]), "heightEmu": int(height * size["heightEmu"])},
+    "text": None if not text else {"plainText": text, "fontSizesPt": [18]},
+  }
+items = [
+  item("sp", "header-a", .08, .20, .22, .05, "Alpha"),
+  item("sp", "header-b", .39, .20, .22, .05, "Beta"),
+  item("sp", "header-c", .70, .20, .22, .05, "Gamma"),
+  item("table", "native-table", .05, .28, .90, .55, "1"),
+]
+print(json.dumps({"count": _concept_item_count("table-matrix", "Unrelated topic", [], items, size)}))
+`;
+  const result = spawnSync(python, ["-c", script], { cwd: process.cwd(), encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).count, 3);
+});
+
 test("validates and loads a clone-only source-bound profile", async (t) => {
   const source = profileFixture();
   const validated = validateDesignProfile(source);

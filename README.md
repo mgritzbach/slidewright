@@ -82,7 +82,7 @@ Outputs are written to `outputs/demo/` and include the editable PPTX, rendered p
 
 ### Optional E6 partner review
 
-Set `"reviewMode": "executive-overlay"` in a guarded request to receive two decks: the clean verified `deck.pptx` and `deck.executive-review.pptx`, a separate editable copy with concise yellow partner-review boxes over claims, decisions, dense passages, or storyline transitions that need human judgment. Use `"reviewMode": "off"`—the default—to publish only the clean deck. Unsupported values fail before compilation.
+Set `"reviewMode": "executive-overlay"` in a guarded request to receive two decks: the clean verified `deck.pptx` and `deck.executive-review.pptx`, a separate editable copy with yellow partner-review boxes over exact claims, decisions, tables, frameworks, or storyline transitions that need human judgment. Each note names the target object, diagnoses the issue, explains the executive impact, recommends a concrete revision, and cites the selected reference concept when reference grounding is active. Notes are rejected if they repeat a sentence or cannot fit inside their own yellow block. Use `"reviewMode": "off"`—the default—to publish only the clean deck. Unsupported values fail before compilation.
 
 ```powershell
 npm run executive-review
@@ -213,6 +213,20 @@ npm run design-profile
 ```
 
 The verified `g22-v1` policy is deliberately clone-only: it edits declared native placeholder text inside a copy of the source deck and preserves undeclared objects. It does not claim arbitrary structural import or unrestricted generation from someone else's template. The benchmark uses a synthetic PowerPoint-authored fixture, exact-EMU geometry audits, eight destructive controls—including a rendered rim-geometry mutation—real PowerPoint save/reopen, and full-size visual review. Read the [design-profile contract](plugins/slidewright/skills/slidewright/references/design-profile.md) before applying it to an existing deck.
+
+### Reference-grounded new decks
+
+Version `0.3.0` adds a distinct path for creating a new deck from the design language of a reference presentation. Profiling inventories every viable source slide as a semantic design concept—statement, matrix, comparison, process, layered diagram, radial diagram, column cards, image-led editorial, or structured content—without aborting on standard DrawingML gradients. Every viable concept includes a normalized native-object reconstruction blueprint, named composition variant, and positive semantic item topology where required. The guarded builder resolves source tokens through actual display-order theme inheritance, records guides/master/layout/logo/chrome provenance, forbids silent font substitution, rejects unknown or incompatible topology, and labels a slide reference-derived only when an exact native editable adapter produces observable objects. `design-provenance.json` records the source slide, concept, model, variant, source/generated item counts, adapter evidence, inheritance, adaptation, and confidence, and the verifier recomputes those claims instead of trusting aggregates.
+
+```powershell
+node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs profile reference.pptx --out reference-profile.json
+node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs request request.json --out outputs/my-run --reference-profile reference-profile.json
+node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs request-verify outputs/my-run --out outputs/my-run-verification.json
+```
+
+For a deck of six slides or more, the build fails unless at least 75% of substantive slides are reference-derived, no more than two slides use a generic fallback, and at least six distinct reference concepts are used. This is a bounded native reconstruction path, not a promise of pixel-identical cloning of arbitrary SmartArt or proprietary assets. Use [the reference-grounding contract](docs/REFERENCE_GROUNDING.md) and inspect the emitted clean and review decks before delivery.
+
+For real-world acceptance, use the five-scenario [manual test plan](docs/MANUAL_TEST_PLAN_0.3.0.md). It captures first-open acceptance, editability, save/close/reopen stability, reference recognizability, E6 specificity, cleanup minutes, and screenshots by slide number.
 
 
 ## Feedback-safe layout contracts

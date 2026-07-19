@@ -190,14 +190,15 @@ export async function renderPlan(plan, { out, previewDir, executiveReview = null
         continue;
       }
       if (shape.type === "shape") {
-        slide.shapes.add({
+        const shapeOptions = {
           geometry: shape.geometry,
           name: shape.id,
           position: shape.position,
           fill: shape.fill,
           line: { style: "solid", fill: shape.line.color, width: shape.line.width },
-          borderRadius: "rounded-2xl",
-        });
+        };
+        if (["rect", "textbox", "roundRect"].includes(shape.geometry)) shapeOptions.borderRadius = "rounded-2xl";
+        slide.shapes.add(shapeOptions);
         continue;
       }
       const textbox = slide.shapes.add({
