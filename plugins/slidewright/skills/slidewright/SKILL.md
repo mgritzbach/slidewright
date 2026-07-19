@@ -32,6 +32,7 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Use equal outer margins and symmetric component padding unless the specification explicitly declares an intentional exception.
 - Choose the largest fitting size from the approved integer point scale. Never emit fractional point sizes.
 - Preserve text as native editable text and emphasis as independent runs.
+- In repeated bullets or list paragraphs with a leading label and explanation, keep the label/delimiter in its own emphasized run and every explanation in a separate consistent regular run. Reject whole-paragraph emphasis drift and label-style leakage during creation, translation, or edits.
 - Use auto-sizing as a deterministic compile step; do not delegate uncontrolled fractional shrinking to PowerPoint.
 - Keep every object inside the slide canvas and every single-line title on one line.
 - Never allow visible text boxes to overlap. A generic overlap declaration cannot waive text-to-text separation.

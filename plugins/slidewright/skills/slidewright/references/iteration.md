@@ -20,6 +20,6 @@ Run `scripts/slidewright.mjs iterate <plan.json> --manifest <edit.json> --out <u
 
 Version 1 supports single-run text replacement, run-level bold, text or fill color, bounded position fields, semantic native-shape chart values with their marks, and the gap of a named two-column layout. It does not claim arbitrary layout restructuring or native Office `c:chart` mutation.
 
-After every edit, run font audit, zero-warning lint, render, OOXML audit, and localized render comparison. Untouched named objects must retain their hashes, untouched pixels must be exact, and release fixtures must survive PowerPoint save and reopen.
+After every edit, run font audit, zero-warning lint, render, OOXML audit, and localized render comparison. The named editor itself rejects an invalid post-edit plan, including a repeated `Label — explanation` item whose body inherits the label's emphasis. Untouched named objects must retain their hashes, untouched pixels must be exact, and release fixtures must survive PowerPoint save and reopen.
 
 The PPTX stores canonical chart-component metadata in native shape descriptions so data values remain reconstructable without the external plan. Treat a missing, stale, or hash-invalid payload as a build failure.

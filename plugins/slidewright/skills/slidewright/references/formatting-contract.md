@@ -22,11 +22,13 @@
 - Give constrained headlines an archetype-specific line and auto-size budget. Shorten the copy before allowing multiple shrink steps or excessive wrapping.
 - Preserve paragraph boundaries and use only the deck spacing tokens, normally `0, 6, 12 pt`. Avoid stacked before/after spacing greater than the deck maximum.
 - Compare repeated components by master, archetype, family, slot, and declared variant. Headline/body hierarchy may not drift between equivalent instances.
+- In repeated `Label — explanation`, `Label: explanation`, or equivalent bullet patterns, keep the label and delimiter in an emphasized native run and the explanation in a separate regular run. Peer explanations must share one style; a label-specific italic or color nuance must not leak into its body.
 
 ## Editability
 
 - Render visible text as native PowerPoint text.
 - Preserve emphasis through rich-text runs, not separate raster labels.
+- Re-run the formatting linter after every named edit. Reject an edit that collapses a mixed-emphasis boundary or makes one peer explanation inherit its label emphasis.
 - Use native semantic charts, tables, shapes, and connectors when users may edit them.
 - Bind every non-decorative icon to the exact label and a declared semantic concept. The icon name must be allowed by the deck's ontology; for example, `Goal` maps to `target` or `bullseye`.
 - Rasterize only photographs, illustrations, and other true visual assets.
@@ -35,4 +37,4 @@
 
 Require passing plan and rendered-layout lint, an exported PPTX, OOXML audit, rendered previews, and full-size visual review. Use stable object names to map planned objects to actual exported bounds and line counts; missing or ambiguous mappings fail the build.
 
-Run `npm run universal-design` in the repository to exercise seven slides across six unrelated page archetypes, a native table, semantic icons, native paragraph spacing, 21 isolated plan controls, seven exported-OOXML controls, seven hash-bound full-size visual baselines, and single-item 45x icon-card copy stress. The controls include declaration removal, contract mutation, and custom-contract injection so component, backing, icon, typography, and spacing rules cannot be waived by deleting, widening, or rebinding metadata.
+Run `npm run universal-design` in the repository to exercise seven slides across six unrelated page archetypes, a native table, semantic icons, native paragraph spacing, 21 isolated plan controls, seven exported-OOXML controls, seven hash-bound full-size visual baselines, and single-item 45x icon-card copy stress. Run `npm run emphasis-pattern` to render and audit repeated label/body rich text and reject whole-paragraph emphasis drift or a single leaked explanation. The controls include declaration removal, contract mutation, and custom-contract injection so component, backing, icon, typography, spacing, and rich-text rules cannot be waived by deleting, widening, or rebinding metadata.

@@ -16,6 +16,7 @@ The adapter may split flexible hero body/callout copy, two-column bodies, sectio
 ## Invariants
 
 - Preserve every normalized source word token and its bold, italic, color, bullet, and level state exactly once and in order.
+- Preserve semantic run boundaries for repeated label/body patterns: translation and continuation relayout may normalize whitespace, but may not turn `bold label — regular explanation` into a whole-paragraph style or let one item's label emphasis leak into its explanation.
 - Allow whitespace and source run boundaries to normalize at continuation breaks; do not claim byte-exact source copy or original run segmentation.
 - Keep the original slide first, then place labeled continuation slides immediately after it in field order.
 - Balance chunks across the minimum fitting slide count instead of leaving a nearly empty final continuation.

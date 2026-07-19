@@ -117,6 +117,112 @@ function boldProfile(shape) {
   return "mixed";
 }
 
+function emphasisStyle(run) {
+  return JSON.stringify({
+    bold: run?.bold === true,
+    italic: run?.italic === true,
+    color: typeof run?.color === "string" ? run.color.toUpperCase() : null,
+  });
+}
+
+function dominantRunStyle(runs, start, end) {
+  const counts = new Map();
+  let offset = 0;
+  for (const run of runs ?? []) {
+    const text = String(run?.text ?? "");
+    const runStart = offset;
+    const runEnd = offset + text.length;
+    offset = runEnd;
+    const overlapStart = Math.max(start, runStart);
+    const overlapEnd = Math.min(end, runEnd);
+    if (overlapEnd <= overlapStart) continue;
+    const characters = text.slice(overlapStart - runStart, overlapEnd - runStart).replace(/[\s\u00a0]/gu, "").length;
+    if (!characters) continue;
+    const key = emphasisStyle(run);
+    const record = counts.get(key) ?? { characters: 0, order: counts.size };
+    record.characters += characters;
+    counts.set(key, record);
+  }
+  return [...counts.entries()].sort((left, right) => right[1].characters - left[1].characters || left[1].order - right[1].order)[0]?.[0] ?? null;
+}
+
+function runStylesInRange(runs, start, end) {
+  const styles = new Set();
+  let offset = 0;
+  for (const run of runs ?? []) {
+    const text = String(run?.text ?? "");
+    const runStart = offset;
+    const runEnd = offset + text.length;
+    offset = runEnd;
+    const overlapStart = Math.max(start, runStart);
+    const overlapEnd = Math.min(end, runEnd);
+    if (overlapEnd <= overlapStart) continue;
+    if (!text.slice(overlapStart - runStart, overlapEnd - runStart).replace(/[\s\u00a0]/gu, "").length) continue;
+    styles.add(emphasisStyle(run));
+  }
+  return styles;
+}
+
+function labelBodyEmphasisProfile(paragraph) {
+  const runs = paragraph?.runs ?? [];
+  const text = textFromRuns(runs);
+  const match = /(?:\s([—–-])|(:))(?=\s)/u.exec(text);
+  if (!match) return null;
+  const delimiter = match[1] ?? match[2];
+  const delimiterIndex = match.index + match[0].lastIndexOf(delimiter);
+  const labelStyle = dominantRunStyle(runs, 0, delimiterIndex + delimiter.length);
+  const separatorStyle = dominantRunStyle(runs, delimiterIndex, delimiterIndex + delimiter.length);
+  const bodyStyle = dominantRunStyle(runs, delimiterIndex + delimiter.length, text.length);
+  const bodyStyles = runStylesInRange(runs, delimiterIndex + delimiter.length, text.length);
+  if (!labelStyle || !bodyStyle) return null;
+  return {
+    delimiterKind: delimiter === ":" ? "colon" : "dash",
+    labelStyle,
+    bodyStyle,
+    bodyIsUniform: bodyStyles.size === 1,
+    labelIsDistinct: labelStyle !== bodyStyle || separatorStyle !== bodyStyle,
+  };
+}
+
+function repeatedEmphasisBlocks(paragraphs) {
+  const blocks = [];
+  let current = [];
+  let currentKey = null;
+  const flush = () => {
+    if (current.length >= 2) blocks.push(current);
+    current = [];
+    currentKey = null;
+  };
+  for (const [index, paragraph] of (paragraphs ?? []).entries()) {
+    const profile = labelBodyEmphasisProfile(paragraph);
+    const key = profile ? `${paragraph.bullet === true}|${paragraph.level ?? 0}|${profile.delimiterKind}` : null;
+    if (!profile) {
+      flush();
+      continue;
+    }
+    if (currentKey !== null && key !== currentKey) flush();
+    currentKey = key;
+    current.push({ index, profile });
+  }
+  flush();
+  return blocks;
+}
+
+function lintRepeatedParagraphEmphasis(slide, shape, diagnostics) {
+  for (const block of repeatedEmphasisBlocks(shape.text?.paragraphs ?? [])) {
+    const bodyStyles = new Set(block.map((item) => item.profile.bodyStyle));
+    const distinctStates = new Set(block.map((item) => item.profile.labelIsDistinct));
+    const everyBodyIsUniform = block.every((item) => item.profile.bodyIsUniform);
+    if (bodyStyles.size === 1 && distinctStates.size === 1 && everyBodyIsUniform) continue;
+    const indexes = block.map((item) => item.index + 1).join(", ");
+    diagnostics.push(diagnostic(
+      "SW030", "error", slide.id, shape.id,
+      `Repeated label–body paragraphs ${indexes} do not share one emphasis pattern; label emphasis or explanation weight leaked between peer items.`,
+      "Keep each leading label and delimiter in its own native emphasized run, keep the explanation in a separate regular run, and apply the same body style to every peer item.",
+    ));
+  }
+}
+
 function styleSignature(shape) {
   return JSON.stringify({
     typographyRole: shape.typographyRole,
@@ -557,6 +663,7 @@ export function lintPlan(plan) {
       if (shape.type !== "text") continue;
 
       const paragraphs = shape.text?.paragraphs ?? [{ spaceBeforePt: 0, spaceAfterPt: 0 }];
+      lintRepeatedParagraphEmphasis(slide, shape, diagnostics);
       let previousAfter = 0;
       for (const [paragraphIndex, paragraph] of paragraphs.entries()) {
         const before = Number(paragraph.spaceBeforePt ?? 0);

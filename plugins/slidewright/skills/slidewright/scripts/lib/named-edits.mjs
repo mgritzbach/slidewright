@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { fitText, textFromRuns } from "./typography.mjs";
+import { lintPlan } from "./linter.mjs";
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -57,6 +58,19 @@ function recomputeFit(shape) {
   shape.style.fontSizePt = fit.fontSizePt;
 }
 
+function correspondingParagraphRun(shape, flatRunIndex) {
+  let cursor = 0;
+  for (const [paragraphIndex, paragraph] of (shape.text?.paragraphs ?? []).entries()) {
+    if (paragraphIndex > 0) cursor += 1;
+    if (paragraph.bullet === true) cursor += 1;
+    for (const run of paragraph.runs ?? []) {
+      if (cursor === flatRunIndex) return run;
+      cursor += 1;
+    }
+  }
+  return null;
+}
+
 function numericPatch(position, patch, id) {
   for (const [key, value] of Object.entries(patch ?? {})) {
     if (!["left", "top", "width", "height", "rotation"].includes(key) || !Number.isFinite(value)) throw new Error(`Invalid position patch '${key}' for '${id}'.`);
@@ -109,6 +123,8 @@ export function applyNamedEdits(inputPlan, edits) {
       if (typeof edit.value !== "string" || !edit.value.trim()) throw new Error("Text edits require a non-empty value.");
       if (shape.text.runs.length !== 1) throw new Error(`Text edit target '${edit.targetId}' must have exactly one run in named-edits v1.`);
       shape.text.runs[0].text = edit.value;
+      const paragraphRun = correspondingParagraphRun(shape, 0);
+      if (paragraphRun) paragraphRun.text = edit.value;
       recomputeFit(shape);
       changedIds.add(shape.id);
       continue;
@@ -119,6 +135,8 @@ export function applyNamedEdits(inputPlan, edits) {
       if (!Number.isInteger(runIndex) || !shape.text.runs[runIndex]) throw new Error(`Bold edit run ${runIndex} does not exist on '${edit.targetId}'.`);
       if (typeof edit.value !== "boolean") throw new Error("Bold edits require a boolean value.");
       shape.text.runs[runIndex].bold = edit.value;
+      const paragraphRun = correspondingParagraphRun(shape, runIndex);
+      if (paragraphRun) paragraphRun.bold = edit.value;
       changedIds.add(shape.id);
       continue;
     }
@@ -180,6 +198,11 @@ export function applyNamedEdits(inputPlan, edits) {
   const expectedChangedIds = [...changedIds].sort();
   const comparison = compareNamedFingerprints(inputPlan, plan, expectedChangedIds);
   if (!comparison.valid) throw new Error(`Named edit changed an unauthorized object or was a no-op: expected ${expectedChangedIds.join(", ")}; found ${comparison.actualChangedIds.join(", ")}.`);
+  const quality = lintPlan(plan);
+  if (!quality.valid) {
+    const rules = [...new Set(quality.diagnostics.map((item) => item.ruleId))].sort();
+    throw new Error(`Named edit violates the formatting contract: ${rules.join(", ")}.`);
+  }
   plan.build = { deterministicHash: planContentHash(plan).slice(0, 16) };
   return { plan, changedIds: expectedChangedIds, comparison };
 }

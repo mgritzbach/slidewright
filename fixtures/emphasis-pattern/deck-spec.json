@@ -1,0 +1,52 @@
+{
+  "version": "0.2",
+  "title": "Repeated emphasis pattern fixture",
+  "theme": {
+    "fontFamily": "Arial",
+    "colors": {
+      "accent": "#4F46E5",
+      "accentSoft": "#E0E7FF"
+    }
+  },
+  "slides": [
+    {
+      "id": "emphasis-pattern",
+      "layout": "continuation",
+      "eyebrow": "RICH-TEXT CONTRACT",
+      "title": "Labels stay emphasized; explanations stay regular",
+      "body": {
+        "paragraphs": [
+          {
+            "runs": [
+              { "text": "EXAMPLES", "bold": false, "italic": true }
+            ]
+          },
+          {
+            "runs": [
+              { "text": "News summary —", "bold": true, "italic": false },
+              { "text": " Receive relevant personalized news every morning", "bold": false, "italic": false }
+            ]
+          },
+          {
+            "runs": [
+              { "text": "Page update —", "bold": true, "italic": false },
+              { "text": " Keep your website continuously up to date", "bold": false, "italic": false }
+            ]
+          },
+          {
+            "runs": [
+              { "text": "Goal check —", "bold": true, "italic": false },
+              { "text": " Get hourly progress updates on long tasks", "bold": false, "italic": false }
+            ]
+          },
+          {
+            "runs": [
+              { "text": "To-do list —", "bold": true, "italic": true },
+              { "text": " Create a morning list from email, notes, and calendars", "bold": false, "italic": false }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

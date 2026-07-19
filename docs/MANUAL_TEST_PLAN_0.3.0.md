@@ -53,6 +53,7 @@ In PowerPoint, make all of these edits in a delivered deck:
 
 1. Change one title and add roughly 25% more body copy.
 2. Bold and unbold individual words in a mixed-emphasis paragraph.
+   Also inspect a repeated `Label — explanation` list: every label stays emphasized, every explanation stays regular, and a label-specific italic nuance does not spread into its body.
 3. Change one chart value and one native-table cell.
 4. Ungroup and regroup one graphic.
 5. Move one diagram node and adjust one connector.

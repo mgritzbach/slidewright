@@ -68,6 +68,14 @@ npm run universal-design
 
 The command rebuilds seven slides across six archetypes, checks 21 isolated plan mutants (including table-cell overflow, contract mutation, custom-contract injection, and 6+6pt stacked spacing) and seven exported-OOXML mutants (including visible backing spill, repeated-component style, and headline-size drift), binds the native PPTX to 45 named objects, 35 native paragraphs, one native table, four semantic icons, zero pictures, and seven individually reviewed full-size visual baselines. A 45x single-card copy stress must split into continuation slides while every peer card keeps one common body style. Any rendered drift requires a new full-size review before the baseline can be updated.
 
+Repeated `Label — explanation` and `Label: explanation` patterns have a separate run-level release gate:
+
+```powershell
+npm run emphasis-pattern
+```
+
+The gate renders an editable PPTX, proves every label and explanation remains a separate native run, permits label-only nuances such as italics, and plan-binds the final OOXML back to the compiled run styles. `SW030` rejects alternating whole-paragraph emphasis, a fully bold explanation, or even label emphasis leaking into only the first body word. The same invariant runs after translation/adaptive relayout and after named edits.
+
 Supported local overrides are `SLIDEWRIGHT_CODEX_RUNTIME_ROOT` and `SLIDEWRIGHT_ARTIFACT_TOOL_PATH`. They must point to existing local resources; Slidewright never interprets them as URLs or executes an external bootstrap helper. A clean host with no supported runtime exits once with `SW_RUNTIME_UNAVAILABLE` and one recovery instruction. Test the current native-host checkpoint with:
 
 ```powershell

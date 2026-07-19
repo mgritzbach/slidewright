@@ -72,4 +72,6 @@ Use a string for uniform text. Use runs for editable emphasis:
 
 Do not encode formatting with Markdown markers inside visible text.
 
+For repeated `Label — explanation` items, encode the label plus delimiter and the explanation as separate runs. Keep the explanation style consistent across peer items; do not bold or italicize the whole paragraph merely because its leading label is emphasized.
+
 For multiple native paragraphs, use `paragraphs` and optional `spaceBeforePt`/`spaceAfterPt` values from `0`, `6`, or `12`. Equivalent repeated components must keep their role and declared variant; do not encode one-off formatting in the content specification.
