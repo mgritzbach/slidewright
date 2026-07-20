@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "slidewright-c02-tag-installation-proof/v1",
+  "valid": true,
+  "repository": "mgritzbach/slidewright",
+  "tag": "v0.4.0",
+  "version": "0.4.0",
+  "commit": "9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+  "releaseUrl": "https://github.com/mgritzbach/slidewright/releases/tag/v0.4.0",
+  "workflow": {
+    "runId": "29741701040",
+    "runUrl": "https://github.com/mgritzbach/slidewright/actions/runs/29741701040",
+    "event": "push",
+    "headBranch": "v0.4.0",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "artifactArchives": [
+    {
+      "id": "8460617895",
+      "name": "slidewright-installation-Linux-9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+      "digest": "sha256:1946a5762f3c316b6561b865e637e64237aaa714df77c9cb6d7c097dfa3742fa"
+    },
+    {
+      "id": "8460626763",
+      "name": "slidewright-installation-Windows-9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+      "digest": "sha256:6c7db2974e06b028ef401151521e1b2568b8d6103ed3055a5f90b03a6a7071a5"
+    },
+    {
+      "id": "8460618121",
+      "name": "slidewright-installation-macOS-9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+      "digest": "sha256:e32be413453f299c85cb0257da94443eab0b61ab36821de22b885d204df81b5b"
+    },
+    {
+      "id": "8460633344",
+      "name": "slidewright-installation-aggregate-9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+      "digest": "sha256:956a63b26b7edd8593a999533a13968e7ca622031abc6966c6d93f240f31a1ea"
+    }
+  ],
+  "aggregate": {
+    "schemaVersion": "slidewright-installation-aggregate/v1",
+    "valid": true,
+    "gitSha": "9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+    "codexPackage": "@openai/codex",
+    "codexVersion": "0.144.5",
+    "platforms": ["darwin", "linux", "win32"],
+    "surfaces": ["cli", "desktop-app-server-backend", "ide-app-server-backend"],
+    "pluginTreeHash": "dd9dcd5b9b234d286401ec428b7f6b499b0b845e5a2d537698f283fc53254981",
+    "contractHash": "43caf91dc248117bd415ecf6b9747d917888b44d7b9251f2b5ddcce5b070d7cc",
+    "implementationHash": "027380ffd4774d95119d0cfa219e87ec329ad14a412c926d817584b44ad6b987",
+    "aggregateHash": "1f5df789d91d98ce08e5871c4da2ee3e91108c1df662e4c64b94a5c7c5d41518",
+    "hostScorecardHashes": {
+      "darwin": "ec6e6fd541d3333d5d8c3c8e9cd47c03a994b477fcc83c67fd74b3c4d5fbbd94",
+      "linux": "127dc7634b3ea9f05bf3eee5d429bcda3dd08543f40c381b4c5d534e7baa36a9",
+      "win32": "d21fff10b8f075f4c41027873671e7de558bf6e01e23da43f13935d22c2e526d"
+    }
+  },
+  "independentVerification": {
+    "downloadedAllThreeHostArtifacts": true,
+    "rawCommandLogsVerified": 54,
+    "reaggregatedOnExactCheckout": true,
+    "locallyRecomputedAggregateHash": "1f5df789d91d98ce08e5871c4da2ee3e91108c1df662e4c64b94a5c7c5d41518",
+    "matchesCiAggregate": true
+  },
+  "limitations": [
+    "App-server discovery is backend evidence, not a substitute for a genuine primary Codex Desktop task.",
+    "App-server discovery is backend evidence, not a substitute for a genuine primary VS Code extension task.",
+    "C02 remains 0 until both nonce-bound primary-client proofs exist on this exact public release."
+  ]
+}

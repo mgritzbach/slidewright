@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "slidewright-c02-cli-proof/v2",
+  "valid": true,
+  "surface": "codex-cli",
+  "source": {
+    "repository": "mgritzbach/slidewright",
+    "tag": "v0.4.0",
+    "version": "0.4.0",
+    "commit": "9aa1a6500dcb4a8d4b0b58960a995fb331f05f55",
+    "releaseUrl": "https://github.com/mgritzbach/slidewright/releases/tag/v0.4.0"
+  },
+  "installation": {
+    "method": "isolated-code-home-copy-of-byte-verified-public-install",
+    "logicalSkillPath": "$CODEX_HOME/skills/slidewright",
+    "validatorPassed": true,
+    "installedSkillNormalizedSha256": "137da6f00c3228910d44de6b04981883b2c648018dd88e7dfd2dd9cd593ab75b",
+    "publicSourceNormalizedSha256": "137da6f00c3228910d44de6b04981883b2c648018dd88e7dfd2dd9cd593ab75b",
+    "bytesMatchPublicSource": true
+  },
+  "client": {
+    "name": "OpenAI Codex CLI",
+    "version": "0.118.0",
+    "model": "gpt-5.4",
+    "sandbox": "read-only",
+    "ephemeral": true,
+    "exitCode": 0,
+    "threadId": "019f7f80-e6f0-7891-97a8-78ce2945e8b4"
+  },
+  "probe": {
+    "explicitSkillInvocation": "$slidewright",
+    "selectionAcknowledged": true,
+    "installedReferenceRead": "references/complaint-contract.md",
+    "installedReferenceReadExitCode": 0,
+    "installedReferenceSha256": "77061cc020612b2279d5f6bb844c7813a134b811b217b1a4571d2682e8509663",
+    "rawClientOutputSha256": "719fb72c7d6b3cbe63760081f02c529b10adc149cae5b4ccb100b3d9a02c84f4",
+    "lastMessageSha256": "d16b1fd54163b3bfb4e4802e63585b18ec977c80a46fc65d2ae5f33c607cc036",
+    "requestedExactDiagnosticResponseObserved": false
+  },
+  "limitations": [
+    "This proves fresh Codex CLI discovery, explicit selection, and an installed public-byte read on v0.4.0 only.",
+    "The response reverted to Slidewright's ordinary intake flow, so this proof does not claim exact diagnostic-response compliance.",
+    "Fresh primary Codex Desktop and VS Code extension nonce proofs remain required before C02 can advance to 1."
+  ]
+}

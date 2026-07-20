@@ -4,6 +4,16 @@ C02 is an adoption gate, not an installation-only gate. A successful CLI install
 an app-server backend response, or an agent saying that Slidewright is available
 does not prove that a real Codex client injected and used the installed skill.
 
+The current public-release baseline is v0.4.0 at commit
+`9aa1a6500dcb4a8d4b0b58960a995fb331f05f55`. Its tag-triggered GitHub Actions run
+`29741701040` independently passed clean-home plugin installation on Linux,
+Windows, and macOS. Downloading all three host artifacts and replaying their 54
+raw command-log hash checks on the exact checkout reproduced aggregate hash
+`1f5df789d91d98ce08e5871c4da2ee3e91108c1df662e4c64b94a5c7c5d41518`.
+A fresh Codex CLI task also explicitly selected `$slidewright` and read the
+installed public complaint contract. Those machine proofs are committed under
+`evidence/c02/v2/`; they do not substitute for the two primary GUI clients.
+
 Completion requires three distinct surfaces on one exact public release:
 
 1. the existing clean-home CLI installation proof;
