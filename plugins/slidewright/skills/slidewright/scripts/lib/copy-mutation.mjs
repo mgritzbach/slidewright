@@ -30,6 +30,11 @@ export function mutateDeckCopy(input, factor) {
       slide[side].heading = mutateText(slide[side].heading, factor);
       slide[side].body = mutateText(slide[side].body, factor);
     }
+    for (const item of slide.items ?? []) {
+      item.label = mutateText(item.label, factor);
+      item.body = mutateText(item.body, factor);
+    }
+    if (slide.synthesis != null) slide.synthesis = mutateText(slide.synthesis, factor);
   }
   spec.title = `${spec.title} copy-${Math.round(factor * 100)}`;
   return spec;
@@ -48,6 +53,12 @@ export function mutateFlexibleDeckCopy(input, factor) {
       slide.subtitle = mutateText(slide.subtitle, factor);
     } else if (slide.layout === "continuation") {
       slide.body = mutateText(slide.body, factor);
+    } else if (slide.layout === "point-grid") {
+      for (const item of slide.items ?? []) item.body = mutateText(item.body, factor);
+    } else if (slide.layout === "opposition") {
+      slide.left.body = mutateText(slide.left.body, factor);
+      slide.right.body = mutateText(slide.right.body, factor);
+      if (slide.synthesis != null) slide.synthesis = mutateText(slide.synthesis, factor);
     }
   }
   spec.title = `${spec.title} flexible-copy-${Math.round(factor * 100)}`;

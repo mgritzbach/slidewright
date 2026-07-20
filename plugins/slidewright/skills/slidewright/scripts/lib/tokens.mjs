@@ -69,6 +69,18 @@ export const DEFAULT_ARCHETYPES = Object.freeze({
     requiresSemanticIcons: true,
     minimumSemanticIcons: 2,
   }),
+  "point-grid": Object.freeze({
+    pageRole: "structured-argument",
+    requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body"]),
+    requiredBackedRoles: Object.freeze({ subheading: 2, body: 2 }),
+    componentFamilies: Object.freeze({ "point-cell": Object.freeze({ minimumInstances: 2, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
+  }),
+  opposition: Object.freeze({
+    pageRole: "opposition",
+    requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body"]),
+    requiredBackedRoles: Object.freeze({ subheading: 2, body: 2 }),
+    componentFamilies: Object.freeze({ "opposition-side": Object.freeze({ minimumInstances: 2, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["left", "right"]) }) }),
+  }),
 });
 
 export const DEFAULT_ICON_ONTOLOGY = Object.freeze({

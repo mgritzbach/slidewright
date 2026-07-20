@@ -376,6 +376,51 @@ function lintComponentFamilies(plan, diagnostics) {
   }
 }
 
+function lintPeerGroups(slide, byId, diagnostics, tolerance) {
+  for (const group of slide.layoutContract?.peerGroups ?? []) {
+    const reasons = [];
+    const members = (group.memberIds ?? []).map((id) => byId.get(id));
+    const rows = group.rows ?? [];
+    if (!group.id || members.some((member) => !member)) reasons.push("member binding is incomplete");
+    if (!rows.length || rows.some((count) => !Number.isInteger(count) || count < 1) || rows.reduce((sum, count) => sum + count, 0) !== members.length) reasons.push("row declaration does not match the peer count");
+    const gap = Number(group.gap);
+    if (!Number.isFinite(gap) || gap < QUALITY_THRESHOLDS.minimumPeerGapPx) reasons.push(`declared gap must be at least ${QUALITY_THRESHOLDS.minimumPeerGapPx}px`);
+    if (!reasons.length) {
+      let offset = 0;
+      const rowRects = [];
+      for (const count of rows) {
+        const row = members.slice(offset, offset + count).map((member) => rect(member));
+        offset += count;
+        rowRects.push(row);
+        const top = row[0].top;
+        const height = row[0].height;
+        if (group.equalWithinRows === true && row.some((item) => !nearlyEqual(item.top, top, tolerance) || !nearlyEqual(item.height, height, tolerance) || !nearlyEqual(item.width, row[0].width, tolerance))) reasons.push("peers within a row do not share equal top, width, and height geometry");
+        for (let index = 1; index < row.length; index += 1) {
+          const actualGap = row[index].left - row[index - 1].right;
+          if (!nearlyEqual(actualGap, gap, tolerance)) reasons.push(`horizontal peer gap ${actualGap}px differs from ${gap}px`);
+        }
+        if (group.centeredIncompleteRows === true) {
+          const rowLeft = row[0].left;
+          const rowRight = row.at(-1).right;
+          const frameCenter = slide.frame.left + slide.frame.width / 2;
+          if (!nearlyEqual((rowLeft + rowRight) / 2, frameCenter, tolerance)) reasons.push("row is not centered within the content frame");
+        }
+      }
+      for (let index = 1; index < rowRects.length; index += 1) {
+        const previousBottom = Math.max(...rowRects[index - 1].map((item) => item.bottom));
+        const currentTop = Math.min(...rowRects[index].map((item) => item.top));
+        const actualGap = currentTop - previousBottom;
+        if (!nearlyEqual(actualGap, gap, tolerance)) reasons.push(`vertical peer gap ${actualGap}px differs from ${gap}px`);
+      }
+    }
+    if (reasons.length) diagnostics.push(diagnostic(
+      "SW031", "error", slide.id, group.id ?? null,
+      `Count-aware peer geometry failed: ${[...new Set(reasons)].join("; ")}.`,
+      "Restore equal peer geometry, exact gutters, and centered incomplete rows; use one declared emphasis variant instead of accidental size drift.",
+    ));
+  }
+}
+
 function effectiveTextBackground(slide, shapes, textIndex, tolerance) {
   const textRect = rect(shapes[textIndex]);
   const containers = shapes
@@ -467,6 +512,7 @@ export function lintPlan(plan) {
   for (const slide of plan.slides ?? []) {
     const shapes = slide.shapes ?? [];
     const byId = new Map(shapes.map((shape) => [shape.id, shape]));
+    lintPeerGroups(slide, byId, diagnostics, tolerance);
     const insetTokens = new Set(plan.designSystem?.insetTokensPx ?? []);
     const maximumInset = Number(plan.designSystem?.maximumInsetPx);
     const paragraphSpacing = new Set(plan.designSystem?.paragraphSpacingPt ?? []);

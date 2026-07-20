@@ -1,0 +1,135 @@
+{
+  "version": "0.2",
+  "title": "Consulting structure benchmark",
+  "theme": {
+    "fontFamily": "Arial",
+    "colors": {
+      "background": "#FFFFFF",
+      "surface": "#FFFFFF",
+      "text": "#172033",
+      "muted": "#465166",
+      "subtle": "#8B95A7",
+      "accent": "#B71833",
+      "accentSoft": "#FBE9ED",
+      "border": "#D8DCE4",
+      "success": "#157347"
+    }
+  },
+  "slides": [
+    {
+      "id": "two-points",
+      "layout": "point-grid",
+      "title": "Two conditions determine whether the program can scale",
+      "items": [
+        { "id": "demand", "label": "Demand", "body": "Users must experience a recurring problem with measurable urgency." },
+        { "id": "delivery", "label": "Delivery", "body": "The operating model must solve that problem reliably at attractive cost." }
+      ]
+    },
+    {
+      "id": "three-points",
+      "layout": "point-grid",
+      "title": "Three moves convert the strategy into execution",
+      "items": [
+        { "id": "focus", "label": "Focus", "body": "Choose the segments where the advantage is strongest." },
+        { "id": "build", "label": "Build", "body": "Concentrate resources on the few capabilities that matter." },
+        { "id": "scale", "label": "Scale", "body": "Replicate the proven model with clear owners and measures." }
+      ]
+    },
+    {
+      "id": "four-points",
+      "layout": "point-grid",
+      "title": "Four workstreams address the full change agenda",
+      "items": [
+        { "id": "market", "label": "Market", "body": "Prioritize customers and define the value proposition." },
+        { "id": "offer", "label": "Offer", "body": "Simplify the portfolio around defensible use cases." },
+        { "id": "operations", "label": "Operations", "body": "Redesign processes, roles, and decision rights." },
+        { "id": "enablers", "label": "Enablers", "body": "Align data, technology, talent, and governance." }
+      ]
+    },
+    {
+      "id": "five-points",
+      "layout": "point-grid",
+      "title": "Five design choices shape the target operating model",
+      "items": [
+        { "id": "mandate", "label": "Mandate", "body": "Define the outcome and the decisions in scope." },
+        { "id": "structure", "label": "Structure", "body": "Set accountabilities across central and local teams." },
+        { "id": "process", "label": "Process", "body": "Standardize the few critical end-to-end routines." },
+        { "id": "metrics", "label": "Metrics", "body": "Track value, pace, quality, and adoption." },
+        { "id": "cadence", "label": "Cadence", "body": "Create a regular forum for decisions and escalation." }
+      ]
+    },
+    {
+      "id": "six-points",
+      "layout": "point-grid",
+      "title": "Six capabilities create a repeatable growth engine",
+      "items": [
+        { "id": "insight", "label": "Insight", "body": "Translate evidence into a focused opportunity thesis." },
+        { "id": "proposition", "label": "Proposition", "body": "Match the offer to the highest-value customer job." },
+        { "id": "channel", "label": "Channel", "body": "Reach customers through the most efficient route." },
+        { "id": "conversion", "label": "Conversion", "body": "Equip teams with simple, testable sales motions." },
+        { "id": "retention", "label": "Retention", "body": "Use service and outcomes to reinforce loyalty." },
+        { "id": "learning", "label": "Learning", "body": "Feed performance data back into the next cycle." }
+      ]
+    },
+    {
+      "id": "seven-points",
+      "layout": "point-grid",
+      "title": "Seven controls keep implementation on course",
+      "items": [
+        { "id": "outcome", "label": "Outcome", "body": "State one measurable result." },
+        { "id": "owner", "label": "Owner", "body": "Name one accountable leader." },
+        { "id": "scope", "label": "Scope", "body": "Fix the boundaries and interfaces." },
+        { "id": "plan", "label": "Plan", "body": "Sequence the critical actions." },
+        { "id": "resources", "label": "Resources", "body": "Commit capacity and funding." },
+        { "id": "risks", "label": "Risks", "body": "Surface assumptions and mitigations." },
+        { "id": "review", "label": "Review", "body": "Use evidence to decide and adapt." }
+      ]
+    },
+    {
+      "id": "eight-points",
+      "layout": "point-grid",
+      "title": "Eight questions provide a complete investment screen",
+      "items": [
+        { "id": "problem", "label": "Problem", "body": "Is the need material?" },
+        { "id": "customer", "label": "Customer", "body": "Who owns the need?" },
+        { "id": "market", "label": "Market", "body": "Is the pool attractive?" },
+        { "id": "solution", "label": "Solution", "body": "Does the offer work?" },
+        { "id": "edge", "label": "Advantage", "body": "Why will it win?" },
+        { "id": "model", "label": "Economics", "body": "Can it earn returns?" },
+        { "id": "team", "label": "Team", "body": "Can the team execute?" },
+        { "id": "risk", "label": "Risk", "body": "What could break the case?" }
+      ]
+    },
+    {
+      "id": "nine-points",
+      "layout": "point-grid",
+      "title": "Nine levers cover the transformation system without overlap",
+      "items": [
+        { "id": "vision", "label": "Vision", "body": "Direction" },
+        { "id": "portfolio", "label": "Portfolio", "body": "Choices" },
+        { "id": "value", "label": "Value", "body": "Business case" },
+        { "id": "organization", "label": "Organization", "body": "Accountability" },
+        { "id": "process", "label": "Process", "body": "Ways of working" },
+        { "id": "technology", "label": "Technology", "body": "Platforms" },
+        { "id": "people", "label": "People", "body": "Skills" },
+        { "id": "governance", "label": "Governance", "body": "Decisions" },
+        { "id": "adoption", "label": "Adoption", "body": "Behavior" }
+      ]
+    },
+    {
+      "id": "opposition",
+      "layout": "opposition",
+      "title": "Centralization improves control, while local ownership preserves speed",
+      "axisLabel": "VS",
+      "left": {
+        "heading": "Centralize when consistency creates value",
+        "body": "Use common standards for scarce expertise, enterprise risk, shared data, and cross-business investment decisions."
+      },
+      "right": {
+        "heading": "Localize when proximity creates value",
+        "body": "Keep customer decisions, rapid experimentation, and market-specific trade-offs close to the operating teams."
+      },
+      "synthesis": { "runs": [ { "text": "Recommended model — ", "bold": true }, { "text": "centralize standards and platforms; localize customer-facing decisions within explicit guardrails.", "bold": false } ] }
+    }
+  ]
+}

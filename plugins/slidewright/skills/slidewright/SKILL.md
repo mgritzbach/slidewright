@@ -42,6 +42,7 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Keep every text box strictly inside its declared backing block and preserve equivalent headline/body roles across repeated components.
 - Bind non-decorative icons to the exact label and a declared semantic concept; reject unrelated icon choices.
 - Keep constrained headlines within their archetype line/auto-size budget and use native paragraph spacing from the deck's `0/6/12 pt` scale.
+- For 2-9 parallel consulting points, use the count-aware `point-grid` grammar; use `opposition` only for genuinely conflicting positions and add its synthesis band when the recommendation reconciles them. See [references/deck-spec.md](references/deck-spec.md).
 - Remove empty inherited paragraphs before bullet formatting or fitting; never emit blank bullets.
 - Require explicit divider and substantive-slide coverage for every declared topic in long-form decks.
 - Treat undeclared sibling overlap, child escape from padded parents, low contrast, declared alignment drift, excess wrapping, and crowded layouts as build failures.

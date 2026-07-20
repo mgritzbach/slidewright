@@ -197,7 +197,7 @@ export async function renderPlan(plan, { out, previewDir, executiveReview = null
           fill: shape.fill,
           line: { style: "solid", fill: shape.line.color, width: shape.line.width },
         };
-        if (["rect", "textbox", "roundRect"].includes(shape.geometry)) shapeOptions.borderRadius = "rounded-2xl";
+        if (shape.geometry === "roundRect") shapeOptions.borderRadius = "rounded-2xl";
         slide.shapes.add(shapeOptions);
         continue;
       }

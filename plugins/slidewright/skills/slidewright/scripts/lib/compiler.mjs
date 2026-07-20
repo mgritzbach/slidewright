@@ -63,7 +63,7 @@ export function validateDeckSpec(spec) {
 
   spec.slides.forEach((slide, index) => {
     if (!slide || typeof slide !== "object") throw new Error(`slides[${index}] must be an object.`);
-    if (!["hero", "two-column", "section", "continuation", "table", "icon-list"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', 'continuation', 'table', or 'icon-list'.`);
+    if (!["hero", "two-column", "section", "continuation", "table", "icon-list", "point-grid", "opposition"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', 'continuation', 'table', 'icon-list', 'point-grid', or 'opposition'.`);
     if (slide.columnGap != null && (!Number.isFinite(slide.columnGap) || slide.columnGap < 16 || slide.columnGap > 96)) throw new Error(`slides[${index}].columnGap must be between 16 and 96.`);
     if (slide.headlineSplit != null && (!slide.headlineSplit || !["center", "two-thirds"].includes(slide.headlineSplit.ratio) || !["left", "right"].includes(slide.headlineSplit.side))) throw new Error(`slides[${index}].headlineSplit must declare ratio center|two-thirds and side left|right.`);
     if (slide.reviewIntent != null && (!slide.reviewIntent || !REVIEW_RELATIONSHIPS.has(slide.reviewIntent.relationship))) throw new Error(`slides[${index}].reviewIntent.relationship must be one of ${[...REVIEW_RELATIONSHIPS].join(" | ")}.`);
@@ -101,7 +101,7 @@ export function validateDeckSpec(spec) {
         if (!Array.isArray(row) || row.length !== slide.table.columns.length) throw new Error(`slides[${index}].table.rows[${rowIndex}] must contain exactly ${slide.table.columns.length} cells.`);
         row.forEach((value, columnIndex) => assertString(value, `slides[${index}].table.rows[${rowIndex}][${columnIndex}]`));
       });
-    } else {
+    } else if (slide.layout === "icon-list") {
       assertText(slide.title, `slides[${index}].title`, true);
       if (!Array.isArray(slide.items) || slide.items.length < 2 || slide.items.length > 4) throw new Error(`slides[${index}].items must contain 2-4 semantic icon cards.`);
       const itemIds = [];
@@ -115,6 +115,28 @@ export function validateDeckSpec(spec) {
         itemIds.push(item.id);
       });
       if (new Set(itemIds).size !== itemIds.length) throw new Error(`slides[${index}].items ids must be unique.`);
+    } else if (slide.layout === "point-grid") {
+      assertText(slide.title, `slides[${index}].title`, true);
+      if (!Array.isArray(slide.items) || slide.items.length < 2 || slide.items.length > 9) throw new Error(`slides[${index}].items must contain 2-9 points.`);
+      if (slide.arrangement != null && !["auto", "columns", "rows", "grid"].includes(slide.arrangement)) throw new Error(`slides[${index}].arrangement must be 'auto', 'columns', 'rows', or 'grid'.`);
+      const itemIds = [];
+      slide.items.forEach((item, itemIndex) => {
+        assertString(item?.id, `slides[${index}].items[${itemIndex}].id`);
+        assertText(item?.label, `slides[${index}].items[${itemIndex}].label`, true);
+        assertText(item?.body, `slides[${index}].items[${itemIndex}].body`);
+        if (item.emphasis != null && typeof item.emphasis !== "boolean") throw new Error(`slides[${index}].items[${itemIndex}].emphasis must be boolean.`);
+        itemIds.push(item.id);
+      });
+      if (new Set(itemIds).size !== itemIds.length) throw new Error(`slides[${index}].items ids must be unique.`);
+      if (slide.items.filter((item) => item.emphasis === true).length > 1) throw new Error(`slides[${index}] may emphasize at most one point.`);
+    } else {
+      assertText(slide.title, `slides[${index}].title`, true);
+      for (const side of ["left", "right"]) {
+        assertText(slide[side]?.heading, `slides[${index}].${side}.heading`, true);
+        assertText(slide[side]?.body, `slides[${index}].${side}.body`);
+      }
+      if (slide.axisLabel != null) assertString(slide.axisLabel, `slides[${index}].axisLabel`);
+      if (slide.synthesis != null) assertText(slide.synthesis, `slides[${index}].synthesis`, true);
     }
   });
   return spec;
@@ -182,8 +204,8 @@ function forceCommonTextSize(shapes, fontSizePt) {
   }
 }
 
-function surfaceShape({ id, position, fill, line, radius = 18, padding, role }) {
-  return { id, type: "shape", ...(role ? { role } : {}), geometry: "roundRect", position, fill, line, radius, padding, editable: true };
+function surfaceShape({ id, position, fill, line, radius = 18, padding, role, geometry = "roundRect" }) {
+  return { id, type: "shape", ...(role ? { role } : {}), geometry, position, fill, line, ...(geometry === "roundRect" ? { radius } : {}), padding, editable: true };
 }
 
 function tableShape({ id, position, columns, rows, theme }) {
@@ -431,6 +453,141 @@ function compileIconList(slide, index, frame, theme) {
   return shapes;
 }
 
+function gridRowsForCount(count) {
+  if (count <= 3) return [count];
+  if (count === 4) return [2, 2];
+  if (count === 5) return [3, 2];
+  if (count === 6) return [3, 3];
+  if (count === 7) return [4, 3];
+  if (count === 8) return [4, 4];
+  return [3, 3, 3];
+}
+
+function pointGridRows(count, arrangement) {
+  if (arrangement === "columns") return [count];
+  if (arrangement === "rows") return Array.from({ length: count }, () => 1);
+  return gridRowsForCount(count);
+}
+
+function compilePointGrid(slide, index, frame, theme) {
+  const shapes = [textShape({
+    id: `s${index + 1}-title`, role: "title", typographyRole: "slide-title",
+    position: { left: frame.left, top: frame.top, width: frame.width, height: 96 },
+    value: slide.title, style: { color: theme.colors.text }, theme, defaultBold: true,
+    fit: { preferredSizePt: 36, minSizePt: 28, maxLines: 2, lineHeight: 1.02, glyphFactor: 0.5 },
+  })];
+  const arrangement = slide.arrangement ?? "auto";
+  const rows = pointGridRows(slide.items.length, arrangement);
+  if (rows.some((count) => count > 4)) throw new Error(`point-grid '${arrangement}' would create more than four columns; use arrangement 'auto', 'grid', or 'rows'.`);
+  const gap = 16;
+  const contentTop = frame.top + 128;
+  const contentHeight = frame.height - 128;
+  const rowHeight = (contentHeight - gap * (rows.length - 1)) / rows.length;
+  const padding = { top: 16, right: 16, bottom: 16, left: 16 };
+  const bodyShapes = [];
+  const surfaces = [];
+  let itemIndex = 0;
+  rows.forEach((columnCount, rowIndex) => {
+    const cellWidth = (frame.width - gap * (columnCount - 1)) / columnCount;
+    const rowWidth = cellWidth * columnCount + gap * (columnCount - 1);
+    const rowLeft = frame.left + (frame.width - rowWidth) / 2;
+    for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+      const item = slide.items[itemIndex];
+      const cell = { left: rowLeft + columnIndex * (cellWidth + gap), top: contentTop + rowIndex * (rowHeight + gap), width: cellWidth, height: rowHeight };
+      const surfaceId = `s${index + 1}-${item.id}-surface`;
+      const variantId = item.emphasis === true ? "emphasis" : "default";
+      const surface = surfaceShape({
+        id: surfaceId, role: "point-cell", geometry: "rect", position: cell,
+        fill: item.emphasis === true ? theme.colors.accentSoft : theme.colors.surface,
+        line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: item.emphasis === true ? 2 : 1 }, padding,
+      });
+      surface.gridCell = { row: rowIndex + 1, column: columnIndex + 1, rowCount: rows.length, columnCount, peerCount: slide.items.length };
+      shapes.push(surface);
+      surfaces.push(surface);
+      const labelHeight = rows.length >= 3 ? 32 : 44;
+      shapes.push(textShape({
+        id: `s${index + 1}-${item.id}-label`, role: "subheading", typographyRole: "component-heading", parentId: surfaceId,
+        componentPattern: { familyId: "point-cell", instanceId: item.id, slot: "heading", variantId },
+        position: { left: cell.left + padding.left, top: cell.top + padding.top, width: cell.width - padding.left - padding.right, height: labelHeight },
+        value: item.label, style: { color: item.emphasis === true ? theme.colors.accent : theme.colors.text }, theme, defaultBold: true,
+        fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 2, lineHeight: 1 },
+      }));
+      const body = textShape({
+        id: `s${index + 1}-${item.id}-body`, role: "body", typographyRole: "component-body", parentId: surfaceId,
+        componentPattern: { familyId: "point-cell", instanceId: item.id, slot: "body", variantId },
+        position: { left: cell.left + padding.left, top: cell.top + padding.top + labelHeight + 8, width: cell.width - padding.left - padding.right, height: cell.height - padding.top - padding.bottom - labelHeight - 8 },
+        value: item.body, style: { color: theme.colors.muted }, theme,
+        fit: { preferredSizePt: 24, minSizePt: 16, maxLines: rows.length >= 3 ? 4 : 7, lineHeight: 1.22 },
+      });
+      bodyShapes.push(body);
+      shapes.push(body);
+      itemIndex += 1;
+    }
+  });
+  forceCommonTextSize(bodyShapes, 16);
+  return { shapes, peerGroups: [{ id: `s${index + 1}-point-cells`, memberIds: surfaces.map((shape) => shape.id), rows, gap, equalWithinRows: true, centeredIncompleteRows: true }] };
+}
+
+function compileOpposition(slide, index, frame, theme) {
+  const shapes = [textShape({
+    id: `s${index + 1}-title`, role: "title", typographyRole: "slide-title",
+    position: { left: frame.left, top: frame.top, width: frame.width, height: 96 },
+    value: slide.title, style: { color: theme.colors.text }, theme, defaultBold: true,
+    fit: { preferredSizePt: 36, minSizePt: 28, maxLines: 2, lineHeight: 1.02, glyphFactor: 0.5 },
+  })];
+  const gap = 56;
+  const synthesisHeight = slide.synthesis == null ? 0 : 104;
+  const panelTop = frame.top + 128;
+  const panelHeight = frame.height - 128 - (synthesisHeight ? synthesisHeight + 16 : 0);
+  const panelWidth = (frame.width - gap) / 2;
+  const padding = { top: 24, right: 24, bottom: 24, left: 24 };
+  const surfaceIds = [];
+  const bodyShapes = [];
+  ["left", "right"].forEach((side, sideIndex) => {
+    const panel = { left: frame.left + sideIndex * (panelWidth + gap), top: panelTop, width: panelWidth, height: panelHeight };
+    const surfaceId = `s${index + 1}-${side}-surface`;
+    surfaceIds.push(surfaceId);
+    shapes.push(surfaceShape({ id: surfaceId, role: "opposition-side", geometry: "rect", position: panel, fill: sideIndex === 0 ? theme.colors.surface : theme.colors.accentSoft, line: { color: sideIndex === 0 ? theme.colors.border : theme.colors.accent, width: sideIndex === 0 ? 1 : 2 }, padding }));
+    shapes.push(textShape({
+      id: `s${index + 1}-${side}-heading`, role: "subheading", typographyRole: "component-heading", parentId: surfaceId,
+      componentPattern: { familyId: "opposition-side", instanceId: side, slot: "heading", variantId: side },
+      position: { left: panel.left + padding.left, top: panel.top + padding.top, width: panel.width - padding.left - padding.right, height: 52 },
+      value: slide[side].heading, style: { color: sideIndex === 0 ? theme.colors.text : theme.colors.accent }, theme, defaultBold: true,
+      fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 2, lineHeight: 1 },
+    }));
+    const body = textShape({
+      id: `s${index + 1}-${side}-body`, role: "body", typographyRole: "component-body", parentId: surfaceId,
+      componentPattern: { familyId: "opposition-side", instanceId: side, slot: "body", variantId: side },
+      position: { left: panel.left + padding.left, top: panel.top + padding.top + 76, width: panel.width - padding.left - padding.right, height: panel.height - padding.top - padding.bottom - 76 },
+      value: slide[side].body, style: { color: theme.colors.text }, theme,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 8, lineHeight: 1.22 },
+    });
+    bodyShapes.push(body);
+    shapes.push(body);
+  });
+  forceCommonTextSize(bodyShapes, Math.min(...bodyShapes.map((shape) => shape.style.fontSizePt)));
+  const axisWidth = 32;
+  const axisLeft = frame.left + frame.width / 2 - axisWidth / 2;
+  shapes.push(textShape({
+    id: `s${index + 1}-axis`, role: "eyebrow", typographyRole: "eyebrow",
+    position: { left: axisLeft, top: panelTop + panelHeight / 2 - 12, width: axisWidth, height: 24 },
+    value: slide.axisLabel ?? "VS", style: { color: theme.colors.accent, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
+    fit: { preferredSizePt: 14, minSizePt: 12, maxLines: 1, lineHeight: 1 },
+  }));
+  if (slide.synthesis != null) {
+    const surface = { left: frame.left, top: panelTop + panelHeight + 16, width: frame.width, height: synthesisHeight };
+    const surfaceId = `s${index + 1}-synthesis-surface`;
+    shapes.push(surfaceShape({ id: surfaceId, role: "text-backing", geometry: "rect", position: surface, fill: theme.colors.surface, line: { color: theme.colors.border, width: 1 }, padding: { top: 16, right: 16, bottom: 16, left: 16 } }));
+    shapes.push(textShape({
+      id: `s${index + 1}-synthesis`, role: "body", typographyRole: "component-body", parentId: surfaceId,
+      position: { left: surface.left + 16, top: surface.top + 16, width: surface.width - 32, height: surface.height - 32 },
+      value: slide.synthesis, style: { color: theme.colors.text, verticalAlignment: "middle" }, theme, defaultBold: true,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.22 },
+    }));
+  }
+  return { shapes, peerGroups: [{ id: `s${index + 1}-opposition-sides`, memberIds: surfaceIds, rows: [2], gap, equalWithinRows: true, centeredIncompleteRows: true }] };
+}
+
 export function compileDeck(input) {
   const spec = validateDeckSpec(structuredClone(input));
   const canvas = { ...DEFAULT_CANVAS, ...(spec.canvas ?? {}) };
@@ -457,7 +614,12 @@ export function compileDeck(input) {
     iconOntology: { ...structuredClone(DEFAULT_ICON_ONTOLOGY), ...(structuredClone(spec.designSystem?.iconOntology) ?? {}) },
   };
   const slides = spec.slides.map((slide, index) => {
-    const shapes = slide.layout === "hero"
+    const compiled = slide.layout === "point-grid"
+      ? compilePointGrid(slide, index, frame, theme)
+      : slide.layout === "opposition"
+        ? compileOpposition(slide, index, frame, theme)
+        : null;
+    const shapes = compiled?.shapes ?? (slide.layout === "hero"
       ? compileHero(slide, index, frame, theme)
       : slide.layout === "two-column"
         ? compileTwoColumn(slide, index, frame, theme)
@@ -467,7 +629,7 @@ export function compileDeck(input) {
             ? compileContinuation(slide, index, frame, theme)
             : slide.layout === "table"
               ? compileTable(slide, index, frame, theme)
-              : compileIconList(slide, index, frame, theme);
+              : compileIconList(slide, index, frame, theme));
     const headlineId = `s${index + 1}-title`;
     const titleSurfaceId = slide.layout === "section" ? `s${index + 1}-title-surface` : null;
     const structuralSplits = [];
@@ -513,6 +675,7 @@ export function compileDeck(input) {
         structuralSplits,
         fitSurfaces: titleSurfaceId ? [{ surfaceId: titleSurfaceId, childIds: [headlineId], minHeight: 128, exactBottom: true }] : [],
         backings: shapes.filter((shape) => shape.type === "text" && shape.backingId).map((shape) => ({ backingId: shape.backingId, contentIds: [shape.id] })),
+        peerGroups: compiled?.peerGroups ?? [],
         reservedRegionIds: [],
         ...(slide.layout === "two-column" ? { type: "two-column", columnGap: slide.columnGap ?? 24 } : {}),
       },

@@ -57,6 +57,16 @@ Use `layout: "icon-list"`, a `title`, and 2-4 items. Each item requires a stable
 }
 ```
 
+## Count-aware consulting points
+
+Use `layout: "point-grid"` for 2-9 logically parallel points. Each item needs a stable `id`, editable `label`, and editable `body`. `arrangement` may be `auto`, `columns`, `rows`, or `grid`; prefer `auto` unless the content relationship requires a specific direction. At most one item may set `emphasis: true`.
+
+`auto` resolves to `2`, `3`, `2+2`, `3+2`, `3+3`, `4+3`, `4+4`, and `3+3+3` rows for counts 2 through 9. Incomplete rows are centered. `SW031` enforces equal peer geometry and exact gutters.
+
+## Opposition and synthesis
+
+Use `layout: "opposition"` for two genuinely conflicting positions. Provide a native editable `title`, `left.heading`, `left.body`, `right.heading`, and `right.body`. `axisLabel` defaults to `VS`. Add optional `synthesis` when the recommendation combines the two sides or defines a conditional boundary. Use a comparison table instead when there are more than two alternatives or several repeated criteria.
+
 ## Text values
 
 Use a string for uniform text. Use runs for editable emphasis:

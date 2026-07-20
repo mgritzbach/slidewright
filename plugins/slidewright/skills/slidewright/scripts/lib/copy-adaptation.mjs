@@ -187,6 +187,18 @@ function descriptorsFor(slide) {
     shapeId: `s1-${item.id ?? `item-${index + 1}`}-body`,
     defaultBold: false,
   }));
+  if (slide.layout === "point-grid") return (slide.items ?? []).map((item, index) => ({
+    key: `point-${item.id ?? index + 1}`,
+    label: `${item.label ?? "POINT"}`.toUpperCase(),
+    path: ["items", index, "body"],
+    shapeId: `s1-${item.id ?? `point-${index + 1}`}-body`,
+    defaultBold: false,
+  }));
+  if (slide.layout === "opposition") return [
+    { key: "left-body", label: "LEFT POSITION", path: ["left", "body"], shapeId: "s1-left-body", defaultBold: false },
+    { key: "right-body", label: "RIGHT POSITION", path: ["right", "body"], shapeId: "s1-right-body", defaultBold: false },
+    ...(slide.synthesis == null ? [] : [{ key: "synthesis", label: "SYNTHESIS", path: ["synthesis"], shapeId: "s1-synthesis", defaultBold: true }]),
+  ];
   // Table cells are validated cell-by-cell by the compiler and linter. They
   // cannot be moved into prose continuation slides without changing semantics.
   if (slide.layout === "table") return [];
