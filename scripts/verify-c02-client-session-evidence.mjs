@@ -7,4 +7,4 @@ const target = process.argv[2];
 if (!target) throw new Error("Usage: node scripts/verify-c02-client-session-evidence.mjs <proof.json>");
 const proof = JSON.parse(await fs.readFile(path.resolve(target), "utf8"));
 assertClientSessionProof(proof);
-console.log(JSON.stringify({ proof: path.resolve(target), discoveryUseValid: proof.discoveryUseValid, nonceProofValid: proof.nonceProofValid, surfaceComplete: proof.surfaceComplete, c02Complete: proof.c02Complete }, null, 2));
+console.log(JSON.stringify({ proof: path.resolve(target), discoveryValid: proof.discoveryValid, installedReadValid: proof.installedReadValid, clientInvocationValid: proof.clientInvocationValid, nonceProofValid: proof.nonceProofValid, surfaceComplete: proof.surfaceComplete, c02Complete: proof.c02Complete }, null, 2));

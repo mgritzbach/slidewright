@@ -66,7 +66,7 @@ function capabilityStatus() {
   return [
     { id: "powerpoint-windows", callable: platform === "win32" && command("powershell", ["-NoProfile", "-Command", `(Test-Path '${powerpointPath.replaceAll("'", "''")}')`]) === "True", evidence: false, reason: platform === "win32" ? "Application detected; a clean-commit COM suite run is still required." : "Requires a Windows suite host." },
     { id: "powerpoint-macos", callable: platform === "darwin" && command("test", ["-d", powerpointPath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
-    { id: "google-slides", callable: false, evidence: false, reason: "Requires an authenticated browser-automation import/edit/export job; URL access alone is not evidence." },
+    { id: "google-slides", callable: fsSync.existsSync(path.join(process.cwd(), "scripts", "c19", "run_google_slides_suite.mjs")), evidence: false, reason: "Credential-free capture importer is available; a redacted authenticated Slides API v1 + Drive API v3 capture and exact-commit validation are still required." },
     { id: "keynote-macos", callable: platform === "darwin" && command("test", ["-d", keynotePath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
     { id: "libreoffice", callable: libreOfficeCallable, evidence: false, reason: libreOfficeCallable
       ? `Detected ${libreOfficeVersion} with UNO Java bridge runner and PDF renderer; a clean-commit suite run is still required.`
@@ -116,7 +116,7 @@ const destructiveControls = await runC19DestructiveControls(evidence, {
   expectedRepository: evidence.attribution.repository,
 });
 const result = {
-  schemaVersion: "slidewright-c19-suite-validation/v1",
+  schemaVersion: "slidewright-c19-suite-validation/v2",
   valid: true,
   suiteId: verified.suiteId,
   sourceCommit: gitHead,

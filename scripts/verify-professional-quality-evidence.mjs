@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateReviewerFormConfig } from "./lib/c13-reviewer-workflow.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultScorecard = path.join(root, "outputs", "professional-quality", "scorecard.json");
@@ -254,6 +255,36 @@ export async function verifyProfessionalQualityScorecard(scorecard, { repository
       invariant(/^D-[0-9A-F]{10}$/u.test(design.candidateCode), `Routing sheet ${routing.assignmentId} has an invalid candidate code.`);
       invariant(/^decks\/P-[0-9A-F]{10}\.pptx$/u.test(design.deck), `Routing sheet ${routing.assignmentId} has a non-opaque deck path.`);
       invariant(Number.isInteger(design.slide) && design.slide >= 1, `Routing sheet ${routing.assignmentId} has an invalid slide number.`);
+    }
+  }
+  const reviewerForms = scorecard.reviewPacket.reviewerForms;
+  invariant(Array.isArray(reviewerForms) && reviewerForms.length === 1 + scorecard.contract.targetUsers.minimumIndependentHumanUsers, "C13 packet lacks one offline form for the expert and each target user.");
+  invariant(reviewerForms.filter((form) => form.role === "blind-expert").length === 1, "C13 packet must contain exactly one blind-expert form.");
+  invariant(reviewerForms.filter((form) => form.role === "target-user").length === scorecard.contract.targetUsers.minimumIndependentHumanUsers, "C13 packet lacks a form for every target-user assignment.");
+  const manifestPath = path.resolve(repositoryRoot, scorecard.reviewPacket.candidateManifest);
+  const packetRoot = path.dirname(manifestPath);
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  for (const form of reviewerForms) {
+    invariant(form.offline === true && form.sourceFieldsExcluded === true, `C13 reviewer form ${form.assignmentId} is not declared offline and blind.`);
+    const formPath = path.resolve(repositoryRoot, form.path);
+    invariant(formPath.startsWith(`${packetRoot}${path.sep}`), `C13 reviewer form ${form.assignmentId} escapes the blinded packet.`);
+    const html = await fs.readFile(formPath, "utf8");
+    invariant(sha256(Buffer.from(html)) === form.sha256, `C13 reviewer form ${form.assignmentId} hash mismatch.`);
+    invariant(html.includes("connect-src 'none'"), `C13 reviewer form ${form.assignmentId} does not block network requests.`);
+    invariant(!/https?:\/\//u.test(html), `C13 reviewer form ${form.assignmentId} contains an external URL.`);
+    invariant(!/<textarea\b/iu.test(html), `C13 reviewer form ${form.assignmentId} permits unstructured personal data.`);
+    invariant(!/(fixtureId|sourceDeckSha256|finalDeckSha256|designId|dhash64)/u.test(html), `C13 reviewer form ${form.assignmentId} leaks administrator-only source fields.`);
+    const embedded = html.match(/<script type="application\/json" id="review-config">([^<]+)<\/script>/u);
+    invariant(embedded, `C13 reviewer form ${form.assignmentId} lacks its embedded blinded configuration.`);
+    const config = JSON.parse(embedded[1]);
+    validateReviewerFormConfig(config);
+    invariant(config.role === form.role && config.assignmentId === form.assignmentId && config.reviews.length === form.designCount, `C13 reviewer form ${form.assignmentId} disagrees with its scorecard record.`);
+    if (form.role === "blind-expert") {
+      invariant(form.designCount >= scorecard.contract.blindExpert.minimumDesignsPerExpert, "C13 expert form covers too few designs.");
+      invariant(JSON.stringify(config.reviews.map((review) => review.candidateCode)) === JSON.stringify(manifest.candidates.map((candidate) => candidate.candidateCode)), "C13 expert form does not cover the frozen candidate manifest in order.");
+    } else {
+      const assignment = assignmentDocument.assignments.find((item) => item.assignmentId === form.assignmentId);
+      invariant(assignment && JSON.stringify(config.reviews.map((review) => review.candidateCode)) === JSON.stringify(assignment.candidateCodes), `C13 target-user form ${form.assignmentId} does not match its frozen assignment.`);
     }
   }
   if (requireComplete) invariant(scorecard.c13Satisfied === true, `C13 remains incomplete: ${scorecard.externalEvidence.missing.join("; ")}`);

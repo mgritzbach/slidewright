@@ -176,7 +176,7 @@ The C17 matrix uses four licensed decks and independently checks the complete OP
 
 ## Cross-suite interoperability status
 
-Run `npm run interoperability:status` to see which of the six target application suites are callable and which have real evidence. The command deliberately exits nonzero until exact-deck, clean-commit, automation-trace, native-edit, re-export, semantic-inventory, and rendered-slide evidence has been imported for PowerPoint Windows, PowerPoint macOS, Google Slides, Keynote, LibreOffice, and Canva. Capability detection alone never counts. See [the C19 evidence contract](docs/C19_INTEROPERABILITY.md).
+Run `npm run interoperability:status` to see which of the six target application suites are callable and which have real evidence. The command deliberately exits nonzero until exact-deck, clean-commit, automation-trace, native-edit, re-export, semantic-inventory, and rendered-slide evidence has been imported for PowerPoint Windows, PowerPoint macOS, Google Slides, Keynote, LibreOffice, and Canva. Google Slides may use authenticated browser automation or the credential-free importer for a redacted Slides API v1 plus Drive API v3 capture; API evidence records exact discovery revisions and reports converted Office charts as `unsupported`. Capability detection or an exploratory connector run never counts. See [the C19 evidence contract](docs/C19_INTEROPERABILITY.md).
 
 ## Optional direct PowerPoint adapter
 

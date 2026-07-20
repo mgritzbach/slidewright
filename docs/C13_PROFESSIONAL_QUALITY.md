@@ -28,6 +28,19 @@ to exactly five candidate codes, opaque deck filenames, and slide numbers. They
 contain no fixture ids, source paths, hashes, or design identities. Give a user
 only the routing file whose assignment id they will submit.
 
+The packet also contains six self-contained offline browser forms:
+
+- `expert-review.html` covers all 21 blinded images and anchored expert scores;
+- `target-users/target-user-N-review.html` covers exactly one five-design user
+  assignment, opens only opaque deck files, measures cleanup time, and records
+  repair-action counts.
+
+Each form generates its own random pseudonym, offers no free-form or direct
+personal-data fields, blocks network requests with a content-security policy,
+validates completeness locally, and downloads an importer-ready JSON response.
+Nothing is uploaded automatically. The JSON templates and routing sheets remain
+available as non-browser fallbacks.
+
 The packet's `RUBRIC.md` anchors every expert dimension from 1 (critical
 failure) through 5 (exceptional) and defines first-open acceptance as requiring
 no edit. Target-user timing starts when the assigned slide appears and stops

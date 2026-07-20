@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "slidewright-c19-contract/v2",
+  "id": "c19-cross-suite-interoperability-v2",
+  "requiredSuites": [
+    {
+      "id": "powerpoint-windows",
+      "application": "Microsoft PowerPoint",
+      "proofMode": "desktop-automation",
+      "platform": "windows",
+      "automationProtocol": "com"
+    },
+    {
+      "id": "powerpoint-macos",
+      "application": "Microsoft PowerPoint",
+      "proofMode": "desktop-automation",
+      "platform": "macos",
+      "automationProtocol": "applescript"
+    },
+    {
+      "id": "google-slides",
+      "application": "Google Slides",
+      "platform": "web",
+      "proofModes": [
+        {
+          "mode": "browser-automation",
+          "automationProtocol": "browser",
+          "requiresAuthenticatedSession": true,
+          "serviceOrigins": ["https://docs.google.com"]
+        },
+        {
+          "mode": "authenticated-service-automation",
+          "automationProtocol": "rest-oauth2",
+          "serviceOrigins": [
+            "https://slides.googleapis.com",
+            "https://www.googleapis.com"
+          ],
+          "requiredApis": [
+            {
+              "id": "slides:v1",
+              "version": "v1",
+              "rootUrl": "https://slides.googleapis.com/"
+            },
+            {
+              "id": "drive:v3",
+              "version": "v3",
+              "rootUrl": "https://www.googleapis.com/"
+            }
+          ],
+          "acceptedWriteScopes": [
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/drive"
+          ],
+          "requiredOperationSequence": [
+            { "id": "import", "apiId": "drive:v3", "method": "drive.files.create" },
+            { "id": "open-before", "apiId": "slides:v1", "method": "slides.presentations.get" },
+            { "id": "native-edit", "apiId": "slides:v1", "method": "slides.presentations.batchUpdate" },
+            { "id": "reopen-after", "apiId": "slides:v1", "method": "slides.presentations.get" },
+            { "id": "export-pptx", "apiId": "drive:v3", "method": "drive.files.export" },
+            { "id": "export-pdf", "apiId": "drive:v3", "method": "drive.files.export" },
+            { "id": "cleanup", "apiId": "drive:v3", "method": "drive.files.delete" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keynote-macos",
+      "application": "Apple Keynote",
+      "proofMode": "desktop-automation",
+      "platform": "macos",
+      "automationProtocol": "applescript"
+    },
+    {
+      "id": "libreoffice",
+      "application": "LibreOffice Impress",
+      "proofMode": "desktop-automation",
+      "platform": "any-desktop",
+      "automationProtocol": "uno"
+    },
+    {
+      "id": "canva",
+      "application": "Canva",
+      "proofMode": "browser-automation",
+      "platform": "web",
+      "automationProtocol": "browser",
+      "requiresAuthenticatedSession": true,
+      "serviceOrigins": ["https://www.canva.com"]
+    }
+  ],
+  "coreSemanticChecks": [
+    "slide-count",
+    "native-visible-text",
+    "sentinel-edit-roundtrip",
+    "no-full-slide-raster",
+    "reading-order"
+  ],
+  "advancedSemanticChecks": [
+    "mixed-emphasis",
+    "native-table",
+    "native-chart",
+    "native-group",
+    "attached-connectors"
+  ],
+  "advancedInventoryBindings": {
+    "mixed-emphasis": "mixedEmphasisObjects",
+    "native-table": "tables",
+    "native-chart": "charts",
+    "native-group": "groups",
+    "attached-connectors": "attachedConnectors"
+  },
+  "allowedAdvancedOutcomes": [
+    "preserved",
+    "changed",
+    "unsupported"
+  ],
+  "minimumFixtureInventory": {
+    "slides": 2,
+    "nativeTextObjects": 4,
+    "mixedEmphasisObjects": 1,
+    "tables": 1,
+    "charts": 1,
+    "groups": 1,
+    "connectors": 1,
+    "attachedConnectors": 1
+  },
+  "renderContract": {
+    "minimumWidthPixels": 960,
+    "minimumHeightPixels": 540,
+    "requiredPerSlideChecks": [
+      "readable",
+      "not-clipped",
+      "not-blank"
+    ],
+    "requiresHashBoundVisualReview": true
+  },
+  "publication": {
+    "requiresAllSuites": true,
+    "requiresOneExactSourceDeckAcrossSuites": true,
+    "requiresExactCleanSourceCommit": true,
+    "requiresAuthenticatedArtifactMetadata": true,
+    "artifactBodiesCommitted": false
+  }
+}

@@ -13,10 +13,12 @@ export const C19_REQUIRED_SUITES = Object.freeze([
 
 export const C19_IMPLEMENTATION_CLOSURE = Object.freeze([
   "docs/C19_INTEROPERABILITY.md",
-  "fixtures/interoperability/c19-v1/contract.json",
-  "schemas/c19-interop-suite.schema.json",
+  "fixtures/interoperability/c19-v2/contract.json",
+  "schemas/c19-google-slides-capture.schema.json",
+  "schemas/c19-interop-suite-v2.schema.json",
   "scripts/c19/LibreOfficeUnoWorker.java",
   "scripts/c19/inventory_interop.py",
+  "scripts/c19/run_google_slides_suite.mjs",
   "scripts/c19/run_libreoffice_suite.mjs",
   "scripts/c19/powerpoint_windows_worker.ps1",
   "scripts/c19/run_powerpoint_windows_suite.mjs",
@@ -95,6 +97,21 @@ function suiteContract(contract, suiteId) {
   return suite;
 }
 
+function proofContract(suite, mode) {
+  if (typeof suite.proofMode === "string") {
+    invariant(mode === suite.proofMode, `${suite.id}: automation mode mismatch.`);
+    return {
+      mode: suite.proofMode,
+      automationProtocol: suite.automationProtocol,
+      requiresAuthenticatedSession: suite.requiresAuthenticatedSession,
+      serviceOrigins: suite.serviceOrigins ?? (suite.serviceOrigin ? [suite.serviceOrigin] : []),
+    };
+  }
+  const proof = suite.proofModes?.find((item) => item.mode === mode);
+  invariant(proof, `${suite.id}: automation mode is not allowed by the frozen contract.`);
+  return proof;
+}
+
 function validateInventory(inventory, minimum, label) {
   invariant(inventory && typeof inventory === "object", `${label}: inventory is missing.`);
   for (const [key, floor] of Object.entries(minimum)) {
@@ -112,8 +129,25 @@ function validateChecks(actual, expectedIds, label, outcomes) {
   }
 }
 
+function expectedAdvancedOutcome(before, after) {
+  if (before > 0 && after === before) return "preserved";
+  if (after > 0) return "changed";
+  return "unsupported";
+}
+
+function validateAdvancedInventoryBindings(evidence, contract) {
+  for (const check of evidence.semantic.advancedChecks) {
+    const key = contract.advancedInventoryBindings?.[check.id];
+    invariant(typeof key === "string" && key.length > 0, `${evidence.suiteId} advanced/${check.id}: inventory binding is missing.`);
+    const before = evidence.semantic.sourceInventory[key];
+    const after = evidence.semantic.resultInventory[key];
+    invariant(Number.isInteger(before) && Number.isInteger(after), `${evidence.suiteId} advanced/${check.id}: bound inventory is missing.`);
+    invariant(check.outcome === expectedAdvancedOutcome(before, after), `${evidence.suiteId} advanced/${check.id}: outcome contradicts the independent inventories.`);
+  }
+}
+
 function collectReceipts(evidence) {
-  return [
+  const receipts = [
     ...evidence.runner.implementation.map((item, index) => [`runner implementation ${index + 1}`, item]),
     ["automation application log", evidence.automation.applicationLog],
     ["automation trace", evidence.automation.trace],
@@ -122,15 +156,21 @@ function collectReceipts(evidence) {
     ["mutation report", evidence.mutation.report],
     ["semantic report", evidence.semantic.report],
     ["render report", evidence.render.report],
+    ["visual review", evidence.render.review],
     ...evidence.render.slides.map((item) => [`render slide ${item.slide}`, item.image]),
   ];
+  if (evidence.render.sourceDocument) receipts.push(["render source document", evidence.render.sourceDocument]);
+  if (evidence.automation.captureManifest) receipts.push(["service capture manifest", evidence.automation.captureManifest]);
+  for (const [index, item] of (evidence.automation.discovery ?? []).entries()) receipts.push([`service discovery ${index + 1}`, item.artifact]);
+  for (const [index, item] of (evidence.automation.snapshots ?? []).entries()) receipts.push([`service snapshot ${index + 1}`, item]);
+  return receipts;
 }
 
 export async function contractWithHash(root) {
-  const file = path.join(root, "fixtures", "interoperability", "c19-v1", "contract.json");
+  const file = path.join(root, "fixtures", "interoperability", "c19-v2", "contract.json");
   const bytes = await fs.readFile(file);
   const contract = JSON.parse(bytes.toString("utf8"));
-  invariant(contract.schemaVersion === "slidewright-c19-contract/v1", "C19 contract schema is invalid.");
+  invariant(contract.schemaVersion === "slidewright-c19-contract/v2", "C19 contract schema is invalid.");
   invariant(JSON.stringify(contract.requiredSuites.map((item) => item.id)) === JSON.stringify(C19_REQUIRED_SUITES), "C19 required suite order drifted.");
   return { contract, file, hash: sha256(bytes) };
 }
@@ -143,7 +183,7 @@ export async function validateC19SuiteEvidence(evidence, {
   bundleRoot = null,
   verifyArtifactBodies = false,
 } = {}) {
-  invariant(evidence?.schemaVersion === "slidewright-c19-suite-evidence/v1", "C19 suite evidence schema is invalid.");
+  invariant(evidence?.schemaVersion === "slidewright-c19-suite-evidence/v2", "C19 suite evidence schema is invalid.");
   invariant(evidence.evidenceOrigin === "suite-runner", "C19 rejects self-reports; evidenceOrigin must be suite-runner.");
   invariant(evidence.contractHash === contractHash && DIGEST.test(evidence.contractHash ?? ""), "C19 suite evidence is bound to a stale or invalid contract.");
   const frozen = suiteContract(contract, evidence.suiteId);
@@ -164,18 +204,62 @@ export async function validateC19SuiteEvidence(evidence, {
 
   invariant(evidence.application?.name === frozen.application, `${evidence.suiteId}: application identity mismatch.`);
   invariant(typeof evidence.application.version === "string" && evidence.application.version.length > 0 && !/^unknown$/iu.test(evidence.application.version), `${evidence.suiteId}: application version is missing.`);
-  invariant(evidence.automation?.mode === frozen.proofMode, `${evidence.suiteId}: automation mode mismatch.`);
+  const proof = proofContract(frozen, evidence.automation?.mode);
   invariant(typeof evidence.automation.startedAt === "string" && Number.isFinite(Date.parse(evidence.automation.startedAt)), `${evidence.suiteId}: automation start time is invalid.`);
   invariant(typeof evidence.automation.endedAt === "string" && Number.isFinite(Date.parse(evidence.automation.endedAt)) && Date.parse(evidence.automation.endedAt) >= Date.parse(evidence.automation.startedAt), `${evidence.suiteId}: automation end time is invalid.`);
-  if (frozen.proofMode === "desktop-automation") {
+  if (proof.mode === "desktop-automation") {
     invariant(evidence.application.platform === evidence.attribution.hostPlatform, `${evidence.suiteId}: desktop application platform drifted.`);
     invariant(DIGEST.test(evidence.application.executableSha256 ?? ""), `${evidence.suiteId}: executable SHA-256 is missing.`);
-    invariant(evidence.automation.protocol === frozen.automationProtocol, `${evidence.suiteId}: desktop automation protocol mismatch.`);
+    invariant(evidence.automation.protocol === proof.automationProtocol, `${evidence.suiteId}: desktop automation protocol mismatch.`);
     invariant(Number.isInteger(evidence.automation.processId) && evidence.automation.processId > 0, `${evidence.suiteId}: owned application process receipt is missing.`);
-  } else {
-    invariant(evidence.application.serviceOrigin === frozen.serviceOrigin, `${evidence.suiteId}: service origin mismatch.`);
+  } else if (proof.mode === "browser-automation") {
+    invariant(evidence.automation.protocol === proof.automationProtocol, `${evidence.suiteId}: browser automation protocol mismatch.`);
+    invariant(JSON.stringify(evidence.application.serviceOrigins) === JSON.stringify(proof.serviceOrigins), `${evidence.suiteId}: service origin mismatch.`);
+    if (proof.requiresAuthenticatedSession) {
+      invariant(evidence.automation.authenticated === true && evidence.automation.authentication?.type === "browser-session"
+        && DIGEST.test(evidence.automation.authentication?.principalSha256 ?? ""), `${evidence.suiteId}: authenticated browser session proof is missing.`);
+    }
     invariant(typeof evidence.automation.browser?.name === "string" && evidence.automation.browser.name.length > 0, `${evidence.suiteId}: browser identity is missing.`);
     invariant(typeof evidence.automation.browser?.version === "string" && evidence.automation.browser.version.length > 0 && !/^unknown$/iu.test(evidence.automation.browser.version), `${evidence.suiteId}: browser version is missing.`);
+  } else if (proof.mode === "authenticated-service-automation") {
+    invariant(evidence.automation.protocol === proof.automationProtocol, `${evidence.suiteId}: service automation protocol mismatch.`);
+    invariant(evidence.application.versionKind === "api-discovery-revision" && evidence.application.serviceBuildExposed === false, `${evidence.suiteId}: service version attribution is misleading or incomplete.`);
+    invariant(JSON.stringify(evidence.application.serviceOrigins) === JSON.stringify(proof.serviceOrigins), `${evidence.suiteId}: service origin set mismatch.`);
+    invariant(evidence.automation.authenticated === true && ["oauth2-user", "oauth2-service-account"].includes(evidence.automation.authentication?.type), `${evidence.suiteId}: authenticated service identity is missing.`);
+    invariant(DIGEST.test(evidence.automation.authentication?.principalSha256 ?? ""), `${evidence.suiteId}: authenticated principal digest is missing.`);
+    invariant(Array.isArray(evidence.automation.authentication?.scopes)
+      && evidence.automation.authentication.scopes.length > 0
+      && evidence.automation.authentication.scopes.every((scope) => proof.acceptedWriteScopes.includes(scope))
+      && proof.acceptedWriteScopes.some((scope) => evidence.automation.authentication.scopes.includes(scope)), `${evidence.suiteId}: Google OAuth scopes are missing or exceed the frozen write-scope allowlist.`);
+    invariant(Array.isArray(evidence.automation.discovery) && evidence.automation.discovery.length === proof.requiredApis.length, `${evidence.suiteId}: API discovery attribution is incomplete.`);
+    for (const [index, required] of proof.requiredApis.entries()) {
+      const actual = evidence.automation.discovery[index];
+      invariant(actual?.id === required.id && actual.version === required.version && actual.rootUrl === required.rootUrl
+        && /^\d{8}$/u.test(actual.revision ?? ""), `${evidence.suiteId}: API discovery identity drifted for ${required.id}.`);
+      validateFileReceipt(actual.artifact, `${evidence.suiteId} ${required.id} discovery`);
+    }
+    const version = evidence.automation.discovery.map((item) => `${item.id}@${item.revision}`).join("+");
+    invariant(evidence.application.version === version, `${evidence.suiteId}: application version is not derived from the captured API discovery revisions.`);
+    const serviceTrace = evidence.automation.serviceTrace;
+    invariant(serviceTrace?.authenticated === true && serviceTrace.resourceIdSha256 === evidence.automation.authentication.resourceIdSha256
+      && DIGEST.test(serviceTrace.resourceIdSha256 ?? ""), `${evidence.suiteId}: authenticated resource binding is missing.`);
+    invariant(DIGEST.test(serviceTrace.beforeRevisionIdSha256 ?? "") && DIGEST.test(serviceTrace.afterRevisionIdSha256 ?? "")
+      && serviceTrace.beforeRevisionIdSha256 !== serviceTrace.afterRevisionIdSha256, `${evidence.suiteId}: revision-bound service edit is missing.`);
+    invariant(Array.isArray(serviceTrace.operations) && serviceTrace.operations.length === proof.requiredOperationSequence.length, `${evidence.suiteId}: service operation sequence is incomplete.`);
+    let previousEndedAt = null;
+    for (const [index, required] of proof.requiredOperationSequence.entries()) {
+      const actual = serviceTrace.operations[index];
+      invariant(actual?.id === required.id && actual.apiId === required.apiId && actual.method === required.method, `${evidence.suiteId}: service operation sequence drifted at ${required.id}.`);
+      invariant(Number.isInteger(actual.status) && actual.status >= 200 && actual.status < 300, `${evidence.suiteId}: service operation ${required.id} did not succeed.`);
+      invariant(actual.resourceIdSha256 === serviceTrace.resourceIdSha256 && DIGEST.test(actual.requestSha256 ?? "") && DIGEST.test(actual.responseSha256 ?? ""), `${evidence.suiteId}: service operation ${required.id} is not resource/request/response bound.`);
+      invariant(Number.isFinite(Date.parse(actual.startedAt)) && Number.isFinite(Date.parse(actual.endedAt))
+        && Date.parse(actual.endedAt) >= Date.parse(actual.startedAt), `${evidence.suiteId}: service operation ${required.id} timestamps are invalid.`);
+      invariant(previousEndedAt === null || Date.parse(actual.startedAt) >= previousEndedAt, `${evidence.suiteId}: service operation ${required.id} overlaps or precedes the prior operation.`);
+      previousEndedAt = Date.parse(actual.endedAt);
+    }
+    invariant(serviceTrace.operations[2].requiredRevisionIdSha256 === serviceTrace.beforeRevisionIdSha256
+      && serviceTrace.operations[3].revisionIdSha256 === serviceTrace.afterRevisionIdSha256, `${evidence.suiteId}: batchUpdate/readback revision binding drifted.`);
+    invariant(evidence.automation.captureManifest && Array.isArray(evidence.automation.snapshots) && evidence.automation.snapshots.length >= 3, `${evidence.suiteId}: service capture receipts are incomplete.`);
   }
 
   invariant(evidence.operation && ["opened", "imported", "saved", "reopened", "exported"].every((key) => evidence.operation[key] === true), `${evidence.suiteId}: application operation chain is incomplete.`);
@@ -202,9 +286,12 @@ export async function validateC19SuiteEvidence(evidence, {
   }, `${evidence.suiteId} result`);
   validateChecks(evidence.semantic.coreChecks, contract.coreSemanticChecks, `${evidence.suiteId} core`, ["preserved"]);
   validateChecks(evidence.semantic.advancedChecks, contract.advancedSemanticChecks, `${evidence.suiteId} advanced`, contract.allowedAdvancedOutcomes);
+  validateAdvancedInventoryBindings(evidence, contract);
 
   invariant(evidence.render?.renderer && typeof evidence.render.renderer.name === "string" && evidence.render.renderer.name.length > 0, `${evidence.suiteId}: renderer identity is missing.`);
   invariant(typeof evidence.render.renderer.version === "string" && evidence.render.renderer.version.length > 0 && !/^unknown$/iu.test(evidence.render.renderer.version), `${evidence.suiteId}: renderer version is missing.`);
+  invariant(evidence.render.review, `${evidence.suiteId}: hash-bound visual review is missing.`);
+  if (proof.mode === "authenticated-service-automation") invariant(evidence.render.sourceDocument && /\.pdf$/iu.test(evidence.render.sourceDocument.path ?? ""), `${evidence.suiteId}: service-produced PDF render source is missing.`);
   invariant(Array.isArray(evidence.render.slides) && evidence.render.slides.length === evidence.resultDeck.slideCount, `${evidence.suiteId}: per-slide render set is incomplete.`);
   const slideNumbers = evidence.render.slides.map((item) => item.slide);
   invariant(new Set(slideNumbers).size === slideNumbers.length && slideNumbers.every((item, index) => item === index + 1), `${evidence.suiteId}: render slide identities are not complete and ordered.`);
@@ -243,6 +330,19 @@ export async function runC19DestructiveControls(validEvidence, options) {
     ["missing-semantic-core-check", (item) => { item.semantic.coreChecks.pop(); }],
     ["missing-render-slide", (item) => { item.render.slides.pop(); }],
   ];
+  if (validEvidence.automation?.mode === "authenticated-service-automation") {
+    controls.push(
+      ["missing-authenticated-service-proof", (item) => { item.automation.authenticated = false; }],
+      ["service-api-origin-drift", (item) => { item.application.serviceOrigins[0] = "https://example.invalid"; }],
+      ["service-discovery-revision-missing", (item) => { item.automation.discovery[0].revision = "unknown"; }],
+      ["service-operation-sequence-drift", (item) => { [item.automation.serviceTrace.operations[1], item.automation.serviceTrace.operations[2]] = [item.automation.serviceTrace.operations[2], item.automation.serviceTrace.operations[1]]; }],
+      ["false-preserved-advanced-outcome", (item) => {
+        const chart = item.semantic.advancedChecks.find((check) => check.id === "native-chart");
+        chart.outcome = chart.outcome === "preserved" ? "unsupported" : "preserved";
+      }],
+      ["missing-service-pdf", (item) => { delete item.render.sourceDocument; }],
+    );
+  }
   const results = [];
   for (const [id, mutate] of controls) {
     const mutant = structuredClone(validEvidence);
@@ -275,7 +375,7 @@ function receiptForBytes(relative, bytes) {
   return { path: relative, byteLength: bytes.length, sha256: sha256(bytes) };
 }
 
-export async function verifyPublishedC19Evidence({ root, published = path.join(root, "evidence", "c19", "v1") }) {
+export async function verifyPublishedC19Evidence({ root, published = path.join(root, "evidence", "c19", "v2") }) {
   const pointerPath = path.join(published, "current.json");
   let pointer;
   try { pointer = await readJson(pointerPath); }
@@ -283,7 +383,7 @@ export async function verifyPublishedC19Evidence({ root, published = path.join(r
     if (error?.code === "ENOENT") throw new Error("C19 public evidence is pending: no replicated six-suite matrix has been imported.");
     throw error;
   }
-  invariant(pointer.schemaVersion === "slidewright-c19-current/v1" && pointer.valid === true && pointer.state === "replicated", "C19 public pointer is absent, incomplete, or not replicated.");
+  invariant(pointer.schemaVersion === "slidewright-c19-current/v2" && pointer.valid === true && pointer.state === "replicated", "C19 public pointer is absent, incomplete, or not replicated.");
   invariant(pointer.pointerHash === canonicalHash(pointer, "pointerHash"), "C19 public pointer hash mismatch.");
   invariant(DIGEST.test(pointer.scorecardHash ?? "") && pointer.run === `runs/${pointer.scorecardHash}`, "C19 public run pointer is invalid.");
   invariant(COMMIT.test(pointer.sourceCommit ?? "") && REPOSITORY.test(pointer.repository ?? "") && /^\d+$/u.test(`${pointer.runId ?? ""}`), "C19 public attribution is invalid.");
@@ -299,7 +399,7 @@ export async function verifyPublishedC19Evidence({ root, published = path.join(r
     && pointer.files.scorecard.byteLength === scorecardBytes.length
     && pointer.files.scorecard.sha256 === sha256(scorecardBytes), "C19 public scorecard bytes drifted.");
   const scorecard = JSON.parse(scorecardBytes.toString("utf8"));
-  invariant(scorecard.schemaVersion === "slidewright-c19-matrix-scorecard/v1" && scorecard.valid === true && scorecard.allRequiredSuitesVerified === true, "C19 public scorecard is incomplete.");
+  invariant(scorecard.schemaVersion === "slidewright-c19-matrix-scorecard/v2" && scorecard.valid === true && scorecard.allRequiredSuitesVerified === true, "C19 public scorecard is incomplete.");
   invariant(scorecard.scorecardHash === pointer.scorecardHash && scorecard.scorecardHash === canonicalHash(scorecard, "scorecardHash"), "C19 public scorecard hash mismatch.");
   invariant(scorecard.contractHash === contractHash && scorecard.sourceCommit === pointer.sourceCommit && scorecard.repository === pointer.repository
     && `${scorecard.runId}` === `${pointer.runId}` && scorecard.runUrl === pointer.runUrl, "C19 public scorecard attribution drifted.");

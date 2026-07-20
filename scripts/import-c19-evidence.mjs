@@ -33,7 +33,7 @@ async function writeAtomic(file, contents) {
   finally { await fs.rm(temporary, { force: true }); }
 }
 
-export async function importC19Evidence({ root, input, artifactsFile, runId, sourceCommit, repository, published = path.join(root, "evidence", "c19", "v1"), enforceCheckout = true }) {
+export async function importC19Evidence({ root, input, artifactsFile, runId, sourceCommit, repository, published = path.join(root, "evidence", "c19", "v2"), enforceCheckout = true }) {
   invariant(/^\d+$/u.test(`${runId}`) && /^[a-f0-9]{40}$/u.test(sourceCommit ?? "")
     && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository ?? ""), "C19 import attribution is invalid.");
   if (enforceCheckout) {
@@ -98,7 +98,7 @@ export async function importC19Evidence({ root, input, artifactsFile, runId, sou
     };
   });
   const scorecard = {
-    schemaVersion: "slidewright-c19-matrix-scorecard/v1",
+    schemaVersion: "slidewright-c19-matrix-scorecard/v2",
     valid: true,
     allRequiredSuitesVerified: true,
     contractHash,
@@ -141,7 +141,7 @@ export async function importC19Evidence({ root, input, artifactsFile, runId, sou
       suiteReceipts.push(receiptForBytes(`${runRelative}/suites/${suiteId}.json`, bytes));
     }
     const pointer = {
-      schemaVersion: "slidewright-c19-current/v1",
+      schemaVersion: "slidewright-c19-current/v2",
       valid: true,
       state: "replicated",
       scorecardHash: scorecard.scorecardHash,

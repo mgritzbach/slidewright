@@ -1,29 +1,55 @@
 # C19 cross-suite interoperability evidence contract
 
-C19 is not credited by a screenshot, a successful file upload, application detection, or a user saying that a deck looked correct. Publication requires six application-generated evidence bundles for one exact source deck and one exact clean Slidewright commit:
+C19 is not credited by a screenshot, a successful file upload, application detection, an API response in isolation, or a user saying that a deck looked correct. Publication requires six application-generated evidence bundles for one exact source deck and one exact clean Slidewright commit:
 
 1. PowerPoint on Windows through owned COM automation.
 2. PowerPoint on macOS through AppleScript automation.
-3. Google Slides through authenticated browser automation.
+3. Google Slides through authenticated browser automation or authenticated Slides API v1 plus Drive API v3 service automation.
 4. Keynote on macOS through AppleScript automation.
 5. LibreOffice Impress through UNO automation.
 6. Canva through authenticated browser automation.
 
-`fixtures/interoperability/c19-v1/contract.json` freezes the suite identities, minimum fixture inventory, semantic checks, and render checks. `schemas/c19-interop-suite.schema.json` documents the evidence envelope. The JavaScript verifier is authoritative and fails closed.
+`fixtures/interoperability/c19-v2/contract.json` freezes the suite identities, mode-specific proof requirements, minimum fixture inventory, semantic checks, and render checks. `schemas/c19-interop-suite-v2.schema.json` documents the evidence envelope. The JavaScript verifier is authoritative and fails closed.
 
 ## What a suite bundle must prove
 
 Every suite artifact is named `slidewright-c19-<suite>-<40-character-commit>` and contains `suite-evidence.json` plus every file named by its receipts. The evidence binds:
 
 - the repository, exact clean commit, source PPTX bytes, result PPTX bytes, and semantic inventories;
-- the application name, non-unknown version, host, automation protocol, owned process or authenticated browser trace, application log, and runner implementation;
+- the application name, non-unknown version attribution, host, automation protocol, owned process or authenticated-service trace, application log, and runner implementation;
 - open/import, save/export, reopen, and a native sentinel-text edit that survives reopening;
-- all slides rendered at reviewable resolution with readable, unclipped, and non-blank checks;
-- preserved core behavior and explicit `preserved`, `changed`, or `unsupported` results for mixed emphasis, tables, charts, groups, and connectors.
+- all slides rendered at reviewable resolution with a review decision bound to each exact image hash;
+- preserved core behavior and explicit `preserved`, `changed`, or `unsupported` results for mixed emphasis, tables, charts, groups, and attached connectors.
 
-The matrix importer opens and hashes the files in every downloaded artifact. It independently executes eight destructive controls per suite and refuses a partial matrix, mixed deck hashes, dirty or mismatched commits, unknown tool versions, self-reports, missing traces, incomplete semantics, missing renders, or unauthenticated GitHub artifact metadata.
+The matrix importer opens and hashes the files in every downloaded artifact. It independently executes destructive controls per suite and refuses a partial matrix, mixed deck hashes, dirty or mismatched commits, unknown tool versions, self-reports, missing traces, incomplete semantics, missing renders, false advanced outcomes, or unauthenticated GitHub artifact metadata.
 
-Advanced features are reported honestly. An `unsupported` chart or connector result may describe real import behavior, but core native text, slide count, reading order, the editable sentinel, and absence of a full-slide raster fallback must be preserved.
+Advanced features are reported honestly and are cross-checked against independent OOXML inventories. For example, if Google Slides converts the two Office charts into ordinary images, `native-chart` must be `unsupported`, the result inventory must contain zero native chart parts, and the bundle must still prove that the deck was not flattened into full-slide pictures. Core native text, slide count, ordered visible text, the editable sentinel, and absence of a full-slide raster fallback must remain preserved.
+
+## Authenticated Google service automation
+
+The v2 contract does not mislabel an API run as browser automation. `authenticated-service-automation` is a distinct proof mode with these requirements:
+
+- OAuth-authenticated private-file operations and a SHA-256 pseudonym for the principal; access tokens, refresh tokens, client secrets, and private keys are prohibited from the bundle;
+- captured discovery documents for `slides:v1` and `drive:v3`, including the exact discovery revisions used for version attribution;
+- exact service origins `https://slides.googleapis.com` and `https://www.googleapis.com`;
+- one resource-bound sequence: Drive import, Slides read, revision-controlled `batchUpdate`, Slides readback, Drive PPTX export, Drive PDF export, and Drive cleanup;
+- distinct before/after revision hashes, request/response hashes, successful status codes, and timestamps for every operation;
+- source and exported PPTX artifacts, the service-produced PDF, per-slide renders, API snapshots, and a hash-bound full-size visual review.
+
+Google does not expose a user-facing Slides deployment build through these APIs. Slidewright therefore records `application.versionKind: api-discovery-revision`, derives the version string from the captured Slides v1 and Drive v3 discovery revisions, and records `serviceBuildExposed: false`. It never invents a Google Slides UI build number. The official API defines [`presentations.get`](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get) and revision-controlled [`presentations.batchUpdate`](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/batchUpdate) at `slides.googleapis.com/v1`; Drive API v3 performs the import and [`files.export`](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/export) returns the Google presentation as PPTX and PDF bytes.
+
+The repository runner is deliberately credential-free. An authenticated client creates a redacted capture matching `schemas/c19-google-slides-capture.schema.json`; the local importer receives no credentials:
+
+```text
+node scripts/c19/run_google_slides_suite.mjs \
+  --capture <redacted-capture-root> \
+  --out <artifact-root> \
+  --repository <owner/repo>
+```
+
+The capture root must contain `capture-manifest.json` and hash receipts for the source/result PPTX, result PDF, application log, service trace, both discovery documents, before/update/after snapshots, review decisions, and every slide render. The importer rejects credential-like material, missing or altered files, a second undeclared text edit, a reading-order change, a visual-review hash mismatch, or a claimed advanced outcome that contradicts the independent inventories.
+
+A visual defect cannot be normalized away only in the Google copy. If the exact shared fixture clips in Google Slides, that suite fails. Fix the canonical source fixture, commit it, and rerun every suite against the new exact bytes. This preserves the one-deck/same-commit requirement.
 
 ## Host workflow
 
@@ -45,8 +71,6 @@ The LibreOffice adapter refuses every pre-existing LibreOffice process, launches
 node scripts/c19/run_libreoffice_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
 ```
 
-The host must provide LibreOffice, Java/Javac, and `pdftoppm`. Override discovery only with explicit executable paths: `SLIDEWRIGHT_LIBREOFFICE`, `SLIDEWRIGHT_JAVA`, `SLIDEWRIGHT_JAVAC`, and `SLIDEWRIGHT_PDFTOPPM`. Installation or detection never counts as evidence; only a clean-commit bundle that independently validates does.
-
 After all seven GitHub artifacts (six suite bundles and the matrix artifact) are downloaded, publish only through:
 
 ```text
@@ -54,8 +78,8 @@ node scripts/import-c19-evidence.mjs --input <download-root> --artifacts <github
 node scripts/verify-c19-interop-evidence.mjs
 ```
 
-Running the benchmark without `--evidence` prints capability and publication status. A detected application remains `evidence: false`; this prevents a local installation from being mistaken for a completed suite run.
+Running the benchmark without `--evidence` prints capability and publication status. A detected application or available capture importer remains `evidence: false`; this prevents an installation or adapter from being mistaken for a completed suite run.
 
 ## Current proof boundary
 
-The contract, importer, verifier, destructive controls, PowerPoint Windows adapter, and LibreOffice UNO adapter exist. Until six real bundles are imported, `evidence/c19/v1/current.json` does not exist and the release verifier fails. That explicit pending state is intentional. Application detection is not credited, and the macOS and authenticated web suites require their respective hosts and sessions.
+The v2 contract, importer, verifier, destructive controls, PowerPoint Windows adapter, LibreOffice UNO adapter, and credential-free authenticated Google service capture importer exist. Exploratory runs made before the v2 contract and committed runner are not C19 evidence. Until six fresh real bundles from one later clean commit are imported, `evidence/c19/v2/current.json` does not exist, C19 remains `0`, and the release verifier fails intentionally.

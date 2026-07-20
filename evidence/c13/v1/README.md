@@ -1,7 +1,10 @@
 # C13 external review responses
 
 This directory is intentionally empty until real independent human responses
-are collected. Import completed responses with:
+are collected. Reviewers should use the generated offline forms under
+`outputs/professional-quality/reviewer-packet/`; those forms download complete,
+assignment-bound JSON without collecting names, emails, employers, or free-form
+text. Import each downloaded response with:
 
 ```powershell
 node scripts/import-professional-quality-response.mjs --input C:\path\to\response.json

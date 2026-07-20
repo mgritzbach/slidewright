@@ -40,4 +40,4 @@ proof.proofHash = sha256(JSON.stringify(copy));
 const output = path.resolve(args.out);
 await fs.mkdir(path.dirname(output), { recursive: true });
 await fs.writeFile(output, `${JSON.stringify(proof, null, 2)}\n`, "utf8");
-console.log(JSON.stringify({ output, discoveryUseValid: proof.discoveryUseValid, nonceProofValid: proof.nonceProofValid, surfaceComplete: proof.surfaceComplete, proofHash: proof.proofHash }, null, 2));
+console.log(JSON.stringify({ output, discoveryValid: proof.discoveryValid, installedReadValid: proof.installedReadValid, clientInvocationValid: proof.clientInvocationValid, nonceProofValid: proof.nonceProofValid, surfaceComplete: proof.surfaceComplete, proofHash: proof.proofHash }, null, 2));

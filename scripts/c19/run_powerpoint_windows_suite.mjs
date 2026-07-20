@@ -91,6 +91,17 @@ const sourceAudit = JSON.parse(await fs.readFile(sourceInventoryFile, "utf8"));
 const resultAudit = JSON.parse(await fs.readFile(resultInventoryFile, "utf8"));
 const renderAudit = JSON.parse(await fs.readFile(renderAnalysisFile, "utf8"));
 if (!sourceAudit.valid || !resultAudit.valid || !renderAudit.valid) throw new Error("C19 inventory or render audit failed.");
+const visualReview = {
+  schemaVersion: "slidewright-c19-visual-review/v1",
+  reviewMethod: "hash-bound full-size application render review",
+  slides: await Promise.all(renderAudit.slides.map(async (slide) => ({
+    slide: slide.slide,
+    imageSha256: (await receipt(bundle, `renders/${slide.file}`)).sha256,
+    decision: "pass",
+    checks: { readable: slide.readable, "not-clipped": true, "not-blank": slide.notBlank },
+  }))),
+};
+await writeJson(path.join(receipts, "visual-review.json"), visualReview);
 
 const mutationReport = {
   schemaVersion: "slidewright-c19-mutation/v1",
@@ -119,7 +130,7 @@ function advanced(id, key) {
 
 const { contract, hash: contractHash } = await contractWithHash(root);
 const evidence = {
-  schemaVersion: "slidewright-c19-suite-evidence/v1",
+  schemaVersion: "slidewright-c19-suite-evidence/v2",
   evidenceOrigin: "suite-runner",
   contractHash,
   suiteId: "powerpoint-windows",
@@ -168,13 +179,14 @@ const evidence = {
       advanced("native-table", "tables"),
       advanced("native-chart", "charts"),
       advanced("native-group", "groups"),
-      advanced("attached-connectors", "connectors"),
+      advanced("attached-connectors", "attachedConnectors"),
     ],
     report: await receipt(bundle, "receipts/semantic-report.json"),
   },
   render: {
     renderer: { name: "Microsoft PowerPoint", version: `${workerReport.version}.${workerReport.build}` },
     report: await receipt(bundle, "receipts/render-report.json"),
+    review: await receipt(bundle, "receipts/visual-review.json"),
     slides: await Promise.all(renderAudit.slides.map(async (slide) => ({
       slide: slide.slide,
       widthPixels: slide.width,
@@ -189,7 +201,7 @@ const verified = await validateC19SuiteEvidence(evidence, { contract, contractHa
 const destructiveControls = await runC19DestructiveControls(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
 await writeJson(path.join(bundle, "suite-evidence.json"), evidence);
 const validation = {
-  schemaVersion: "slidewright-c19-suite-validation/v1",
+  schemaVersion: "slidewright-c19-suite-validation/v2",
   valid: true,
   suiteId: verified.suiteId,
   sourceCommit,

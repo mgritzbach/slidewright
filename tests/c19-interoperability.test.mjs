@@ -27,17 +27,20 @@ function pptxBytes(label) {
   return Buffer.from(`PK\u0003\u0004${label}\n[Content_Types].xml\nppt/presentation.xml\n`, "utf8");
 }
 
-function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 source deck" } = {}) {
+function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 source deck", proofMode = null, unsupportedCharts = false } = {}) {
   const source = receipt("artifacts/source.pptx", pptxBytes(sourceContents));
   const result = receipt("artifacts/result.pptx", pptxBytes(`${suite.id} result deck`));
   const plain = (name) => receipt(`receipts/${name}`, `${suite.id}/${name}`);
   const implementation = plain("runner.mjs");
-  const sourceInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: 1, groups: 1, connectors: 1 };
-  const resultInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: 1, groups: 1, connectors: 1 };
+  const selectedProof = suite.proofMode
+    ? { mode: suite.proofMode, automationProtocol: suite.automationProtocol, requiresAuthenticatedSession: suite.requiresAuthenticatedSession, serviceOrigins: suite.serviceOrigins }
+    : suite.proofModes.find((item) => item.mode === (proofMode ?? "browser-automation"));
+  const sourceInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: 1, groups: 1, connectors: 1, attachedConnectors: 1 };
+  const resultInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: unsupportedCharts ? 0 : 1, groups: 1, connectors: 1, attachedConnectors: 1 };
   const sourceInventoryHash = sha256(JSON.stringify(Object.fromEntries(Object.entries(sourceInventory).sort())));
   const resultInventoryHash = sha256(JSON.stringify(Object.fromEntries(Object.entries(resultInventory).sort())));
   const evidence = {
-    schemaVersion: "slidewright-c19-suite-evidence/v1",
+    schemaVersion: "slidewright-c19-suite-evidence/v2",
     evidenceOrigin: "suite-runner",
     contractHash,
     suiteId: suite.id,
@@ -58,16 +61,19 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
       name: suite.application,
       version: "1.2.3",
       platform: suite.platform === "any-desktop" ? "windows" : suite.platform,
-      ...(suite.proofMode === "desktop-automation" ? { executableSha256: sha256(`${suite.id}/executable`) } : { serviceOrigin: suite.serviceOrigin }),
+      ...(selectedProof.mode === "desktop-automation"
+        ? { executableSha256: sha256(`${suite.id}/executable`) }
+        : { serviceOrigins: selectedProof.serviceOrigins }),
     },
     automation: {
-      mode: suite.proofMode,
+      mode: selectedProof.mode,
+      protocol: selectedProof.automationProtocol,
       startedAt: "2026-07-18T00:00:00.000Z",
       endedAt: "2026-07-18T00:01:00.000Z",
       applicationLog: plain("application.log"),
       trace: plain("automation-trace.zip"),
-      ...(suite.proofMode === "desktop-automation"
-        ? { protocol: suite.automationProtocol, processId: 4123 }
+      ...(selectedProof.mode === "desktop-automation"
+        ? { processId: 4123 }
         : { browser: { name: "Chromium", version: "140.0.0" } }),
     },
     sourceDeck: { artifact: source, slideCount: 2, inventoryHash: sourceInventoryHash },
@@ -87,12 +93,13 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
       sourceInventory,
       resultInventory,
       coreChecks: ["slide-count", "native-visible-text", "sentinel-edit-roundtrip", "no-full-slide-raster", "reading-order"].map((id) => ({ id, outcome: "preserved", details: `${id} was measured by the suite adapter.` })),
-      advancedChecks: ["mixed-emphasis", "native-table", "native-chart", "native-group", "attached-connectors"].map((id) => ({ id, outcome: "preserved", details: `${id} remained native in the exported deck.` })),
+      advancedChecks: ["mixed-emphasis", "native-table", "native-chart", "native-group", "attached-connectors"].map((id) => ({ id, outcome: id === "native-chart" && unsupportedCharts ? "unsupported" : "preserved", details: `${id} outcome was derived from the exported-deck inventory.` })),
       report: plain("semantic.json"),
     },
     render: {
       renderer: { name: suite.application, version: "1.2.3" },
       report: plain("render.json"),
+      review: plain("visual-review.json"),
       slides: [1, 2].map((slide) => ({
         slide,
         widthPixels: 1600,
@@ -102,10 +109,58 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
       })),
     },
   };
+  if (selectedProof.mode === "browser-automation" && selectedProof.requiresAuthenticatedSession) {
+    evidence.automation.authenticated = true;
+    evidence.automation.authentication = { type: "browser-session", principalSha256: sha256("browser-principal") };
+  }
+  if (selectedProof.mode === "authenticated-service-automation") {
+    const resourceIdSha256 = sha256("google-resource");
+    const beforeRevisionIdSha256 = sha256("before-revision");
+    const afterRevisionIdSha256 = sha256("after-revision");
+    const discovery = selectedProof.requiredApis.map((api) => ({ ...api, revision: "20260713", artifact: plain(`${api.id.replace(":", "-")}-discovery.json`) }));
+    const serviceTrace = {
+      authenticated: true,
+      resourceIdSha256,
+      beforeRevisionIdSha256,
+      afterRevisionIdSha256,
+      operations: selectedProof.requiredOperationSequence.map((operation, index) => ({
+        ...operation,
+        status: 200,
+        resourceIdSha256,
+        requestSha256: sha256(`${operation.id}/request`),
+        responseSha256: sha256(`${operation.id}/response`),
+        startedAt: `2026-07-18T00:00:0${index}.000Z`,
+        endedAt: `2026-07-18T00:00:0${index}.500Z`,
+        ...(operation.id === "native-edit" ? { requiredRevisionIdSha256: beforeRevisionIdSha256 } : {}),
+        ...(operation.id === "reopen-after" ? { revisionIdSha256: afterRevisionIdSha256 } : {}),
+      })),
+    };
+    evidence.application.version = discovery.map((item) => `${item.id}@${item.revision}`).join("+");
+    evidence.application.versionKind = "api-discovery-revision";
+    evidence.application.serviceBuildExposed = false;
+    delete evidence.automation.browser;
+    evidence.automation.authenticated = true;
+    evidence.automation.authentication = {
+      type: "oauth2-user",
+      principalSha256: sha256("principal"),
+      scopes: [selectedProof.acceptedWriteScopes[0]],
+      resourceIdSha256,
+    };
+    evidence.automation.discovery = discovery;
+    evidence.automation.serviceTrace = serviceTrace;
+    evidence.automation.captureManifest = plain("capture-manifest.json");
+    evidence.automation.snapshots = [plain("before.json"), plain("update.json"), plain("after.json")];
+    evidence.render.sourceDocument = receipt("exports/result.pdf", "%PDF-1.7\nfixture");
+    evidence.render.renderer.version = evidence.application.version;
+  }
   const receiptValues = [
     evidence.runner.implementation[0], evidence.automation.applicationLog, evidence.automation.trace,
     evidence.sourceDeck.artifact, evidence.resultDeck.artifact, evidence.mutation.report,
-    evidence.semantic.report, evidence.render.report, ...evidence.render.slides.map((item) => item.image),
+    evidence.semantic.report, evidence.render.report, evidence.render.review, ...evidence.render.slides.map((item) => item.image),
+    ...(evidence.render.sourceDocument ? [evidence.render.sourceDocument] : []),
+    ...(evidence.automation.captureManifest ? [evidence.automation.captureManifest] : []),
+    ...(evidence.automation.discovery ?? []).map((item) => item.artifact),
+    ...(evidence.automation.snapshots ?? []),
   ];
   const files = receiptValues.map((item) => ({ ...item, contents: item.contents }));
   for (const item of receiptValues) delete item.contents;
@@ -126,7 +181,9 @@ test("C19 contract freezes all six target suites and honest advanced outcomes", 
   assert.deepEqual(contract.allowedAdvancedOutcomes, ["preserved", "changed", "unsupported"]);
   assert.equal(contract.publication.requiresAllSuites, true);
   assert.equal(contract.publication.requiresOneExactSourceDeckAcrossSuites, true);
-  const schema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-interop-suite.schema.json"), "utf8"));
+  const google = contract.requiredSuites.find((item) => item.id === "google-slides");
+  assert.ok(google.proofModes.some((item) => item.mode === "authenticated-service-automation"));
+  const schema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-interop-suite-v2.schema.json"), "utf8"));
   assert.equal(schema.properties.evidenceOrigin.const, "suite-runner");
 });
 
@@ -136,11 +193,31 @@ test("C19 validates automation-bound suite evidence and rejects eight destructiv
     const { evidence } = suiteEvidence(suite, contractHash);
     const verified = await validateC19SuiteEvidence(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
     assert.equal(verified.suiteId, suite.id);
-    assert.equal(verified.receipts, 10);
+    assert.equal(verified.receipts, 11);
     const controls = await runC19DestructiveControls(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
     assert.equal(controls.length, 8);
     assert.ok(controls.every((item) => item.rejected));
   }
+});
+
+test("C19 accepts revision-bound authenticated Google service automation and reports Office charts unsupported", async () => {
+  const { contract, hash: contractHash } = await contractWithHash(root);
+  const suite = contract.requiredSuites.find((item) => item.id === "google-slides");
+  const { evidence } = suiteEvidence(suite, contractHash, { proofMode: "authenticated-service-automation", unsupportedCharts: true });
+  const verified = await validateC19SuiteEvidence(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
+  assert.equal(verified.suiteId, "google-slides");
+  assert.equal(evidence.semantic.advancedChecks.find((item) => item.id === "native-chart").outcome, "unsupported");
+  const controls = await runC19DestructiveControls(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
+  assert.equal(controls.length, 14);
+  assert.ok(controls.every((item) => item.rejected));
+
+  const extraScope = structuredClone(evidence);
+  extraScope.automation.authentication.scopes.push("https://www.googleapis.com/auth/gmail.readonly");
+  await assert.rejects(() => validateC19SuiteEvidence(extraScope, { contract, contractHash }), /scope allowlist/u);
+
+  const overlappingTrace = structuredClone(evidence);
+  overlappingTrace.automation.serviceTrace.operations[1].startedAt = overlappingTrace.automation.serviceTrace.operations[0].startedAt;
+  await assert.rejects(() => validateC19SuiteEvidence(overlappingTrace, { contract, contractHash }), /overlaps or precedes/u);
 });
 
 test("C19 rejects self-reports, unknown versions, partial semantics, and unbound artifact bodies", async (t) => {
@@ -240,4 +317,20 @@ test("C19 LibreOffice adapter owns an isolated UNO process and performs a native
   assert.match(worker, /impress_pdf_Export/u);
   assert.match(runner, /verifyArtifactBodies: true/u);
   assert.match(runner, /runC19DestructiveControls/u);
+});
+
+test("C19 Google Slides importer is credential-free, revision-bound, and fails on collateral text edits", async () => {
+  const runner = await fs.readFile(path.join(root, "scripts", "c19", "run_google_slides_suite.mjs"), "utf8");
+  const captureSchema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-google-slides-capture.schema.json"), "utf8"));
+  assert.equal(captureSchema.properties.captureOrigin.const, "authenticated-google-service-automation");
+  assert.match(runner, /C19 Google Slides evidence requires an exact clean Git checkout/u);
+  assert.match(runner, /rejectSecretBearingCapture/u);
+  assert.match(runner, /identity-bearing fields/u);
+  assert.match(runner, /api-discovery-revision/u);
+  assert.match(runner, /beforeRevisionIdSha256/u);
+  assert.match(runner, /visibleTextOrder/u);
+  assert.match(runner, /changed native visible-text reading order or made an undeclared text edit/u);
+  assert.match(runner, /advanced\("native-chart", "charts"\)/u);
+  assert.match(runner, /sourceDocument: manifest\.files\.resultPdf/u);
+  assert.doesNotMatch(runner, /GOOGLE_APPLICATION_CREDENTIALS|Authorization:\s*Bearer|refreshToken/u);
 });
