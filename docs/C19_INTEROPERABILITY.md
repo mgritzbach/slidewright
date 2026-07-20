@@ -42,7 +42,7 @@ node scripts/c19/run_powerpoint_windows_suite.mjs --source <semantic-surface.ppt
 The LibreOffice adapter refuses every pre-existing LibreOffice process, launches an isolated headless profile and socket, performs the sentinel edit through the real UNO Java bridge, exports and reopens PPTX, exports a PDF through Impress, renders every PDF page, waits for natural application termination, and applies the same independent OOXML and destructive-control gates:
 
 ```text
-npm run interoperability:libreoffice -- --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
+node scripts/c19/run_libreoffice_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
 ```
 
 The host must provide LibreOffice, Java/Javac, and `pdftoppm`. Override discovery only with explicit executable paths: `SLIDEWRIGHT_LIBREOFFICE`, `SLIDEWRIGHT_JAVA`, `SLIDEWRIGHT_JAVAC`, and `SLIDEWRIGHT_PDFTOPPM`. Installation or detection never counts as evidence; only a clean-commit bundle that independently validates does.
