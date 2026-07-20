@@ -135,6 +135,30 @@ test("C10 PowerPoint worker is isolated and has no destructive process-control p
   assert.doesNotMatch(worker, /GetActiveObject|AttachActive|\.Quit\s*\(|Stop-Process|\.Kill\s*\(/u);
 });
 
+test("C10 semantic auditor normalizes only an explicit clean text cache marker", () => {
+  const auditor = path.join(scripts, "template", "audit_powerpoint_roundtrip_semantics.py");
+  const probe = [
+    "import importlib.util,json,sys",
+    "spec=importlib.util.spec_from_file_location('audit',sys.argv[1])",
+    "module=importlib.util.module_from_spec(spec)",
+    "spec.loader.exec_module(module)",
+    `namespace='${"http://schemas.openxmlformats.org/drawingml/2006/main"}'`,
+    "base=f'<a:rPr xmlns:a=\"{namespace}\" lang=\"en-US\"/>' .encode()",
+    "clean=f'<a:rPr xmlns:a=\"{namespace}\" lang=\"en-US\" dirty=\"0\"/>' .encode()",
+    "dirty=f'<a:rPr xmlns:a=\"{namespace}\" lang=\"en-US\" dirty=\"1\"/>' .encode()",
+    "base_value,_=module.normalize_xml('ppt/slides/slide1.xml',base)",
+    "clean_value,clean_labels=module.normalize_xml('ppt/slides/slide1.xml',clean)",
+    "dirty_value,dirty_labels=module.normalize_xml('ppt/slides/slide1.xml',dirty)",
+    "print(json.dumps({'cleanEqual':base_value==clean_value,'dirtyEqual':base_value==dirty_value,'cleanLabels':clean_labels,'dirtyLabels':dirty_labels}))",
+  ].join(";");
+  const completed = run(python, ["-c", probe, auditor]);
+  const result = JSON.parse(completed.stdout);
+  assert.equal(result.cleanEqual, true);
+  assert.equal(result.dirtyEqual, false);
+  assert.ok(result.cleanLabels.includes("explicit-clean-text-cache"));
+  assert.ok(!result.dirtyLabels.includes("explicit-clean-text-cache"));
+});
+
 test("C10 semantic auditor rejects chart, workbook, table, hyperlink, media, and native-object drift", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-c10-semantic-controls-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));

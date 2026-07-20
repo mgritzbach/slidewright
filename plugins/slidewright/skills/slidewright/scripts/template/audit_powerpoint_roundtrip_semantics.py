@@ -64,6 +64,13 @@ def normalize_xml(part: str, data: bytes) -> tuple[Any, list[str]]:
     normalizations: set[str] = set()
 
     def visit(node: ET.Element) -> None:
+        # Current PowerPoint materializes an explicit clean-cache marker on
+        # table-cell runs during SaveAs. Absence and dirty="0" are equivalent;
+        # dirty="1" remains semantic and must never be normalized.
+        if node.tag in {f"{{{A}}}rPr", f"{{{A}}}endParaRPr"} and node.get("dirty") == "0":
+            del node.attrib["dirty"]
+            normalizations.add("explicit-clean-text-cache")
+
         # PowerPoint refreshes only the displayed value of dynamic fields.  The
         # field type, ID, formatting, and all surrounding text remain audited.
         if node.tag == f"{{{A}}}fld" and node.get("type", "").lower().startswith(("datetime", "slidenum")):
