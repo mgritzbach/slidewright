@@ -313,6 +313,9 @@ test("C19 LibreOffice adapter owns an isolated UNO process and performs a native
   assert.doesNotMatch(runner, /taskkill|Stop-Process|\.kill\s*\(/iu);
   assert.match(worker, /targetText\.setString\(replacement\)/u);
   assert.match(worker, /Impress MS PowerPoint 2007 XML/u);
+  assert.match(worker, /UnoRuntime\.queryInterface\(XCloseable\.class, document\)/u);
+  assert.match(worker, /closeable\.close\(true\)/u);
+  assert.doesNotMatch(worker, /close\(source\);\s*source = null;\s*reopened = load/u);
   assert.match(worker, /reopenedNativeTextMatched/u);
   assert.match(worker, /impress_pdf_Export/u);
   assert.match(runner, /verifyArtifactBodies: true/u);

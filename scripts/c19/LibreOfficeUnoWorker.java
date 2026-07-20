@@ -12,6 +12,7 @@ import com.sun.star.lang.XComponent;
 import com.sun.star.text.XText;
 import com.sun.star.uno.UnoRuntime;
 import com.sun.star.uno.XComponentContext;
+import com.sun.star.util.XCloseable;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -85,6 +86,11 @@ public final class LibreOfficeUnoWorker {
 
   private static void close(XComponent document) throws Exception {
     if (document == null) return;
+    XCloseable closeable = UnoRuntime.queryInterface(XCloseable.class, document);
+    if (closeable != null) {
+      closeable.close(true);
+      return;
+    }
     document.dispose();
   }
 
@@ -137,8 +143,6 @@ public final class LibreOfficeUnoWorker {
         property("FilterName", "Impress MS PowerPoint 2007 XML"),
         property("Overwrite", Boolean.TRUE)
       });
-      close(source);
-      source = null;
 
       reopened = load(loader, output);
       Object reopenedShape = findNamedShape(reopened, target);
