@@ -1,6 +1,6 @@
 {
   "name": "slidewright",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Compile ideas into formatting-safe, native editable PowerPoint decks and verify the exported artifact.",
   "author": {
     "name": "Michael Gritzbach"
