@@ -131,7 +131,7 @@ export function validateDeckSpec(spec) {
       if (slide.items.filter((item) => item.emphasis === true).length > 1) throw new Error(`slides[${index}] may emphasize at most one point.`);
     } else if (slide.layout === "polygon-cycle") {
       assertText(slide.title, `slides[${index}].title`, true);
-      if (!Array.isArray(slide.items) || slide.items.length < 3 || slide.items.length > 8) throw new Error(`slides[${index}].items must contain 3-8 related points.`);
+      if (!Array.isArray(slide.items) || slide.items.length < 3 || slide.items.length > 12) throw new Error(`slides[${index}].items must contain 3-12 related points.`);
       if (!['cycle', 'system', 'perimeter', 'mutual-reinforcement'].includes(slide.relationship)) throw new Error(`slides[${index}].relationship must be 'cycle', 'system', 'perimeter', or 'mutual-reinforcement'.`);
       if (slide.center != null) assertText(slide.center, `slides[${index}].center`, true);
       const itemIds = [];
@@ -139,6 +139,10 @@ export function validateDeckSpec(spec) {
         assertString(item?.id, `slides[${index}].items[${itemIndex}].id`);
         assertText(item?.label, `slides[${index}].items[${itemIndex}].label`, true);
         assertText(item?.body, `slides[${index}].items[${itemIndex}].body`);
+        if (item.marker != null) {
+          assertString(item.marker, `slides[${index}].items[${itemIndex}].marker`);
+          if (Array.from(item.marker).length > 3) throw new Error(`slides[${index}].items[${itemIndex}].marker must contain at most 3 characters.`);
+        }
         if (item.emphasis != null && typeof item.emphasis !== "boolean") throw new Error(`slides[${index}].items[${itemIndex}].emphasis must be boolean.`);
         itemIds.push(item.id);
       });
@@ -543,7 +547,18 @@ function compilePointGrid(slide, index, frame, theme) {
   return { shapes, peerGroups: [{ id: `s${index + 1}-point-cells`, memberIds: surfaces.map((shape) => shape.id), rows, gap, equalWithinRows: true, centeredIncompleteRows: true }] };
 }
 
-const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon" });
+const POLYGON_GEOMETRY = Object.freeze({
+  3: "triangle",
+  4: "rect",
+  5: "pentagon",
+  6: "hexagon",
+  7: "heptagon",
+  8: "octagon",
+  9: "nonagon",
+  10: "decagon",
+  11: "undecagon",
+  12: "dodecagon",
+});
 
 function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
   if (count === 3) return [
@@ -563,6 +578,34 @@ function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
   });
 }
 
+function polygonEdgeSegments(vertices, gap) {
+  return vertices.map((start, index) => {
+    const end = vertices[(index + 1) % vertices.length];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const edgeLength = Math.hypot(dx, dy);
+    return {
+      index,
+      center: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+      width: Math.max(24, edgeLength - gap),
+      rotation: Math.atan2(dy, dx) * 180 / Math.PI,
+    };
+  });
+}
+
+function connectorPosition(start, end, thickness = 2) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  return {
+    left: (start.x + end.x) / 2 - length / 2,
+    top: (start.y + end.y) / 2 - thickness / 2,
+    width: length,
+    height: thickness,
+    rotation: Math.atan2(dy, dx) * 180 / Math.PI,
+  };
+}
+
 function compilePolygonCycle(slide, index, frame, theme) {
   const slideNumber = index + 1;
   const count = slide.items.length;
@@ -575,79 +618,192 @@ function compilePolygonCycle(slide, index, frame, theme) {
   const contentTop = frame.top + 128;
   const contentHeight = frame.height - 128;
   const centerX = frame.left + frame.width / 2;
-  const centerY = contentTop + contentHeight / 2;
-  const radiusX = count === 3 ? 300 : count === 4 ? 180 : count >= 7 ? 280 : 260;
-  const radiusY = 180;
-  const nodeWidth = count === 3 ? 260 : count === 4 ? 220 : count <= 6 ? 210 : 180;
-  const nodeHeight = 104;
+  const centerY = contentTop + contentHeight / 2 - (count === 3 ? 18 : 0);
+  const radiusX = count === 3 ? 205 : count <= 6 ? 205 : count <= 8 ? 220 : 210;
+  const radiusY = count === 3 ? 150 : count <= 8 ? 150 : 142;
+  const nodeWidth = count >= 9 ? 264 : 288;
+  const sideRows = Math.ceil(count / 2);
+  const nodeGap = count >= 9 ? 8 : 12;
+  const nodeHeight = Math.min(84, Math.floor((contentHeight - (sideRows - 1) * nodeGap) / sideRows));
   const nodePadding = { top: 8, right: 8, bottom: 8, left: 8 };
+  const beamHeight = count <= 3 ? 52 : count <= 6 ? 44 : count <= 8 ? 36 : 28;
+  const beamGap = count === 3 ? 80 : count === 4 ? 14 : count <= 8 ? 10 : 8;
   const vertices = polygonVertexCenters(count, centerX, centerY, radiusX, radiusY);
+  const segments = polygonEdgeSegments(vertices, beamGap);
   const nodeIds = slide.items.flatMap((item) => [
     `s${slideNumber}-${item.id}-surface`,
+    `s${slideNumber}-${item.id}-rail`,
+    `s${slideNumber}-${item.id}-badge`,
+    `s${slideNumber}-${item.id}-badge-text`,
     `s${slideNumber}-${item.id}-label`,
     `s${slideNumber}-${item.id}-body`,
   ]);
+  const segmentIds = slide.items.map((item) => `s${slideNumber}-${item.id}-segment`);
+  const segmentMarkerIds = slide.items.map((item) => `s${slideNumber}-${item.id}-segment-marker`);
+  const connectorIds = slide.items.map((item) => `s${slideNumber}-${item.id}-connector`);
+  const centerSurfaceId = slide.center == null ? null : `s${slideNumber}-center-surface`;
   const centerId = slide.center == null ? null : `s${slideNumber}-center`;
-  const outlineId = `s${slideNumber}-polygon-outline`;
-  const outlinePosition = { left: centerX - radiusX, top: centerY - radiusY, width: radiusX * 2, height: radiusY * 2 };
-  const outline = surfaceShape({
-    id: outlineId,
-    role: "polygon-outline",
+  const fieldId = `s${slideNumber}-polygon-field`;
+  const allFieldChildren = [...segmentIds, ...segmentMarkerIds, ...connectorIds, ...nodeIds, ...(centerSurfaceId ? [centerSurfaceId, centerId] : [])];
+  shapes.push(surfaceShape({
+    id: fieldId,
+    role: "polygon-field",
     semanticType: "structural-relationship",
     semanticBinding: { relationship: slide.relationship, sideCount: count },
-    geometry: POLYGON_GEOMETRY[count],
-    position: outlinePosition,
+    geometry: "rect",
+    position: { left: frame.left, top: contentTop, width: frame.width, height: contentHeight },
     fill: theme.colors.background,
-    line: { color: theme.colors.accent, width: 2 },
-    padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    constraints: { allowOverlapWith: [...nodeIds, ...(centerId ? [centerId] : [])] },
+    line: { color: theme.colors.background, width: 0 },
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    constraints: { allowOverlapWith: allFieldChildren },
+  }));
+
+  segments.forEach((segment, segmentIndex) => {
+    const item = slide.items[segmentIndex];
+    shapes.push(surfaceShape({
+      id: segmentIds[segmentIndex],
+      role: "polygon-segment",
+      semanticType: "structural-relationship-segment",
+      semanticBinding: { relationship: slide.relationship, sideCount: count, index: segmentIndex },
+      geometry: "trapezoid",
+      position: {
+        left: segment.center.x - segment.width / 2,
+        top: segment.center.y - beamHeight / 2,
+        width: segment.width,
+        height: beamHeight,
+        rotation: segment.rotation + 180,
+      },
+      fill: item.emphasis === true ? theme.colors.accent : theme.colors.accentSoft,
+      line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: 1 },
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      constraints: { allowOverlapWith: [fieldId, ...segmentIds.filter((_, candidateIndex) => candidateIndex !== segmentIndex), ...connectorIds, ...nodeIds, ...(centerSurfaceId ? [centerSurfaceId, centerId] : [])] },
+    }));
+    shapes.push(textShape({
+      id: segmentMarkerIds[segmentIndex], role: "eyebrow", typographyRole: "eyebrow", parentId: segmentIds[segmentIndex],
+      constraints: { allowOverlapWith: [fieldId, ...connectorIds] },
+      position: { left: segment.center.x - 22, top: segment.center.y - 14, width: 44, height: 28 },
+      value: item.marker ?? String(segmentIndex + 1).padStart(2, "0"),
+      style: { color: item.emphasis === true ? "#FFFFFF" : theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
+      fit: { preferredSizePt: 14, minSizePt: 12, maxLines: 1, lineHeight: 1 },
+    }));
   });
-  shapes.push(outline);
+
+  const cardPositions = new Map();
+  if (count === 3) {
+    const sideY = centerY - nodeHeight / 2;
+    cardPositions.set(0, { left: frame.left + frame.width - nodeWidth, top: sideY, width: nodeWidth, height: nodeHeight, side: "right" });
+    cardPositions.set(1, { left: centerX - nodeWidth / 2, top: contentTop + contentHeight - nodeHeight, width: nodeWidth, height: nodeHeight, side: "bottom" });
+    cardPositions.set(2, { left: frame.left, top: sideY, width: nodeWidth, height: nodeHeight, side: "left" });
+  } else {
+    const right = segments.filter((segment) => segment.center.x > centerX + 0.01 || (Math.abs(segment.center.x - centerX) <= 0.01 && segment.index < count / 2)).sort((a, b) => a.center.y - b.center.y);
+    const left = segments.filter((segment) => !right.includes(segment)).sort((a, b) => a.center.y - b.center.y);
+    for (const [side, sideSegments] of [["left", left], ["right", right]]) {
+      const totalHeight = sideSegments.length * nodeHeight + Math.max(0, sideSegments.length - 1) * nodeGap;
+      const top = contentTop + (contentHeight - totalHeight) / 2;
+      sideSegments.forEach((segment, rowIndex) => cardPositions.set(segment.index, {
+        left: side === "left" ? frame.left : frame.left + frame.width - nodeWidth,
+        top: top + rowIndex * (nodeHeight + nodeGap),
+        width: nodeWidth,
+        height: nodeHeight,
+        side,
+      }));
+    }
+  }
   const surfaceIds = [];
   const bodyShapes = [];
   slide.items.forEach((item, itemIndex) => {
-    const vertex = vertices[itemIndex];
-    const position = { left: vertex.x - nodeWidth / 2, top: vertex.y - nodeHeight / 2, width: nodeWidth, height: nodeHeight };
+    const segment = segments[itemIndex];
+    const position = cardPositions.get(itemIndex);
     const surfaceId = `s${slideNumber}-${item.id}-surface`;
+    const connectorId = connectorIds[itemIndex];
     const variantId = item.emphasis === true ? "emphasis" : "default";
+    const connectorEnd = position.side === "left"
+      ? { x: position.left + position.width, y: position.top + position.height / 2 }
+      : position.side === "right"
+        ? { x: position.left, y: position.top + position.height / 2 }
+        : { x: position.left + position.width / 2, y: position.top };
+    shapes.push(surfaceShape({
+      id: connectorId,
+      role: "polygon-connector",
+      geometry: "rect",
+      position: connectorPosition(segment.center, connectorEnd),
+      fill: item.emphasis === true ? theme.colors.accent : theme.colors.border,
+      line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: 0 },
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      constraints: { allowOverlapWith: [fieldId, ...segmentIds, ...connectorIds, ...nodeIds, ...(centerSurfaceId ? [centerSurfaceId] : [])] },
+    }));
     const surface = surfaceShape({
       id: surfaceId,
       role: "polygon-node",
-      geometry: "rect",
+      geometry: "roundRect",
       position,
       fill: item.emphasis === true ? theme.colors.accentSoft : theme.colors.surface,
       line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: item.emphasis === true ? 2 : 1 },
       padding: nodePadding,
-      constraints: { allowOverlapWith: [outlineId] },
+      constraints: { allowOverlapWith: [fieldId, connectorId] },
     });
-    surface.polygonVertex = { index: itemIndex, sideCount: count };
+    surface.polygonSegment = { index: itemIndex, sideCount: count, segmentShapeId: segmentIds[itemIndex] };
     surfaceIds.push(surfaceId);
     shapes.push(surface);
+    shapes.push(surfaceShape({
+      id: `s${slideNumber}-${item.id}-rail`, role: "polygon-node-rail", geometry: "rect",
+      position: { left: position.left, top: position.top, width: 6, height: position.height },
+      fill: item.emphasis === true ? theme.colors.accent : theme.colors.accentSoft,
+      line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.accentSoft, width: 0 },
+      padding: { top: 0, right: 0, bottom: 0, left: 0 }, constraints: { allowOverlapWith: [fieldId, surfaceId, connectorId] },
+    }));
+    const badgeId = `s${slideNumber}-${item.id}-badge`;
+    shapes.push(surfaceShape({
+      id: badgeId, role: "polygon-node-badge", geometry: "ellipse",
+      position: { left: position.left + 14, top: position.top + (position.height - 32) / 2, width: 32, height: 32 },
+      fill: item.emphasis === true ? theme.colors.accent : theme.colors.accentSoft,
+      line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: 1 },
+      padding: { top: 0, right: 0, bottom: 0, left: 0 }, constraints: { allowOverlapWith: [fieldId, surfaceId, connectorId] },
+    }));
+    shapes.push(textShape({
+      id: `s${slideNumber}-${item.id}-badge-text`, role: "eyebrow", typographyRole: "eyebrow", parentId: badgeId,
+      constraints: { allowOverlapWith: [fieldId, surfaceId, connectorId] },
+      position: { left: position.left + 14, top: position.top + (position.height - 24) / 2, width: 32, height: 24 },
+      value: String(itemIndex + 1), style: { color: item.emphasis === true ? "#FFFFFF" : theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
+      fit: { preferredSizePt: 14, minSizePt: 12, maxLines: 1, lineHeight: 1 },
+    }));
+    const textLeft = position.left + 56;
+    const textWidth = position.width - 68;
+    const labelHeight = 24;
     shapes.push(textShape({
       id: `s${slideNumber}-${item.id}-label`, role: "subheading", typographyRole: "component-heading", parentId: surfaceId,
       componentPattern: { familyId: "polygon-node", instanceId: item.id, slot: "heading", variantId },
-      constraints: { allowOverlapWith: [outlineId] },
-      position: { left: position.left + nodePadding.left, top: position.top + nodePadding.top, width: position.width - nodePadding.left - nodePadding.right, height: 24 },
-      value: item.label, style: { color: item.emphasis === true ? theme.colors.accent : theme.colors.text, alignment: "center" }, theme, defaultBold: true,
-      fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 2, lineHeight: 1 },
+      constraints: { allowOverlapWith: [fieldId, connectorId] },
+      position: { left: textLeft, top: position.top + 9, width: textWidth, height: labelHeight },
+      value: item.label, style: { color: item.emphasis === true ? theme.colors.accent : theme.colors.text }, theme, defaultBold: true,
+      fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 1, lineHeight: 1 },
     }));
     const body = textShape({
       id: `s${slideNumber}-${item.id}-body`, role: "body", typographyRole: "component-body", parentId: surfaceId,
       componentPattern: { familyId: "polygon-node", instanceId: item.id, slot: "body", variantId },
-      constraints: { allowOverlapWith: [outlineId] },
-      position: { left: position.left + nodePadding.left, top: position.top + nodePadding.top + 30, width: position.width - nodePadding.left - nodePadding.right, height: position.height - nodePadding.top - nodePadding.bottom - 30 },
-      value: item.body, style: { color: theme.colors.muted, alignment: "center", verticalAlignment: "middle" }, theme,
-      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.22 },
+      constraints: { allowOverlapWith: [fieldId, connectorId] },
+      position: { left: textLeft, top: position.top + 10 + labelHeight, width: textWidth, height: position.height - 18 - labelHeight },
+      value: item.body, style: { color: theme.colors.muted }, theme,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: nodeHeight <= 68 ? 1 : 2, lineHeight: 1.22 },
     });
     bodyShapes.push(body);
     shapes.push(body);
   });
   forceCommonTextSize(bodyShapes, 16);
   if (centerId) {
+    const centerWidth = count === 3 ? 160 : 236;
+    const centerHeight = count === 3 ? 72 : 76;
+    shapes.push(surfaceShape({
+      id: centerSurfaceId, role: "polygon-center", geometry: "roundRect",
+      position: { left: centerX - centerWidth / 2, top: centerY - centerHeight / 2, width: centerWidth, height: centerHeight },
+      fill: theme.colors.surface, line: { color: theme.colors.accent, width: 2 },
+      padding: { top: 12, right: 12, bottom: 12, left: 12 },
+      constraints: { allowOverlapWith: [fieldId, ...connectorIds] },
+    }));
     shapes.push(textShape({
-      id: centerId, role: "callout", typographyRole: "callout", parentId: outlineId,
-      constraints: { allowOverlapWith: [outlineId] },
-      position: { left: centerX - 140, top: centerY - 38, width: 280, height: 76 },
+      id: centerId, role: "callout", typographyRole: "callout", parentId: centerSurfaceId,
+      constraints: { allowOverlapWith: [fieldId, ...connectorIds] },
+      position: { left: centerX - centerWidth / 2 + 12, top: centerY - centerHeight / 2 + 12, width: centerWidth - 24, height: centerHeight - 24 },
       value: slide.center, style: { color: theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
       fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.08 },
     }));
@@ -658,8 +814,17 @@ function compilePolygonCycle(slide, index, frame, theme) {
       relationship: slide.relationship,
       sideCount: count,
       geometry: POLYGON_GEOMETRY[count],
-      outlineShapeId: outlineId,
+      ringStyle: "segmented-beam",
+      beamGeometry: "trapezoid",
+      fieldShapeId: fieldId,
+      ringBounds: { left: centerX - radiusX, top: centerY - radiusY, width: radiusX * 2, height: radiusY * 2 },
+      beamHeight,
+      beamGap,
+      segmentShapeIds: segmentIds,
+      segmentMarkerIds,
+      connectorShapeIds: connectorIds,
       nodeSurfaceIds: surfaceIds,
+      centerSurfaceId,
       centerShapeId: centerId,
     },
   };

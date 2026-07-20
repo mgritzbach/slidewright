@@ -23,7 +23,7 @@ Public consulting material reinforces the semantic choices. McKinsey's account o
 4. Use a matrix or table when the audience must compare the same criteria across options.
 5. Use opposition for two genuinely conflicting positions. Add a synthesis band when the recommendation combines them.
 6. Use a pyramid for hierarchy or narrowing, not merely because there are three points.
-7. Use a triangle, square, pentagon, hexagon, heptagon, or octagon only when the points form a cycle, system, perimeter, or mutually reinforcing model.
+7. Use a segmented triangle through dodecagon only when the points form a cycle, system, perimeter, or mutually reinforcing model.
 8. Use Venn, puzzle, or radial structures only when overlap, interdependence, or a shared center is the message.
 
 ## Count-aware default for parallel points
@@ -43,9 +43,9 @@ The `point-grid` archetype supports two through nine native point cells. `arrang
 
 Do not make a last item wider merely to fill space. Center the incomplete row. Do not emphasize more than one peer unless the semantics define multiple named variants.
 
-## Polygon systems from triangle through octagon
+## Segmented polygon systems from triangle through dodecagon
 
-The `polygon-cycle` archetype supports three through eight native editable points. Count selects the polygon only after the relationship has been declared.
+The `polygon-cycle` archetype supports three through twelve native editable points. Count selects the polygon only after the relationship has been declared. Each side is its own mitered native beam, with a deliberate corner gap, upright editable marker, optional emphasis state, connector, and matched callout module. Counts nine through twelve automatically use denser but still 16 pt two-column annotations instead of shrinking text.
 
 | Points | Native form | Appropriate meaning |
 |---:|---|---|
@@ -55,8 +55,37 @@ The `polygon-cycle` archetype supports three through eight native editable point
 | 6 | Hexagon | six connected capabilities around one outcome |
 | 7 | Heptagon | seven guardrails defining a perimeter |
 | 8 | Octagon | eight linked levers in a complete system |
+| 9 | Nonagon | nine mutually dependent capabilities in one delivery engine |
+| 10 | Decagon | ten reinforcing enterprise-readiness levers |
+| 11 | Undecagon | eleven controls forming a complete perimeter |
+| 12 | Dodecagon | a recurring monthly or twelve-move transformation cycle |
 
-Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon nodes keep equal dimensions and hierarchy, sit on exact vertices, and may surround one short shared outcome. At most one node receives the emphasis variant.
+Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon callouts keep equal dimensions and hierarchy, bind to the exact edge segment, and may surround one short shared outcome. At most one segment and its callout receive the emphasis variant.
+
+## Shape-composition reference families
+
+The user-supplied references add a reusable composition set. These are semantic families, not screenshots to copy blindly.
+
+| Family | Use when | Defining visual logic |
+|---|---|---|
+| Emphasis matrix | four options share two dimensions and one needs focus | equal 2x2 tiles; one full-fill highlight; explanations outside or in aligned quadrants |
+| Venn intersection | the message is overlap or a combined proposition | two or three translucent circles; intersection owns the synthesis; prose stays outside the geometry |
+| Framed pillars | three or four distinct value drivers support one promise | equal open frames; icon breaks the top rule; identical heading/body hierarchy |
+| Lead-tile mosaic | one statement governs six or seven supporting ideas | one high-contrast lead tile plus equal icon cards on the same grid |
+| Step plus impact | ordered moves lead to one consequence | numbered horizontal rows aligned to one tall impact panel with matching step notches |
+| Milestone timeline | sequence, date, and current/future state matter | continuous rail, alternating annotations, active milestone, muted future region |
+| Ascending steps | ordered stages also represent rising maturity or progress | staggered platforms, large native numbers, short curved or angled connectors, one current-state accent |
+| Asymmetric comparison | two positions conflict and one side is selected | unequal but intentional fields, central `VS` pivot, identical internal text hierarchy |
+| Speech-tab comparison | two alternatives need compact framing before evidence | equal tabbed header blocks with a centered pivot and aligned bullets below |
+| Mirrored feature scorecard | two options must be compared against the same numbered criteria | mirrored central option panels, equal numbered side rails, criterion text aligned across both sides |
+| Quadrant with center | four domains connect through one shared decision | crosshair guides, central diamond or square, four symmetric annotation zones |
+| Funnel or cylinder | stages narrow, accumulate, or filter | stacked tapered native segments with one-to-one aligned explanations |
+| Hub and spoke | one outcome depends on multiple satellite capabilities | dominant center hub, radial connectors, equal icon nodes, external annotations |
+| Honeycomb system | modular capabilities touch through a central capability | native adjacent hexagons, consistent gaps, one center emphasis, paired callouts |
+| Four-part overlap | four lenses jointly define one ideal or combined answer | four equal circles, quiet central overlap field, synthesis in the center, external text in four quadrants |
+| Chevron sequence | two to five true handoffs lead to one conclusion | contiguous native chevrons, repeated step/heading/body hierarchy, semantic icon per step, full-width takeaway band |
+
+The selector must choose these families from message structure: overlap selects Venn; narrowing selects funnel; time selects timeline; shared center selects hub-and-spoke; adjacency and modularity select honeycomb. Item count alone never selects an intricate shape.
 
 ## Opposition, pro/con, and contradiction
 
@@ -88,10 +117,10 @@ The source deck contains decorative cylinders, puzzle pieces, speedometers, Venn
 
 - `point-grid` accepts 2–9 stable items and `auto|columns|rows|grid` arrangement.
 - `opposition` accepts two sides, a short axis label, and an optional synthesis statement.
-- `polygon-cycle` accepts 3-8 stable items plus an explicit relationship and emits a native triangle through octagon.
+- `polygon-cycle` accepts 3-12 stable items plus an explicit relationship and emits a segmented native triangle through dodecagon.
 - Every visible element remains a native editable PowerPoint object.
 - `SW031` rejects unequal peer geometry, wrong gutters, and off-center incomplete rows.
-- `SW032` rejects an unsupported polygon relationship, wrong native outline, unequal nodes, or vertex drift.
+- `SW032` rejects an unsupported polygon relationship, missing or non-native beam, wrong segment count, ring position/rotation drift, unequal callouts, broken marker binding, or center-binding drift.
 - Existing fit, overlap, padding, typography, run-emphasis, export, and rendered-layout rules remain mandatory.
 
 ## Public cross-checks

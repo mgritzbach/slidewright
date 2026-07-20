@@ -51,16 +51,16 @@ test("opposition preserves a balanced decision boundary and optional synthesis b
   assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
 });
 
-test("polygon-cycle compiles native triangle through octagon relationship topologies", () => {
+test("polygon-cycle compiles native triangle through dodecagon segmented relationship topologies", () => {
   const plan = compileDeck(fixture);
   const polygons = plan.slides.filter((slide) => slide.layout === "polygon-cycle");
-  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.sideCount), [3, 4, 5, 6, 7, 8]);
-  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.geometry), ["triangle", "rect", "pentagon", "hexagon", "heptagon", "octagon"]);
+  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.sideCount), [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.geometry), ["triangle", "rect", "pentagon", "hexagon", "heptagon", "octagon", "nonagon", "decagon", "undecagon", "dodecagon"]);
   for (const slide of polygons) {
     const topology = slide.layoutContract.polygonTopology;
-    const outline = slide.shapes.find((shape) => shape.id === topology.outlineShapeId);
-    assert.equal(outline.type, "shape");
-    assert.equal(outline.editable, true);
+    const segments = topology.segmentShapeIds.map((id) => slide.shapes.find((shape) => shape.id === id));
+    assert.equal(segments.length, topology.sideCount);
+    assert.ok(segments.every((segment) => segment.type === "shape" && segment.geometry === "trapezoid" && segment.editable === true));
     assert.equal(topology.nodeSurfaceIds.length, topology.sideCount);
   }
   assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
@@ -74,12 +74,20 @@ test("polygon-cycle rejects decorative count matching and SW032 catches vertex d
   const tooFew = structuredClone(invalidRelationship);
   tooFew.relationship = "system";
   tooFew.items = tooFew.items.slice(0, 2);
-  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [tooFew] }), /3-8 related points/u);
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [tooFew] }), /3-12 related points/u);
+
+  const tooMany = structuredClone(fixture.slides.find((slide) => slide.id === "dodecagon-cycle"));
+  tooMany.items.push({ id: "thirteenth", label: "Thirteenth", body: "Too many" });
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [tooMany] }), /3-12 related points/u);
+
+  const longMarker = structuredClone(fixture.slides.find((slide) => slide.id === "triangle-system"));
+  longMarker.items[0].marker = "LONG";
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [longMarker] }), /marker must contain at most 3 characters/u);
 
   const plan = compileDeck(fixture);
   const slide = plan.slides.find((item) => item.id === "octagon-system");
-  const nodeId = slide.layoutContract.polygonTopology.nodeSurfaceIds[2];
-  slide.shapes.find((shape) => shape.id === nodeId).position.left += 6;
+  const segmentId = slide.layoutContract.polygonTopology.segmentShapeIds[2];
+  slide.shapes.find((shape) => shape.id === segmentId).position.left += 6;
   const report = lintPlan(plan);
   assert.equal(report.valid, false);
   assert.ok(report.diagnostics.some((item) => item.ruleId === "SW032" && item.slideId === "octagon-system"));
@@ -91,5 +99,5 @@ test("copy adaptation preserves the new consulting layouts and their rich-text o
   assert.equal(audit.valid, true, JSON.stringify(audit.diagnostics, null, 2));
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "point-grid").length, 8);
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "opposition").length, 1);
-  assert.equal(result.spec.slides.filter((slide) => slide.layout === "polygon-cycle").length, 6);
+  assert.equal(result.spec.slides.filter((slide) => slide.layout === "polygon-cycle").length, 10);
 });

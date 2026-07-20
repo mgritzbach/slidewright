@@ -47,7 +47,8 @@ export function lintRenderedLayouts(plan, layouts) {
         continue;
       }
       const [left, top, width, height] = element.bbox.map(Number);
-      shape.position = { left, top, width, height };
+      const rotation = Number(element.rotation);
+      shape.position = { left, top, width, height, ...(Number.isFinite(rotation) ? { rotation } : {}) };
       if (shape.type === "text") {
         if (!sameInsets(shape.style?.insets, element.resolvedTextStyle?.insets)) diagnostics.push(
           diagnostic("SW023", slide.id, shape.id, "Rendered text insets differ from the tokenized plan.", "Preserve the same uniform inset token through native export."),

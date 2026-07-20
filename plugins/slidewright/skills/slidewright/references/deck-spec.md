@@ -65,7 +65,7 @@ Use `layout: "point-grid"` for 2-9 logically parallel points. Each item needs a 
 
 ## Polygon relationship system
 
-Use `layout: "polygon-cycle"` only when 3-8 points form a genuine `cycle`, `system`, `perimeter`, or `mutual-reinforcement` relationship. The count determines a native editable triangle, square, pentagon, hexagon, heptagon, or octagon outline; it does not justify the topology by itself. Each item requires `id`, `label`, and `body`; optional `center` names the shared outcome or system. At most one point may set `emphasis: true`.
+Use `layout: "polygon-cycle"` only when 3-12 points form a genuine `cycle`, `system`, `perimeter`, or `mutual-reinforcement` relationship. The count determines a native editable segmented triangle through dodecagon; it does not justify the topology by itself. Every side is an independent trapezoidal beam with an upright editable marker, connector, and matched annotation module. Each item requires `id`, `label`, and `body`; optional `marker` replaces its two-digit segment number, and optional `center` names the shared outcome or system. At most one point may set `emphasis: true`, which highlights the beam and its bound annotation without changing peer geometry or typography.
 
 The compiler binds equal native point surfaces to the polygon vertices. `SW032` rejects a missing semantic relationship, the wrong native polygon, unequal nodes, or vertex drift. Use `point-grid` instead when the items are merely parallel, and use steps or a timeline when order is one-way rather than cyclical.
 

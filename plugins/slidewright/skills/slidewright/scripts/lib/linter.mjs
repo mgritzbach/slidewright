@@ -421,7 +421,7 @@ function lintPeerGroups(slide, byId, diagnostics, tolerance) {
   }
 }
 
-const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon" });
+const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon", 9: "nonagon", 10: "decagon", 11: "undecagon", 12: "dodecagon" });
 const POLYGON_RELATIONSHIPS = new Set(["cycle", "system", "perimeter", "mutual-reinforcement"]);
 
 function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
@@ -442,40 +442,74 @@ function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
   });
 }
 
+function polygonEdgeSegments(vertices, gap) {
+  return vertices.map((start, index) => {
+    const end = vertices[(index + 1) % vertices.length];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const edgeLength = Math.hypot(dx, dy);
+    return {
+      index,
+      center: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+      width: Math.max(24, edgeLength - gap),
+      rotation: Math.atan2(dy, dx) * 180 / Math.PI,
+    };
+  });
+}
+
+function sameRotation(a, b, tolerance) {
+  const delta = Math.abs((((a - b) % 180) + 180) % 180);
+  return Math.min(delta, 180 - delta) <= tolerance;
+}
+
 function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
   const topology = slide.layoutContract?.polygonTopology;
   if (!topology) return;
   const reasons = [];
   const sideCount = Number(topology.sideCount);
-  const outline = byId.get(topology.outlineShapeId);
+  const field = byId.get(topology.fieldShapeId);
+  const segments = (topology.segmentShapeIds ?? []).map((id) => byId.get(id));
+  const markers = (topology.segmentMarkerIds ?? []).map((id) => byId.get(id));
   const nodes = (topology.nodeSurfaceIds ?? []).map((id) => byId.get(id));
-  if (!Number.isInteger(sideCount) || sideCount < 3 || sideCount > 8) reasons.push("side count must be an integer from 3 through 8");
+  if (!Number.isInteger(sideCount) || sideCount < 3 || sideCount > 12) reasons.push("side count must be an integer from 3 through 12");
   if (!POLYGON_RELATIONSHIPS.has(topology.relationship)) reasons.push("semantic relationship is not a cycle, system, perimeter, or mutual reinforcement");
-  if (!outline) reasons.push("outline binding is missing");
+  if (topology.ringStyle !== "segmented-beam") reasons.push("ring style must be segmented-beam");
+  if (!field || field.role !== "polygon-field") reasons.push("polygon field binding is missing");
+  if (segments.length !== sideCount || segments.some((segment) => !segment)) reasons.push("segment binding does not match the side count");
+  if (markers.length !== sideCount || markers.some((marker) => !marker)) reasons.push("segment marker binding does not match the side count");
   if (nodes.length !== sideCount || nodes.some((node) => !node)) reasons.push("node binding does not match the side count");
-  if (outline && outline.geometry !== POLYGON_GEOMETRY[sideCount]) reasons.push(`outline geometry must be '${POLYGON_GEOMETRY[sideCount]}'`);
-  if (outline && (outline.semanticBinding?.relationship !== topology.relationship || Number(outline.semanticBinding?.sideCount) !== sideCount)) reasons.push("outline semantic binding drifted from the topology contract");
+  if (topology.geometry !== POLYGON_GEOMETRY[sideCount]) reasons.push(`polygon metadata geometry must be '${POLYGON_GEOMETRY[sideCount]}'`);
   if (!reasons.length) {
-    const outlineRect = rect(outline);
-    const expected = polygonVertexCenters(sideCount, (outlineRect.left + outlineRect.right) / 2, (outlineRect.top + outlineRect.bottom) / 2, outlineRect.width / 2, outlineRect.height / 2);
+    const ring = topology.ringBounds;
+    const expectedVertices = polygonVertexCenters(sideCount, ring.left + ring.width / 2, ring.top + ring.height / 2, ring.width / 2, ring.height / 2);
+    const expectedSegments = polygonEdgeSegments(expectedVertices, topology.beamGap);
+    segments.forEach((segment, segmentIndex) => {
+      const expected = expectedSegments[segmentIndex];
+      const actualCenter = { x: segment.position.left + segment.position.width / 2, y: segment.position.top + segment.position.height / 2 };
+      if (segment.role !== "polygon-segment" || segment.geometry !== "trapezoid" || topology.beamGeometry !== "trapezoid") reasons.push(`segment ${segmentIndex + 1} is not a native trapezoidal beam`);
+      if (!nearlyEqual(actualCenter.x, expected.center.x, tolerance) || !nearlyEqual(actualCenter.y, expected.center.y, tolerance)) reasons.push(`segment ${segmentIndex + 1} is not centered on its polygon edge`);
+      if (!nearlyEqual(segment.position.width, expected.width, tolerance) || !nearlyEqual(segment.position.height, topology.beamHeight, tolerance)) reasons.push(`segment ${segmentIndex + 1} dimensions drifted from the ring contract`);
+      if (!sameRotation(segment.position.rotation ?? 0, expected.rotation + 180, tolerance)) reasons.push(`segment ${segmentIndex + 1} rotation drifted from the polygon edge`);
+      if (segment.semanticBinding?.index !== segmentIndex || segment.semanticBinding?.relationship !== topology.relationship || Number(segment.semanticBinding?.sideCount) !== sideCount) reasons.push(`segment ${segmentIndex + 1} semantic binding drifted`);
+      if (markers[segmentIndex].parentId !== segment.id || markers[segmentIndex].backingId !== segment.id) reasons.push(`segment marker ${segmentIndex + 1} is not bound to its beam`);
+    });
     const width = nodes[0].position.width;
     const height = nodes[0].position.height;
     nodes.forEach((node, nodeIndex) => {
-      if (node.role !== "polygon-node" || node.geometry !== "rect") reasons.push(`node ${nodeIndex + 1} is not a native polygon-node surface`);
+      if (node.role !== "polygon-node" || node.geometry !== "roundRect") reasons.push(`node ${nodeIndex + 1} is not a native polygon-node surface`);
       if (!nearlyEqual(node.position.width, width, tolerance) || !nearlyEqual(node.position.height, height, tolerance)) reasons.push("polygon nodes do not share equal width and height");
-      const actualCenter = { x: node.position.left + node.position.width / 2, y: node.position.top + node.position.height / 2 };
-      if (!nearlyEqual(actualCenter.x, expected[nodeIndex].x, tolerance) || !nearlyEqual(actualCenter.y, expected[nodeIndex].y, tolerance)) reasons.push(`node ${nodeIndex + 1} is not centered on its declared polygon vertex`);
-      if (node.polygonVertex?.index !== nodeIndex || node.polygonVertex?.sideCount !== sideCount) reasons.push(`node ${nodeIndex + 1} vertex metadata drifted`);
+      if (node.polygonSegment?.index !== nodeIndex || node.polygonSegment?.sideCount !== sideCount || node.polygonSegment?.segmentShapeId !== segments[nodeIndex].id) reasons.push(`node ${nodeIndex + 1} segment binding drifted`);
     });
     if (topology.centerShapeId != null) {
       const center = byId.get(topology.centerShapeId);
-      if (!center || center.parentId !== outline.id || center.backingId !== outline.id) reasons.push("center statement is not bound inside the polygon outline");
+      const centerSurface = byId.get(topology.centerSurfaceId);
+      if (!centerSurface || centerSurface.role !== "polygon-center" || !center || center.parentId !== centerSurface.id || center.backingId !== centerSurface.id) reasons.push("center statement is not bound inside the segmented polygon ring");
     }
   }
   if (reasons.length) diagnostics.push(diagnostic(
-    "SW032", "error", slide.id, topology.outlineShapeId ?? null,
+    "SW032", "error", slide.id, topology.fieldShapeId ?? null,
     `Polygon relationship topology failed: ${[...new Set(reasons)].join("; ")}.`,
-    "Restore the native 3-8 sided outline and equal vertex-bound nodes, or use a grid when the points are merely parallel.",
+    "Restore the native 3-12 sided segmented ring, its editable edge beams, and the segment-bound callouts; use a grid when the points are merely parallel.",
   ));
 }
 
@@ -907,7 +941,8 @@ export function lintPlan(plan) {
 
     const frameRect = { left: slide.frame.left, top: slide.frame.top, right: slide.frame.left + slide.frame.width, bottom: slide.frame.top + slide.frame.height };
     const topLevelShapes = shapes
-      .filter((shape, index) => !shapes.some((candidate, candidateIndex) => candidateIndex !== index && candidate.type === "shape" && contains(rect(candidate), rect(shape), tolerance)));
+      .filter((shape, index) => !shapes.some((candidate, candidateIndex) => candidateIndex !== index && candidate.type === "shape" && contains(rect(candidate), rect(shape), tolerance)))
+      .filter((shape) => shape.role !== "polygon-field");
     const topLevelRects = topLevelShapes
       .map((shape) => rect(shape))
       .map((item) => ({

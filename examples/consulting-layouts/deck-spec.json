@@ -139,7 +139,7 @@
       "center": "Credible delivery",
       "items": [
         { "id": "evidence", "label": "Evidence", "body": "Ground choices" },
-        { "id": "ownership", "label": "Ownership", "body": "Fix accountability" },
+        { "id": "ownership", "label": "Ownership", "body": "Fix accountability", "emphasis": true },
         { "id": "cadence", "label": "Cadence", "body": "Learn and adapt" }
       ]
     },
@@ -151,7 +151,7 @@
       "center": "Operating system",
       "items": [
         { "id": "scope", "label": "Scope", "body": "Set boundaries" },
-        { "id": "roles", "label": "Roles", "body": "Assign decisions" },
+        { "id": "roles", "label": "Roles", "body": "Assign decisions", "emphasis": true },
         { "id": "routines", "label": "Routines", "body": "Coordinate work" },
         { "id": "measures", "label": "Measures", "body": "Track outcomes" }
       ]
@@ -165,7 +165,7 @@
       "items": [
         { "id": "observe", "label": "Observe", "body": "Gather signals" },
         { "id": "frame", "label": "Frame", "body": "Define the need" },
-        { "id": "design", "label": "Design", "body": "Shape the answer" },
+        { "id": "design", "label": "Design", "body": "Shape the answer", "emphasis": true },
         { "id": "deploy", "label": "Deploy", "body": "Put it to work" },
         { "id": "learn", "label": "Learn", "body": "Improve the model" }
       ]
@@ -180,7 +180,7 @@
         { "id": "insight-system", "label": "Insight", "body": "Know the job" },
         { "id": "product", "label": "Product", "body": "Solve the need" },
         { "id": "channel-system", "label": "Channel", "body": "Reach demand" },
-        { "id": "service", "label": "Service", "body": "Deliver reliably" },
+        { "id": "service", "label": "Service", "body": "Deliver reliably", "emphasis": true },
         { "id": "data", "label": "Data", "body": "Guide choices" },
         { "id": "talent", "label": "Talent", "body": "Build capability" }
       ]
@@ -195,7 +195,7 @@
         { "id": "purpose", "label": "Purpose", "body": "Clarify intent" },
         { "id": "rights", "label": "Rights", "body": "Fix authority" },
         { "id": "funding", "label": "Funding", "body": "Bound exposure" },
-        { "id": "data-guardrail", "label": "Data", "body": "Protect access" },
+        { "id": "data-guardrail", "label": "Data", "body": "Protect access", "emphasis": true },
         { "id": "risk-guardrail", "label": "Risk", "body": "Set tolerance" },
         { "id": "review-guardrail", "label": "Review", "body": "Test evidence" },
         { "id": "escalation", "label": "Escalation", "body": "Resolve exceptions" }
@@ -212,10 +212,88 @@
         { "id": "portfolio-system", "label": "Portfolio", "body": "Choose priorities" },
         { "id": "process-system", "label": "Process", "body": "Redesign work" },
         { "id": "technology-system", "label": "Technology", "body": "Enable scale" },
-        { "id": "people-system", "label": "People", "body": "Build skills" },
+        { "id": "people-system", "label": "People", "body": "Build skills", "emphasis": true },
         { "id": "governance-system", "label": "Governance", "body": "Make decisions" },
         { "id": "metrics-system", "label": "Metrics", "body": "Track value" },
         { "id": "adoption-system", "label": "Adoption", "body": "Change behavior" }
+      ]
+    },
+    {
+      "id": "nonagon-system",
+      "layout": "polygon-cycle",
+      "relationship": "system",
+      "title": "Nine capabilities convert strategy into repeatable delivery",
+      "center": "Delivery engine",
+      "items": [
+        { "id": "intent-9", "label": "Intent", "body": "Set direction" },
+        { "id": "choices-9", "label": "Choices", "body": "Focus resources" },
+        { "id": "design-9", "label": "Design", "body": "Shape the model" },
+        { "id": "talent-9", "label": "Talent", "body": "Build capability" },
+        { "id": "data-9", "label": "Data", "body": "Guide action", "emphasis": true },
+        { "id": "tech-9", "label": "Technology", "body": "Enable scale" },
+        { "id": "routines-9", "label": "Routines", "body": "Coordinate work" },
+        { "id": "measures-9", "label": "Measures", "body": "Track value" },
+        { "id": "learning-9", "label": "Learning", "body": "Adapt rapidly" }
+      ]
+    },
+    {
+      "id": "decagon-system",
+      "layout": "polygon-cycle",
+      "relationship": "mutual-reinforcement",
+      "title": "Ten reinforcing levers determine enterprise readiness",
+      "center": "Enterprise readiness",
+      "items": [
+        { "id": "case-10", "label": "Case", "body": "Prove the need" },
+        { "id": "sponsor-10", "label": "Sponsor", "body": "Own the outcome" },
+        { "id": "scope-10", "label": "Scope", "body": "Bound the work" },
+        { "id": "roadmap-10", "label": "Roadmap", "body": "Stage delivery" },
+        { "id": "funding-10", "label": "Funding", "body": "Back priorities" },
+        { "id": "governance-10", "label": "Governance", "body": "Make decisions", "emphasis": true },
+        { "id": "platform-10", "label": "Platform", "body": "Enable reuse" },
+        { "id": "skills-10", "label": "Skills", "body": "Build depth" },
+        { "id": "adoption-10", "label": "Adoption", "body": "Shift behavior" },
+        { "id": "value-10", "label": "Value", "body": "Measure impact" }
+      ]
+    },
+    {
+      "id": "undecagon-perimeter",
+      "layout": "polygon-cycle",
+      "relationship": "perimeter",
+      "title": "Eleven guardrails create a complete control perimeter",
+      "center": "Control perimeter",
+      "items": [
+        { "id": "purpose-11", "label": "Purpose", "body": "Clarify intent" },
+        { "id": "owner-11", "label": "Owner", "body": "Fix authority" },
+        { "id": "access-11", "label": "Access", "body": "Limit entry" },
+        { "id": "privacy-11", "label": "Privacy", "body": "Protect people" },
+        { "id": "security-11", "label": "Security", "body": "Defend assets" },
+        { "id": "quality-11", "label": "Quality", "body": "Test outputs", "emphasis": true },
+        { "id": "risk-11", "label": "Risk", "body": "Set tolerance" },
+        { "id": "review-11", "label": "Review", "body": "Check evidence" },
+        { "id": "record-11", "label": "Record", "body": "Keep history" },
+        { "id": "escalate-11", "label": "Escalate", "body": "Resolve issues" },
+        { "id": "learn-11", "label": "Learn", "body": "Improve controls" }
+      ]
+    },
+    {
+      "id": "dodecagon-cycle",
+      "layout": "polygon-cycle",
+      "relationship": "cycle",
+      "title": "Twelve linked moves sustain a year-round transformation cycle",
+      "center": "Transformation cycle",
+      "items": [
+        { "id": "diagnose-12", "label": "Diagnose", "body": "Read the system" },
+        { "id": "aspire-12", "label": "Aspire", "body": "Set ambition" },
+        { "id": "prioritize-12", "label": "Prioritize", "body": "Choose moves" },
+        { "id": "mobilize-12", "label": "Mobilize", "body": "Align owners" },
+        { "id": "design-12", "label": "Design", "body": "Shape solutions" },
+        { "id": "pilot-12", "label": "Pilot", "body": "Test quickly" },
+        { "id": "validate-12", "label": "Validate", "body": "Prove results", "emphasis": true },
+        { "id": "scale-12", "label": "Scale", "body": "Expand reach" },
+        { "id": "adopt-12", "label": "Adopt", "body": "Change behavior" },
+        { "id": "measure-12", "label": "Measure", "body": "Track value" },
+        { "id": "learn-12", "label": "Learn", "body": "Capture insight" },
+        { "id": "renew-12", "label": "Renew", "body": "Reset choices" }
       ]
     }
   ]
