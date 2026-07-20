@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/c19-browser-operation-evidence.schema.json",
+  "title": "Slidewright C19 redacted browser operation evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "operationId",
+    "origin",
+    "resourceIdSha256",
+    "recordedAt",
+    "actionSha256",
+    "observationSha256",
+    "observations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "slidewright-c19-browser-operation-evidence/v1" },
+    "operationId": {
+      "enum": ["import-pptx", "open-before", "native-edit", "save", "reopen-after", "export-pptx", "export-pdf", "cleanup-delete"]
+    },
+    "origin": { "const": "https://www.canva.com" },
+    "resourceIdSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "actionSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "observationSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "imported-pptx",
+          "editor-open",
+          "sentinel-before-visible",
+          "sentinel-after-visible",
+          "save-complete",
+          "reopen-complete",
+          "pptx-download-complete",
+          "pdf-download-complete",
+          "resource-deleted"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

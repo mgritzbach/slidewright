@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/c19-browser-trace.schema.json",
+  "title": "Slidewright C19 redacted authenticated browser trace",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "authenticated",
+    "authentication",
+    "browser",
+    "serviceOrigins",
+    "resourceIdSha256",
+    "clientBuildSha256",
+    "beforeStateSha256",
+    "afterStateSha256",
+    "startedAt",
+    "endedAt",
+    "operations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "slidewright-c19-browser-trace/v1" },
+    "authenticated": { "const": true },
+    "authentication": {
+      "type": "object",
+      "required": ["type", "principalSha256"],
+      "properties": {
+        "type": { "const": "browser-session" },
+        "principalSha256": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1, "not": { "const": "unknown" } }
+      },
+      "additionalProperties": false
+    },
+    "serviceOrigins": {
+      "const": ["https://www.canva.com"]
+    },
+    "resourceIdSha256": { "$ref": "#/$defs/digest" },
+    "clientBuildSha256": { "$ref": "#/$defs/digest" },
+    "beforeStateSha256": { "$ref": "#/$defs/digest" },
+    "afterStateSha256": { "$ref": "#/$defs/digest" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "endedAt": { "type": "string", "format": "date-time" },
+    "operations": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["id", "origin", "status", "resourceIdSha256", "startedAt", "endedAt", "evidence"],
+        "properties": {
+          "id": {
+            "enum": ["import-pptx", "open-before", "native-edit", "save", "reopen-after", "export-pptx", "export-pdf", "cleanup-delete"]
+          },
+          "origin": { "const": "https://www.canva.com" },
+          "status": { "const": "succeeded" },
+          "resourceIdSha256": { "$ref": "#/$defs/digest" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "endedAt": { "type": "string", "format": "date-time" },
+          "evidence": { "$ref": "#/$defs/fileReceipt" },
+          "stateSha256": { "$ref": "#/$defs/digest" },
+          "beforeStateSha256": { "$ref": "#/$defs/digest" },
+          "afterStateSha256": { "$ref": "#/$defs/digest" },
+          "artifactSha256": { "$ref": "#/$defs/digest" },
+          "resourceDeleted": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "fileReceipt": {
+      "type": "object",
+      "required": ["path", "byteLength", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

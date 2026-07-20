@@ -54,6 +54,13 @@ function capabilityStatus() {
     ? "C:\\Program Files\\Microsoft Office\\Root\\Office16\\POWERPNT.EXE"
     : "/Applications/Microsoft PowerPoint.app";
   const keynotePath = "/Applications/Keynote.app";
+  const powerpointMacRunner = firstFile([path.join(process.cwd(), "scripts", "c19", "run_powerpoint_macos_suite.mjs")]);
+  const keynoteMacRunner = firstFile([path.join(process.cwd(), "scripts", "c19", "run_keynote_macos_suite.mjs")]);
+  const canvaCaptureImporter = [
+    path.join(process.cwd(), "scripts", "c19", "run_canva_suite.mjs"),
+    path.join(process.cwd(), "schemas", "c19-canva-browser-capture.schema.json"),
+  ].every((candidate) => fsSync.existsSync(candidate));
+  const appleScriptAvailable = Boolean(command("osascript", ["-e", "return \"slidewright-c19\""]));
   const libreOfficePath = libreOfficeExecutable(platform);
   const libreOfficeVersion = libreOfficePath ? command(libreOfficePath) : null;
   const libreOfficeRunner = firstFile([
@@ -65,13 +72,15 @@ function capabilityStatus() {
   const libreOfficeCallable = Boolean(libreOfficeVersion && libreOfficeRunner && javaAvailable && javacAvailable && pdfRendererAvailable);
   return [
     { id: "powerpoint-windows", callable: platform === "win32" && command("powershell", ["-NoProfile", "-Command", `(Test-Path '${powerpointPath.replaceAll("'", "''")}')`]) === "True", evidence: false, reason: platform === "win32" ? "Application detected; a clean-commit COM suite run is still required." : "Requires a Windows suite host." },
-    { id: "powerpoint-macos", callable: platform === "darwin" && command("test", ["-d", powerpointPath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
+    { id: "powerpoint-macos", callable: platform === "darwin" && command("test", ["-d", powerpointPath]) !== null && Boolean(powerpointMacRunner) && appleScriptAvailable && pdfRendererAvailable, evidence: false, reason: "Requires a clean-commit macOS AppleScript native-edit/save/reopen/export suite run and full-size render review." },
     { id: "google-slides", callable: fsSync.existsSync(path.join(process.cwd(), "scripts", "c19", "run_google_slides_suite.mjs")), evidence: false, reason: "Credential-free capture importer is available; a redacted authenticated Slides API v1 + Drive API v3 capture and exact-commit validation are still required." },
-    { id: "keynote-macos", callable: platform === "darwin" && command("test", ["-d", keynotePath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
+    { id: "keynote-macos", callable: platform === "darwin" && command("test", ["-d", keynotePath]) !== null && Boolean(keynoteMacRunner) && appleScriptAvailable && pdfRendererAvailable, evidence: false, reason: "Requires a clean-commit macOS AppleScript import/native-edit/save/reopen/PPTX+PDF export suite run and full-size render review." },
     { id: "libreoffice", callable: libreOfficeCallable, evidence: false, reason: libreOfficeCallable
       ? `Detected ${libreOfficeVersion} with UNO Java bridge runner and PDF renderer; a clean-commit suite run is still required.`
       : "LibreOffice suite requires soffice, Java/Javac, pdftoppm, and the repository UNO runner on one host." },
-    { id: "canva", callable: false, evidence: false, reason: "Requires an authenticated browser-automation import/edit/export job; URL access alone is not evidence." },
+    { id: "canva", callable: Boolean(canvaCaptureImporter), evidence: false, reason: canvaCaptureImporter
+      ? "Credential-free capture importer is available; a redacted authenticated browser import/edit/save/reopen/PPTX+PDF export/delete capture and exact-commit validation are still required."
+      : "Requires the repository Canva capture importer plus a real authenticated browser-automation lifecycle; URL access alone is not evidence." },
   ];
 }
 

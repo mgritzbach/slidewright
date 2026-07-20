@@ -29,6 +29,8 @@ The simplest path is the standalone skill. Ask Codex:
 
 Start a new task after installation so `$slidewright` is discovered. The public-main install has been validated, bootstrapped in a clean workspace, and invoked by a fresh Codex CLI client without relying on marketplace UI.
 
+To qualify real Desktop and VS Code adoption rather than backend-only discovery, follow the nonce-bound [C02 primary-client evidence guide](docs/C02_CLIENT_EVIDENCE.md). It rejects stale tasks, subagents, self-reports, and installations that happened after the client registry was loaded.
+
 On newer Codex builds that expose plugin management, install the complete plugin from the public marketplace:
 
 ```powershell
@@ -176,7 +178,7 @@ The C17 matrix uses four licensed decks and independently checks the complete OP
 
 ## Cross-suite interoperability status
 
-Run `npm run interoperability:status` to see which of the six target application suites are callable and which have real evidence. The command deliberately exits nonzero until exact-deck, clean-commit, automation-trace, native-edit, re-export, semantic-inventory, and rendered-slide evidence has been imported for PowerPoint Windows, PowerPoint macOS, Google Slides, Keynote, LibreOffice, and Canva. Google Slides may use authenticated browser automation or the credential-free importer for a redacted Slides API v1 plus Drive API v3 capture; API evidence records exact discovery revisions and reports converted Office charts as `unsupported`. Capability detection or an exploratory connector run never counts. See [the C19 evidence contract](docs/C19_INTEROPERABILITY.md).
+Run `npm run interoperability:status` to see which of the six target application suites are callable and which have real evidence. The command deliberately exits nonzero until exact-deck, clean-commit, automation-trace, native-edit, re-export, semantic-inventory, and rendered-slide evidence has been imported for PowerPoint Windows, PowerPoint macOS, Google Slides, Keynote, LibreOffice, and Canva. Google Slides may use authenticated browser automation or the credential-free importer for a redacted Slides API v1 plus Drive API v3 capture; API evidence records exact discovery revisions and reports converted Office charts as `unsupported`. Canva has a separate credential-free importer for a redacted authenticated-browser lifecycle that binds import, edit, save, reopen, PPTX/PDF export, and deletion without retaining cookies, tokens, account identifiers, or raw design URLs. Capability detection or an exploratory connector run never counts. See [the C19 evidence contract](docs/C19_INTEROPERABILITY.md).
 
 ## Optional direct PowerPoint adapter
 

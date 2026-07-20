@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/c19-canva-browser-capture.schema.json",
+  "title": "Slidewright C19 authenticated Canva browser capture",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "captureOrigin",
+    "recordedAt",
+    "files",
+    "mutation"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "slidewright-c19-canva-browser-capture/v1" },
+    "captureOrigin": { "const": "authenticated-canva-browser-automation" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "files": {
+      "type": "object",
+      "required": [
+        "sourcePptx",
+        "resultPptx",
+        "resultPdf",
+        "applicationLog",
+        "automationTrace",
+        "visualReview",
+        "operationEvidence",
+        "renders"
+      ],
+      "properties": {
+        "sourcePptx": { "$ref": "#/$defs/fileReceipt" },
+        "resultPptx": { "$ref": "#/$defs/fileReceipt" },
+        "resultPdf": { "$ref": "#/$defs/fileReceipt" },
+        "applicationLog": { "$ref": "#/$defs/fileReceipt" },
+        "automationTrace": { "$ref": "#/$defs/fileReceipt" },
+        "visualReview": { "$ref": "#/$defs/fileReceipt" },
+        "operationEvidence": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["id", "artifact"],
+            "properties": {
+              "id": {
+                "enum": [
+                  "import-pptx",
+                  "open-before",
+                  "native-edit",
+                  "save",
+                  "reopen-after",
+                  "export-pptx",
+                  "export-pdf",
+                  "cleanup-delete"
+                ]
+              },
+              "artifact": { "$ref": "#/$defs/fileReceipt" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "renders": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["slide", "image"],
+            "properties": {
+              "slide": { "type": "integer", "minimum": 1 },
+              "image": { "$ref": "#/$defs/fileReceipt" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mutation": {
+      "type": "object",
+      "required": ["targetObjectId", "beforeText", "afterText"],
+      "properties": {
+        "targetObjectId": { "type": "string", "minLength": 1 },
+        "beforeText": { "type": "string", "minLength": 1 },
+        "afterText": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "fileReceipt": {
+      "type": "object",
+      "required": ["path", "byteLength", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -51,6 +51,25 @@ The capture root must contain `capture-manifest.json` and hash receipts for the 
 
 A visual defect cannot be normalized away only in the Google copy. If the exact shared fixture clips in Google Slides, that suite fails. Fix the canonical source fixture, commit it, and rerun every suite against the new exact bytes. This preserves the one-deck/same-commit requirement.
 
+## Authenticated Canva browser automation
+
+Canva evidence is imported from a real authenticated browser session, but the repository runner never receives a cookie, password, OAuth token, email address, local-storage dump, or raw resource URL. The browser session writes a redacted manifest, trace, and operation receipts matching `schemas/c19-canva-browser-capture.schema.json`, `schemas/c19-browser-trace.schema.json`, and `schemas/c19-browser-operation-evidence.schema.json`; identity and the created design are represented only by SHA-256 pseudonyms.
+
+The capture binds one Canva origin and one created-resource lifecycle in this exact order: PPTX import, pre-edit open, native sentinel edit, save, reopen, PPTX export, PDF export, and resource deletion. Every operation has its own receipt, origin, resource digest, non-overlapping timestamps, action/observation hashes, and an operation-specific success observation. The native edit binds distinct before/after state hashes; reopen must bind the after state; export operations must bind the downloaded PPTX and PDF bytes; cleanup must explicitly record `resourceDeleted: true`.
+
+Canva does not expose a stable public deployment version in the editor UI. The capture therefore records a SHA-256 fingerprint of the same-origin web-client scripts observed by the browser. Evidence reports this honestly as `versionKind: web-client-fingerprint`, `serviceBuildExposed: false`, and `web-client@<first-16-digest-characters>` rather than inventing a Canva release number.
+
+The local capture importer is credential-free and runs only from an exact clean checkout:
+
+```text
+node scripts/c19/run_canva_suite.mjs \
+  --capture <redacted-capture-root> \
+  --out <artifact-root> \
+  --repository <owner/repo>
+```
+
+The capture root contains `capture-manifest.json`, the exact shared source PPTX, Canva-exported PPTX and PDF, a redacted application log and browser trace, eight redacted JSON operation receipts, per-slide renders derived from the Canva PDF, and a hash-bound full-size visual review. The importer rejects secret- or identity-bearing text, wrong origins, missing authentication, reordered or overlapping operations, unbound state changes or downloads, an undeleted design, collateral text edits, false advanced-feature outcomes, a visual-review mismatch, and any altered artifact body. Browser capability detection or a successful upload alone never qualifies.
+
 ## Host workflow
 
 The application-specific adapter creates the bundle. On that same exact clean checkout, validate it before upload:
@@ -64,6 +83,16 @@ The Windows adapter uses a newly owned hidden PowerPoint COM process, refuses a 
 ```text
 node scripts/c19/run_powerpoint_windows_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
 ```
+
+The two macOS adapters follow the same fail-closed contract through AppleScript. They refuse a pre-existing user session, own one application PID, bind the edit to the prepared OOXML target and exact source text, save/reopen, re-import the exported PPTX, export an application PDF, wait for natural process exit, and require independent OOXML, render, receipt, and destructive-control validation:
+
+```text
+node scripts/c19/run_powerpoint_macos_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
+node scripts/c19/run_keynote_macos_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
+```
+
+See `docs/C19_MACOS_RUNNERS.md` for prerequisites, the Keynote object-name fallback, privacy-permission handling, and the mandatory full-size human-review boundary.
+Mac runners stop with pending evidence after rendering. They write qualifying `suite-evidence.json` only in a second `--finalize-review` invocation whose external human review is bound to every exact slide-image hash; automated `pass-precheck` decisions are rejected.
 
 The LibreOffice adapter refuses every pre-existing LibreOffice process, launches an isolated headless profile and socket, performs the sentinel edit through the real UNO Java bridge, exports and reopens PPTX, exports a PDF through Impress, renders every PDF page, waits for natural application termination, and applies the same independent OOXML and destructive-control gates:
 
@@ -82,4 +111,4 @@ Running the benchmark without `--evidence` prints capability and publication sta
 
 ## Current proof boundary
 
-The v2 contract, importer, verifier, destructive controls, PowerPoint Windows adapter, LibreOffice UNO adapter, and credential-free authenticated Google service capture importer exist. Exploratory runs made before the v2 contract and committed runner are not C19 evidence. Until six fresh real bundles from one later clean commit are imported, `evidence/c19/v2/current.json` does not exist, C19 remains `0`, and the release verifier fails intentionally.
+The v2 contract, importer, verifier, destructive controls, PowerPoint Windows/macOS adapters, Keynote macOS adapter, LibreOffice UNO adapter, credential-free authenticated Google service capture importer, and credential-free authenticated Canva browser capture importer exist. A macOS runner source file or capability check is not runtime evidence. Exploratory runs made before the v2 contract and committed runners are not C19 evidence. Until six fresh real bundles from one later clean commit are imported, `evidence/c19/v2/current.json` does not exist, C19 remains `0`, and the release verifier fails intentionally.

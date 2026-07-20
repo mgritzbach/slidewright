@@ -248,3 +248,21 @@ test("C02 verifier refuses invented VS Code originators until a real extension s
     }), /No verified originator contract exists/u);
   });
 });
+
+test("C02 human handoff requires two fresh primary clients and all five proof flags", async () => {
+  const guide = await fs.readFile(new URL("../docs/C02_CLIENT_EVIDENCE.md", import.meta.url), "utf8");
+  assert.match(guide, /newly loaded, primary Codex Desktop task/u);
+  assert.match(guide, /newly loaded, primary Codex VS Code extension task/u);
+  assert.match(guide, /two new, distinct 16-64 character nonces/u);
+  assert.match(guide, /nonce must come from the user message after the client has injected its skill\s+registry/u);
+  assert.match(guide, /--surface codex-desktop/u);
+  assert.match(guide, /--surface vscode-extension/u);
+  assert.match(guide, /remains fail-closed until a genuine VS Code rollout establishes its real client\s+originator contract/u);
+  for (const field of ["discoveryValid", "installedReadValid", "clientInvocationValid", "nonceProofValid", "surfaceComplete"]) {
+    assert.match(guide, new RegExp(`\\b${field}\\b`, "u"));
+  }
+  assert.match(guide, /subagents do not count as primary client tasks/u);
+  assert.match(guide, /stale task\s+registries/u);
+  assert.match(guide, /same exact public commit/u);
+  assert.match(guide, /distinct\s+session ids and distinct nonces/u);
+});

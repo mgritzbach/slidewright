@@ -202,6 +202,35 @@ def inventory(pptx: Path) -> dict:
     return result
 
 
+def target_info(pptx: Path, target_name: str) -> dict:
+    """Resolve one named native-text object without trusting application APIs.
+
+    Keynote can rename imported PowerPoint objects.  The macOS adapters bind the
+    mutation to both the prepared OOXML object name and this exact source text,
+    so a fallback text lookup remains specific and independently auditable.
+    """
+    matches: list[dict] = []
+    with zipfile.ZipFile(pptx) as package:
+        names = package.namelist()
+        for slide_index, part in enumerate(slide_parts(names), start=1):
+            root = ET.fromstring(package.read(part))
+            for shape in root.findall(".//p:sp", NS):
+                if shape_name(shape) != target_name:
+                    continue
+                text = drawingml_text(shape)
+                if not text:
+                    raise RuntimeError(f"Target {target_name!r} is not native visible text")
+                matches.append({
+                    "targetObjectId": target_name,
+                    "slide": slide_index,
+                    "text": text,
+                    "textSha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                })
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected exactly one native text target {target_name!r}; found {len(matches)}")
+    return matches[0]
+
+
 def prepare_source(source: Path, output: Path, target_name: str) -> None:
     with zipfile.ZipFile(source) as package:
         members = {name: package.read(name) for name in package.namelist()}
@@ -258,6 +287,10 @@ def main() -> None:
     inspect = subparsers.add_parser("inspect")
     inspect.add_argument("--input", required=True, type=Path)
     inspect.add_argument("--out", required=True, type=Path)
+    target = subparsers.add_parser("target")
+    target.add_argument("--input", required=True, type=Path)
+    target.add_argument("--name", required=True)
+    target.add_argument("--out", required=True, type=Path)
     renders = subparsers.add_parser("inspect-renders")
     renders.add_argument("--input-dir", required=True, type=Path)
     renders.add_argument("--out", required=True, type=Path)
@@ -277,6 +310,12 @@ def main() -> None:
                 readable = entropy > 1.5 and non_blank
                 items.append({"slide": index, "file": image_path.name, "width": image.width, "height": image.height, "entropy": round(entropy, 6), "notBlank": non_blank, "readable": readable, "sha256": sha256_file(image_path)})
         payload = {"schemaVersion": "slidewright-c19-render-analysis/v1", "valid": bool(items) and all(item["notBlank"] and item["readable"] for item in items), "slides": items}
+        args.out.resolve().parent.mkdir(parents=True, exist_ok=True)
+        args.out.resolve().write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(payload, indent=2))
+        return
+    if args.command == "target":
+        payload = {"schemaVersion": "slidewright-c19-target/v1", "valid": True, **target_info(args.input.resolve(), args.name)}
         args.out.resolve().parent.mkdir(parents=True, exist_ok=True)
         args.out.resolve().write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(payload, indent=2))

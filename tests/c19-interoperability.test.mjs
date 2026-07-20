@@ -4,8 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { importC19Evidence } from "../scripts/import-c19-evidence.mjs";
+import { testing as macosRunnerTesting } from "../scripts/c19/macos_desktop_suite_lib.mjs";
 import {
   C19_REQUIRED_SUITES,
+  containsBrowserCredentialMaterial,
   contractWithHash,
   matrixArtifactNames,
   runC19DestructiveControls,
@@ -33,7 +35,7 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
   const plain = (name) => receipt(`receipts/${name}`, `${suite.id}/${name}`);
   const implementation = plain("runner.mjs");
   const selectedProof = suite.proofMode
-    ? { mode: suite.proofMode, automationProtocol: suite.automationProtocol, requiresAuthenticatedSession: suite.requiresAuthenticatedSession, serviceOrigins: suite.serviceOrigins }
+    ? { ...suite, mode: suite.proofMode }
     : suite.proofModes.find((item) => item.mode === (proofMode ?? "browser-automation"));
   const sourceInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: 1, groups: 1, connectors: 1, attachedConnectors: 1 };
   const resultInventory = { slides: 2, nativeTextObjects: 4, mixedEmphasisObjects: 1, tables: 1, charts: unsupportedCharts ? 0 : 1, groups: 1, connectors: 1, attachedConnectors: 1 };
@@ -109,9 +111,64 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
       })),
     },
   };
+  if (selectedProof.requiresExternalManualReview) {
+    evidence.render.reviewAttestation = {
+      reviewMethod: "full-size-human",
+      reviewedAt: "2026-07-18T00:02:00.000Z",
+      reviewerIdSha256: sha256(`${suite.id}/reviewer`),
+      reviewSha256: evidence.render.review.sha256,
+      slideCount: evidence.render.slides.length,
+      allSlidesPassed: true,
+    };
+  }
   if (selectedProof.mode === "browser-automation" && selectedProof.requiresAuthenticatedSession) {
     evidence.automation.authenticated = true;
     evidence.automation.authentication = { type: "browser-session", principalSha256: sha256("browser-principal") };
+  }
+  if (selectedProof.mode === "browser-automation" && selectedProof.requiresResourceLifecycle) {
+    const resourceIdSha256 = sha256("canva-resource");
+    const clientBuildSha256 = sha256("canva-web-client-scripts");
+    const beforeStateSha256 = sha256("canva-before-state");
+    const afterStateSha256 = sha256("canva-after-state");
+    const resultPdf = receipt("exports/result.pdf", "%PDF-1.7\nfixture");
+    const browserEvidence = selectedProof.requiredOperationSequence.map((id) => plain(`browser-${id}.json`));
+    const operations = selectedProof.requiredOperationSequence.map((id, index) => ({
+      id,
+      origin: selectedProof.serviceOrigins[0],
+      status: "succeeded",
+      resourceIdSha256,
+      startedAt: `2026-07-18T00:00:0${index}.000Z`,
+      endedAt: `2026-07-18T00:00:0${index}.500Z`,
+      evidence: browserEvidence[index],
+      ...(id === "open-before" ? { stateSha256: beforeStateSha256 } : {}),
+      ...(id === "native-edit" ? { beforeStateSha256, afterStateSha256 } : {}),
+      ...(id === "reopen-after" ? { stateSha256: afterStateSha256 } : {}),
+      ...(id === "export-pptx" ? { artifactSha256: result.sha256 } : {}),
+      ...(id === "export-pdf" ? { artifactSha256: resultPdf.sha256 } : {}),
+      ...(id === "cleanup-delete" ? { resourceDeleted: true } : {}),
+    }));
+    evidence.application.version = `web-client@${clientBuildSha256.slice(0, 16)}`;
+    evidence.application.versionKind = "web-client-fingerprint";
+    evidence.application.serviceBuildExposed = false;
+    evidence.application.clientBuildSha256 = clientBuildSha256;
+    evidence.automation.captureManifest = plain("canva-capture-manifest.json");
+    evidence.automation.browserEvidence = browserEvidence;
+    evidence.automation.browserTrace = {
+      schemaVersion: "slidewright-c19-browser-trace/v1",
+      authenticated: true,
+      authentication: evidence.automation.authentication,
+      browser: evidence.automation.browser,
+      serviceOrigins: selectedProof.serviceOrigins,
+      resourceIdSha256,
+      clientBuildSha256,
+      beforeStateSha256,
+      afterStateSha256,
+      startedAt: evidence.automation.startedAt,
+      endedAt: evidence.automation.endedAt,
+      operations,
+    };
+    evidence.render.sourceDocument = resultPdf;
+    evidence.render.renderer.version = evidence.application.version;
   }
   if (selectedProof.mode === "authenticated-service-automation") {
     const resourceIdSha256 = sha256("google-resource");
@@ -161,6 +218,7 @@ function suiteEvidence(suite, contractHash, { sourceContents = "one exact C19 so
     ...(evidence.automation.captureManifest ? [evidence.automation.captureManifest] : []),
     ...(evidence.automation.discovery ?? []).map((item) => item.artifact),
     ...(evidence.automation.snapshots ?? []),
+    ...(evidence.automation.browserEvidence ?? []),
   ];
   const files = receiptValues.map((item) => ({ ...item, contents: item.contents }));
   for (const item of receiptValues) delete item.contents;
@@ -183,19 +241,24 @@ test("C19 contract freezes all six target suites and honest advanced outcomes", 
   assert.equal(contract.publication.requiresOneExactSourceDeckAcrossSuites, true);
   const google = contract.requiredSuites.find((item) => item.id === "google-slides");
   assert.ok(google.proofModes.some((item) => item.mode === "authenticated-service-automation"));
+  const canva = contract.requiredSuites.find((item) => item.id === "canva");
+  assert.equal(canva.versionKind, "web-client-fingerprint");
+  assert.deepEqual(canva.requiredOperationSequence, ["import-pptx", "open-before", "native-edit", "save", "reopen-after", "export-pptx", "export-pdf", "cleanup-delete"]);
+  assert.equal(contract.requiredSuites.find((item) => item.id === "powerpoint-macos").requiresExternalManualReview, true);
+  assert.equal(contract.requiredSuites.find((item) => item.id === "keynote-macos").requiresExternalManualReview, true);
   const schema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-interop-suite-v2.schema.json"), "utf8"));
   assert.equal(schema.properties.evidenceOrigin.const, "suite-runner");
 });
 
-test("C19 validates automation-bound suite evidence and rejects eight destructive controls", async () => {
+test("C19 validates automation-bound suite evidence and rejects mode-specific destructive controls", async () => {
   const { contract, hash: contractHash } = await contractWithHash(root);
   for (const suite of contract.requiredSuites) {
     const { evidence } = suiteEvidence(suite, contractHash);
     const verified = await validateC19SuiteEvidence(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
     assert.equal(verified.suiteId, suite.id);
-    assert.equal(verified.receipts, 11);
+    assert.equal(verified.receipts, suite.id === "canva" ? 21 : 11);
     const controls = await runC19DestructiveControls(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
-    assert.equal(controls.length, 8);
+    assert.equal(controls.length, suite.id === "canva" ? 14 : suite.platform === "macos" ? 9 : 8);
     assert.ok(controls.every((item) => item.rejected));
   }
 });
@@ -218,6 +281,52 @@ test("C19 accepts revision-bound authenticated Google service automation and rep
   const overlappingTrace = structuredClone(evidence);
   overlappingTrace.automation.serviceTrace.operations[1].startedAt = overlappingTrace.automation.serviceTrace.operations[0].startedAt;
   await assert.rejects(() => validateC19SuiteEvidence(overlappingTrace, { contract, contractHash }), /overlaps or precedes/u);
+});
+
+test("C19 Canva importer contract binds authenticated origin, stateful edit, exports, cleanup, and redacted operation receipts", async () => {
+  const { contract, hash: contractHash } = await contractWithHash(root);
+  const suite = contract.requiredSuites.find((item) => item.id === "canva");
+  const { evidence } = suiteEvidence(suite, contractHash);
+  const verified = await validateC19SuiteEvidence(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
+  assert.equal(verified.suiteId, "canva");
+  assert.equal(verified.receipts, 21);
+  const controls = await runC19DestructiveControls(evidence, { contract, contractHash, expectedSourceCommit: sourceCommit, expectedRepository: repository });
+  assert.equal(controls.length, 14);
+  assert.ok(controls.every((item) => item.rejected));
+
+  const unboundExport = structuredClone(evidence);
+  unboundExport.automation.browserTrace.operations.find((item) => item.id === "export-pptx").artifactSha256 = sha256("different-download");
+  await assert.rejects(() => validateC19SuiteEvidence(unboundExport, { contract, contractHash }), /PPTX export receipt is unbound/u);
+  const undeleted = structuredClone(evidence);
+  undeleted.automation.browserTrace.operations.find((item) => item.id === "cleanup-delete").resourceDeleted = false;
+  await assert.rejects(() => validateC19SuiteEvidence(undeleted, { contract, contractHash }), /cleanup is unproven/u);
+  const stateDrift = structuredClone(evidence);
+  stateDrift.automation.browserTrace.operations.find((item) => item.id === "reopen-after").stateSha256 = sha256("wrong-reopened-state");
+  await assert.rejects(() => validateC19SuiteEvidence(stateDrift, { contract, contractHash }), /reopened state does not bind/u);
+
+  const runner = await fs.readFile(path.join(root, "scripts", "c19", "run_canva_suite.mjs"), "utf8");
+  const captureSchema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-canva-browser-capture.schema.json"), "utf8"));
+  const traceSchema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-browser-trace.schema.json"), "utf8"));
+  const operationSchema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-browser-operation-evidence.schema.json"), "utf8"));
+  assert.equal(captureSchema.properties.captureOrigin.const, "authenticated-canva-browser-automation");
+  assert.equal(captureSchema.properties.files.properties.operationEvidence.minItems, 8);
+  assert.deepEqual(traceSchema.properties.serviceOrigins.const, ["https://www.canva.com"]);
+  assert.equal(traceSchema.properties.operations.minItems, 8);
+  assert.equal(operationSchema.properties.origin.const, "https://www.canva.com");
+  assert.match(runner, /C19 Canva evidence requires an exact clean Git checkout/u);
+  assert.match(runner, /rejectSecretBearingCapture/u);
+  assert.match(runner, /credential or identity material/u);
+  assert.match(runner, /resourceDeleted === true/u);
+  assert.match(runner, /changed native visible-text reading order or made an undeclared text edit/u);
+  assert.match(runner, /verifyArtifactBodies: true/u);
+  assert.match(runner, /runC19DestructiveControls/u);
+  assert.doesNotMatch(runner, /CANVA_(?:TOKEN|COOKIE|PASSWORD)|Authorization:\s*Bearer/u);
+  assert.equal(containsBrowserCredentialMaterial('{"cookies":[{"name":"session"}]}'), true);
+  assert.equal(containsBrowserCredentialMaterial('{"email":"<redacted>"}'), true);
+  assert.equal(containsBrowserCredentialMaterial('{"message":"user@example.com"}'), true);
+  assert.equal(containsBrowserCredentialMaterial('{"resourceId":"raw-design-id"}'), true);
+  assert.equal(containsBrowserCredentialMaterial('{"message":"https://www.canva.com/design/raw-id/edit"}'), true);
+  assert.equal(containsBrowserCredentialMaterial('{"principalSha256":"' + sha256("principal") + '"}'), false);
 });
 
 test("C19 rejects self-reports, unknown versions, partial semantics, and unbound artifact bodies", async (t) => {
@@ -260,7 +369,7 @@ test("C19 importer refuses partial GitHub matrices and publishes a fully bound s
   const result = await importC19Evidence({ root, input, artifactsFile, runId: "12345", sourceCommit, repository, published, enforceCheckout: false });
   assert.equal(result.valid, true);
   assert.equal(result.suites.length, 6);
-  assert.equal(result.destructiveControls, 48);
+  assert.equal(result.destructiveControls, 56);
   assert.equal(result.artifactBodiesCommitted, false);
   const reverified = await verifyPublishedC19Evidence({ root, published });
   assert.equal(reverified.scorecardHash, result.scorecardHash);
@@ -302,6 +411,82 @@ test("C19 PowerPoint Windows adapter owns an isolated application and performs a
   assert.match(runner, /git\(\["status", "--porcelain"\]\) !== ""/u);
   assert.match(runner, /verifyArtifactBodies: true/u);
   assert.match(runner, /runC19DestructiveControls/u);
+});
+
+test("C19 macOS desktop adapters are owned, native-editing, export-bound, and fail closed", async () => {
+  const common = await fs.readFile(path.join(root, "scripts", "c19", "macos_desktop_suite_lib.mjs"), "utf8");
+  const powerpointRunner = await fs.readFile(path.join(root, "scripts", "c19", "run_powerpoint_macos_suite.mjs"), "utf8");
+  const keynoteRunner = await fs.readFile(path.join(root, "scripts", "c19", "run_keynote_macos_suite.mjs"), "utf8");
+  const powerpointWorker = await fs.readFile(path.join(root, "scripts", "c19", "powerpoint_macos_worker.applescript"), "utf8");
+  const keynoteWorker = await fs.readFile(path.join(root, "scripts", "c19", "keynote_macos_worker.applescript"), "utf8");
+  const runbook = await fs.readFile(path.join(root, "docs", "C19_MACOS_RUNNERS.md"), "utf8");
+
+  assert.match(common, /process\.platform === "darwin"/u);
+  assert.match(common, /requires an exact clean Git checkout/u);
+  assert.match(common, /expectedVisibleTextOrder/u);
+  assert.match(common, /prepare.*config\.emphasisTargetName/u);
+  assert.match(common, /exportedPptxReopenedNativeTextMatched/u);
+  assert.match(common, /verifyArtifactBodies: true/u);
+  assert.match(common, /runC19DestructiveControls/u);
+  assert.match(common, /pending-manual-full-size-review/u);
+  assert.match(common, /--finalize-review/u);
+  assert.match(common, /review\.reviewMethod === "full-size-human"/u);
+  assert.match(common, /item\.decision === "pass"/u);
+  assert.doesNotMatch(common, /pass-precheck/u);
+  assert.doesNotMatch(common, /\.kill\s*\(|killSync|SIGKILL/u);
+
+  assert.match(powerpointRunner, /suiteId: "powerpoint-macos"/u);
+  assert.match(powerpointRunner, /emphasisTargetName: "surface-01-title"/u);
+  assert.match(keynoteRunner, /suiteId: "keynote-macos"/u);
+  assert.match(keynoteRunner, /emphasisTargetName: "surface-01-title"/u);
+  assert.match(powerpointWorker, /requires PowerPoint to be fully closed/u);
+  assert.match(powerpointWorker, /save sourceDeck in \(POSIX file outputPath\) as save as Open XML presentation/u);
+  assert.match(powerpointWorker, /save reopenedDeck in \(POSIX file pdfPath\) as save as PDF/u);
+  assert.match(powerpointWorker, /exported PowerPoint macOS PPTX did not retain native sentinel text/u);
+  assert.match(powerpointWorker, /owned Microsoft PowerPoint process did not exit naturally/u);
+  assert.doesNotMatch(powerpointWorker, /killall|kill -9|pkill/u);
+  assert.doesNotMatch(powerpointWorker, /[^\x00-\x7F]/u);
+
+  assert.match(keynoteWorker, /requires Keynote to be fully closed/u);
+  assert.match(keynoteWorker, /prepared object name or exact source text/u);
+  assert.match(keynoteWorker, /save sourceDocument in \(POSIX file workingPath\)/u);
+  assert.match(keynoteWorker, /export reopenedDocument to \(POSIX file outputPath\) as Microsoft PowerPoint/u);
+  assert.match(keynoteWorker, /export exportedDocument to \(POSIX file pdfPath\) as PDF/u);
+  assert.match(keynoteWorker, /owned Keynote process did not exit naturally/u);
+  assert.doesNotMatch(keynoteWorker, /killall|kill -9|pkill/u);
+  assert.doesNotMatch(keynoteWorker, /[^\x00-\x7F]/u);
+  assert.match(runbook, /cannot qualify as human review/iu);
+  assert.match(runbook, /C19 remains `0`/u);
+});
+
+test("C19 macOS helper binds one exact visible-text edit and strict worker fields", () => {
+  assert.deepEqual(
+    macosRunnerTesting.expectedVisibleTextOrder([["alpha", "target"], ["omega"]], "target", "replacement"),
+    [["alpha", "replacement"], ["omega"]],
+  );
+  assert.throws(() => macosRunnerTesting.expectedVisibleTextOrder([["target", "target"]], "target", "replacement"), /expected one sentinel target/u);
+  assert.throws(() => macosRunnerTesting.expectedVisibleTextOrder([["alpha"]], "target", "replacement"), /expected one sentinel target/u);
+  assert.deepEqual(macosRunnerTesting.parseWorkerFields("noise\nC19\tvalid\ttrue\nC19\tprocessId\t42\n"), { valid: "true", processId: "42" });
+  assert.throws(() => macosRunnerTesting.parseWorkerFields("C19\tvalid\ttrue\nC19\tvalid\tfalse\n"), /duplicated field/u);
+  assert.throws(() => macosRunnerTesting.validateConfig({ targetName: "surface-01-body" }), /configuration root is missing/u);
+  const completeConfig = Object.fromEntries(["root", "runner", "commonRunner", "worker", "inventory", "evidenceLibrary", "suiteId", "label", "application", "appBundle", "appExecutable", "nativeWorkingDocument", "emphasisTargetName", "targetName", "replacementText"].map((key) => [key, key]));
+  assert.equal(macosRunnerTesting.validateConfig(completeConfig), true);
+  assert.throws(() => macosRunnerTesting.validateConfig({ ...completeConfig, emphasisTargetName: completeConfig.targetName }), /must be distinct/u);
+
+  const pendingEvidence = {
+    automation: { endedAt: "2026-07-20T00:00:00.000Z" },
+    render: { slides: [{ slide: 1, image: { sha256: "a".repeat(64) } }] },
+  };
+  const manualReview = {
+    schemaVersion: "slidewright-c19-manual-visual-review/v1",
+    reviewMethod: "full-size-human",
+    reviewedAt: "2026-07-20T00:01:00.000Z",
+    reviewerIdSha256: "b".repeat(64),
+    slides: [{ slide: 1, imageSha256: "a".repeat(64), decision: "pass", checks: { readable: true, "not-clipped": true, "not-blank": true }, notes: "Reviewed at full size." }],
+  };
+  assert.equal(macosRunnerTesting.validateManualReview(manualReview, pendingEvidence), true);
+  assert.throws(() => macosRunnerTesting.validateManualReview({ ...manualReview, slides: [{ ...manualReview.slides[0], decision: "pass-precheck" }] }, pendingEvidence), /did not pass/u);
+  assert.throws(() => macosRunnerTesting.validateManualReview({ ...manualReview, slides: [{ ...manualReview.slides[0], imageSha256: "c".repeat(64) }] }, pendingEvidence), /not hash-bound/u);
 });
 
 test("C19 LibreOffice adapter owns an isolated UNO process and performs a native edit", async () => {

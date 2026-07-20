@@ -13,13 +13,23 @@ export const C19_REQUIRED_SUITES = Object.freeze([
 
 export const C19_IMPLEMENTATION_CLOSURE = Object.freeze([
   "docs/C19_INTEROPERABILITY.md",
+  "docs/C19_MACOS_RUNNERS.md",
   "fixtures/interoperability/c19-v2/contract.json",
+  "schemas/c19-browser-operation-evidence.schema.json",
+  "schemas/c19-browser-trace.schema.json",
+  "schemas/c19-canva-browser-capture.schema.json",
   "schemas/c19-google-slides-capture.schema.json",
   "schemas/c19-interop-suite-v2.schema.json",
   "scripts/c19/LibreOfficeUnoWorker.java",
   "scripts/c19/inventory_interop.py",
+  "scripts/c19/keynote_macos_worker.applescript",
+  "scripts/c19/macos_desktop_suite_lib.mjs",
+  "scripts/c19/powerpoint_macos_worker.applescript",
+  "scripts/c19/run_canva_suite.mjs",
   "scripts/c19/run_google_slides_suite.mjs",
+  "scripts/c19/run_keynote_macos_suite.mjs",
   "scripts/c19/run_libreoffice_suite.mjs",
+  "scripts/c19/run_powerpoint_macos_suite.mjs",
   "scripts/c19/powerpoint_windows_worker.ps1",
   "scripts/c19/run_powerpoint_windows_suite.mjs",
   "scripts/import-c19-evidence.mjs",
@@ -47,6 +57,13 @@ export function stable(value) {
 
 export function sha256(value) {
   return crypto.createHash("sha256").update(Buffer.isBuffer(value) ? value : Buffer.from(String(value), "utf8")).digest("hex");
+}
+
+export function containsBrowserCredentialMaterial(value) {
+  const text = String(value);
+  const prohibitedField = /"(?:access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key|authorization|cookie|cookies|password|email|user[_-]?email|principal[_-]?email|accountId|userId|designId|resourceId|localStorage|sessionStorage)"\s*:/iu;
+  const credentialValue = /Bearer\s+[A-Za-z0-9._~-]{16,}|\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{8,}\b|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|https:\/\/www\.canva\.com\/design\//iu;
+  return prohibitedField.test(text) || credentialValue.test(text);
 }
 
 export function canonicalHash(value, field) {
@@ -101,9 +118,8 @@ function proofContract(suite, mode) {
   if (typeof suite.proofMode === "string") {
     invariant(mode === suite.proofMode, `${suite.id}: automation mode mismatch.`);
     return {
+      ...suite,
       mode: suite.proofMode,
-      automationProtocol: suite.automationProtocol,
-      requiresAuthenticatedSession: suite.requiresAuthenticatedSession,
       serviceOrigins: suite.serviceOrigins ?? (suite.serviceOrigin ? [suite.serviceOrigin] : []),
     };
   }
@@ -160,10 +176,57 @@ function collectReceipts(evidence) {
     ...evidence.render.slides.map((item) => [`render slide ${item.slide}`, item.image]),
   ];
   if (evidence.render.sourceDocument) receipts.push(["render source document", evidence.render.sourceDocument]);
-  if (evidence.automation.captureManifest) receipts.push(["service capture manifest", evidence.automation.captureManifest]);
+  if (evidence.automation.captureManifest) receipts.push(["capture manifest", evidence.automation.captureManifest]);
+  for (const [index, item] of (evidence.automation.browserEvidence ?? []).entries()) receipts.push([`browser operation evidence ${index + 1}`, item]);
   for (const [index, item] of (evidence.automation.discovery ?? []).entries()) receipts.push([`service discovery ${index + 1}`, item.artifact]);
   for (const [index, item] of (evidence.automation.snapshots ?? []).entries()) receipts.push([`service snapshot ${index + 1}`, item]);
   return receipts;
+}
+
+function validateBrowserLifecycle(evidence, proof) {
+  invariant(JSON.stringify(proof.requiresExportFormats) === JSON.stringify(["pptx", "pdf"]), `${evidence.suiteId}: browser export-format contract drifted.`);
+  invariant(evidence.application.versionKind === proof.versionKind && proof.versionKind === "web-client-fingerprint"
+    && evidence.application.serviceBuildExposed === false, `${evidence.suiteId}: browser application version attribution is misleading or incomplete.`);
+  invariant(DIGEST.test(evidence.application.clientBuildSha256 ?? "")
+    && evidence.application.version === `web-client@${evidence.application.clientBuildSha256.slice(0, 16)}`, `${evidence.suiteId}: browser application version is not derived from the captured client fingerprint.`);
+  invariant(evidence.render.sourceDocument && /\.pdf$/iu.test(evidence.render.sourceDocument.path ?? ""), `${evidence.suiteId}: browser-produced PDF render source is missing.`);
+  invariant(evidence.automation.captureManifest, `${evidence.suiteId}: browser capture manifest is missing.`);
+
+  const trace = evidence.automation.browserTrace;
+  invariant(trace?.schemaVersion === "slidewright-c19-browser-trace/v1" && trace.authenticated === true, `${evidence.suiteId}: authenticated browser trace is invalid.`);
+  invariant(trace.authentication?.type === "browser-session"
+    && trace.authentication.principalSha256 === evidence.automation.authentication.principalSha256
+    && DIGEST.test(trace.authentication.principalSha256 ?? ""), `${evidence.suiteId}: browser trace authentication binding is invalid.`);
+  invariant(trace.browser?.name === evidence.automation.browser.name && trace.browser?.version === evidence.automation.browser.version, `${evidence.suiteId}: browser trace identity drifted.`);
+  invariant(JSON.stringify(trace.serviceOrigins) === JSON.stringify(proof.serviceOrigins), `${evidence.suiteId}: browser trace service origin set drifted.`);
+  invariant(trace.clientBuildSha256 === evidence.application.clientBuildSha256 && DIGEST.test(trace.clientBuildSha256 ?? ""), `${evidence.suiteId}: browser client-build fingerprint drifted.`);
+  invariant(DIGEST.test(trace.resourceIdSha256 ?? "") && DIGEST.test(trace.beforeStateSha256 ?? "") && DIGEST.test(trace.afterStateSha256 ?? "")
+    && trace.beforeStateSha256 !== trace.afterStateSha256, `${evidence.suiteId}: browser resource or before/after state binding is missing.`);
+  invariant(trace.startedAt === evidence.automation.startedAt && trace.endedAt === evidence.automation.endedAt, `${evidence.suiteId}: browser trace timing is not bound to the evidence envelope.`);
+  invariant(Array.isArray(trace.operations) && trace.operations.length === proof.requiredOperationSequence.length, `${evidence.suiteId}: browser operation sequence is incomplete.`);
+  invariant(Array.isArray(evidence.automation.browserEvidence) && evidence.automation.browserEvidence.length === trace.operations.length, `${evidence.suiteId}: browser operation receipts are incomplete.`);
+
+  let previousEndedAt = null;
+  for (const [index, requiredId] of proof.requiredOperationSequence.entries()) {
+    const operation = trace.operations[index];
+    invariant(operation?.id === requiredId && operation.status === "succeeded", `${evidence.suiteId}: browser operation sequence drifted at ${requiredId}.`);
+    invariant(operation.origin === proof.serviceOrigins[0] && operation.resourceIdSha256 === trace.resourceIdSha256, `${evidence.suiteId}: browser operation ${requiredId} is not origin/resource bound.`);
+    invariant(Number.isFinite(Date.parse(operation.startedAt)) && Number.isFinite(Date.parse(operation.endedAt))
+      && Date.parse(operation.endedAt) >= Date.parse(operation.startedAt), `${evidence.suiteId}: browser operation ${requiredId} timestamps are invalid.`);
+    invariant(previousEndedAt === null || Date.parse(operation.startedAt) >= previousEndedAt, `${evidence.suiteId}: browser operation ${requiredId} overlaps or precedes the prior operation.`);
+    previousEndedAt = Date.parse(operation.endedAt);
+    validateFileReceipt(operation.evidence, `${evidence.suiteId} ${requiredId} evidence`);
+    invariant(JSON.stringify(operation.evidence) === JSON.stringify(evidence.automation.browserEvidence[index]), `${evidence.suiteId}: browser operation ${requiredId} receipt is not bound to the capture.`);
+  }
+
+  const byId = new Map(trace.operations.map((item) => [item.id, item]));
+  invariant(byId.get("open-before")?.stateSha256 === trace.beforeStateSha256, `${evidence.suiteId}: browser before-state receipt is missing.`);
+  invariant(byId.get("native-edit")?.beforeStateSha256 === trace.beforeStateSha256
+    && byId.get("native-edit")?.afterStateSha256 === trace.afterStateSha256, `${evidence.suiteId}: browser native edit is not state-bound.`);
+  invariant(byId.get("reopen-after")?.stateSha256 === trace.afterStateSha256, `${evidence.suiteId}: browser reopened state does not bind the edit.`);
+  invariant(byId.get("export-pptx")?.artifactSha256 === evidence.resultDeck.artifact.sha256, `${evidence.suiteId}: browser PPTX export receipt is unbound.`);
+  invariant(byId.get("export-pdf")?.artifactSha256 === evidence.render.sourceDocument.sha256, `${evidence.suiteId}: browser PDF export receipt is unbound.`);
+  invariant(byId.get("cleanup-delete")?.resourceDeleted === true, `${evidence.suiteId}: browser-created resource cleanup is unproven.`);
 }
 
 export async function contractWithHash(root) {
@@ -221,6 +284,7 @@ export async function validateC19SuiteEvidence(evidence, {
     }
     invariant(typeof evidence.automation.browser?.name === "string" && evidence.automation.browser.name.length > 0, `${evidence.suiteId}: browser identity is missing.`);
     invariant(typeof evidence.automation.browser?.version === "string" && evidence.automation.browser.version.length > 0 && !/^unknown$/iu.test(evidence.automation.browser.version), `${evidence.suiteId}: browser version is missing.`);
+    if (proof.requiresResourceLifecycle) validateBrowserLifecycle(evidence, proof);
   } else if (proof.mode === "authenticated-service-automation") {
     invariant(evidence.automation.protocol === proof.automationProtocol, `${evidence.suiteId}: service automation protocol mismatch.`);
     invariant(evidence.application.versionKind === "api-discovery-revision" && evidence.application.serviceBuildExposed === false, `${evidence.suiteId}: service version attribution is misleading or incomplete.`);
@@ -300,6 +364,14 @@ export async function validateC19SuiteEvidence(evidence, {
     invariant(Number.isInteger(slide.heightPixels) && slide.heightPixels >= contract.renderContract.minimumHeightPixels, `${evidence.suiteId}/slide-${slide.slide}: render height is too small.`);
     invariant(contract.renderContract.requiredPerSlideChecks.every((key) => slide.checks?.[key] === true), `${evidence.suiteId}/slide-${slide.slide}: readability checks are incomplete.`);
   }
+  if (proof.requiresExternalManualReview) {
+    const review = evidence.render.reviewAttestation;
+    invariant(review?.reviewMethod === "full-size-human" && review.allSlidesPassed === true, `${evidence.suiteId}: external full-size human review is missing.`);
+    invariant(DIGEST.test(review.reviewerIdSha256 ?? "") && DIGEST.test(review.reviewSha256 ?? "")
+      && review.reviewSha256 === evidence.render.review?.sha256, `${evidence.suiteId}: external review identity or artifact binding is invalid.`);
+    invariant(Number.isFinite(Date.parse(review.reviewedAt)) && Date.parse(review.reviewedAt) >= Date.parse(evidence.automation.endedAt), `${evidence.suiteId}: external review timestamp is invalid.`);
+    invariant(review.slideCount === evidence.render.slides.length, `${evidence.suiteId}: external review slide count is incomplete.`);
+  }
 
   const receipts = collectReceipts(evidence);
   const paths = new Set();
@@ -342,6 +414,22 @@ export async function runC19DestructiveControls(validEvidence, options) {
       }],
       ["missing-service-pdf", (item) => { delete item.render.sourceDocument; }],
     );
+  }
+  if (validEvidence.automation?.mode === "browser-automation" && validEvidence.automation?.browserTrace) {
+    controls.push(
+      ["missing-authenticated-browser-proof", (item) => { item.automation.authenticated = false; }],
+      ["browser-origin-drift", (item) => { item.automation.browserTrace.operations[0].origin = "https://example.invalid"; }],
+      ["browser-operation-sequence-drift", (item) => { [item.automation.browserTrace.operations[1], item.automation.browserTrace.operations[2]] = [item.automation.browserTrace.operations[2], item.automation.browserTrace.operations[1]]; }],
+      ["browser-resource-not-deleted", (item) => { item.automation.browserTrace.operations.at(-1).resourceDeleted = false; }],
+      ["false-browser-advanced-outcome", (item) => {
+        const chart = item.semantic.advancedChecks.find((check) => check.id === "native-chart");
+        chart.outcome = chart.outcome === "preserved" ? "unsupported" : "preserved";
+      }],
+      ["missing-browser-pdf", (item) => { delete item.render.sourceDocument; }],
+    );
+  }
+  if (validEvidence.render?.reviewAttestation) {
+    controls.push(["automated-review-masquerade", (item) => { item.render.reviewAttestation.reviewMethod = "pass-precheck"; }]);
   }
   const results = [];
   for (const [id, mutate] of controls) {
