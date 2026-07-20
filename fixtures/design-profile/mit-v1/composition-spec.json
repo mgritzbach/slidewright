@@ -1,0 +1,72 @@
+{
+  "version": "2.0",
+  "mode": "compose-source-archetypes",
+  "source": "slidewright-design-profile-source.pptx",
+  "sourceRights": {
+    "basis": "licensed",
+    "license": "MIT",
+    "redistributionAllowed": true
+  },
+  "slides": [
+    {
+      "archetype": "SW Profile Section",
+      "replacements": [
+        {
+          "shapeName": "SW Section Title",
+          "before": "Decisions, not decoration",
+          "after": "Launch strategy"
+        },
+        {
+          "shapeName": "SW Section Body",
+          "before": "A source-bound section archetype",
+          "after": "A source-native new-deck section"
+        }
+      ]
+    },
+    {
+      "archetype": "SW Profile Content",
+      "replacements": [
+        {
+          "shapeName": "SW Content Title",
+          "before": "Operating review",
+          "after": "Market readiness"
+        },
+        {
+          "shapeName": "SW Content Body",
+          "before": "Three priorities\nOne accountable owner\nA decision by Friday",
+          "after": "One priority segment\nOne accountable owner\nA launch decision Friday"
+        }
+      ]
+    },
+    {
+      "archetype": "SW Profile Content",
+      "replacements": [
+        {
+          "shapeName": "SW Content Title",
+          "before": "Operating review",
+          "after": "Operating model"
+        },
+        {
+          "shapeName": "SW Content Body",
+          "before": "Three priorities\nOne accountable owner\nA decision by Friday",
+          "after": "Three workstreams\nOne release owner\nA weekly decision forum"
+        }
+      ]
+    },
+    {
+      "archetype": "SW Profile Section",
+      "replacements": [
+        {
+          "shapeName": "SW Section Title",
+          "before": "Decisions, not decoration",
+          "after": "Decision requested"
+        },
+        {
+          "shapeName": "SW Section Body",
+          "before": "A source-bound section archetype",
+          "after": "Approve the bounded launch path"
+        }
+      ]
+    }
+  ]
+}

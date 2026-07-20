@@ -38,6 +38,14 @@ The structural gate covers slide dimensions, theme and visible fonts, integer ty
 
 This benchmark proves bounded reuse inside a clone of the source deck. It does not prove arbitrary structural import, chart/table/diagram reconstruction, or synthesis of unrelated layouts.
 
+### Source-native composition benchmark
+
+Run `npm run setup:runtime` and then `node scripts/run-profile-composition-benchmark.mjs` for the rights-aware `g22-v2` path. It uses the committed MIT fixture to build a four-slide editable deck from a two-slide source by selecting source archetypes, cloning their native OOXML and inheritance, replacing only named native placeholder text, deterministically rebasing duplicated identities, and garbage-collecting every unreachable slide/media part.
+
+The automated gate requires byte-identical repeat composition and provenance, an independent relationship-closure and source-object audit, eight forged negative controls, exact pixels outside declared text and dynamic slide-number masks, zero-overflow checks, a process-owned PowerPoint save/reopen, native semantic preservation, and at least 0.999 post-PowerPoint render similarity. Its scorecard remains `goalComplete: false` until a named human or primary agent inspects all four composed and all four roundtrip PNGs individually at full size. Complete the generated review template and run `node scripts/finalize-profile-composition-review.mjs --input <completed-review.json>`; the finalizer verifies the reviewer kind, pre-review scorecard hash, all eight image hashes, reviewer digest, timestamp, and eight explicit pass decisions before setting `goalComplete: true`.
+
+This proves only licensed or explicitly authorized source-native archetype composition. It does not authorize redistribution, infer template rights, or claim arbitrary object import.
+
 ## Native semantic-surface benchmark
 
 Run `npm run semantic-surface` for the controlled `slidewright-semantic-surface-scorecard/v2` suite. It creates three byte-identical exports of a four-slide native-object deck and freezes a recursive contract for 40 objects: 32 shapes, two nested groups, two native Office chart parts, one native table, two attached connectors, and one declared image. The contract also binds top-level order, six nested objects, exact cached chart direction/categories/series data, the 20-cell table matrix, connector endpoints, image relationship/media hash/alt text, and meaningful notes on all four slides. Version 2 additionally refuses a dirty checkout, binds the exact Git commit and implementation/runtime closure, hashes the complete raw receipt tree, and proves both normal watchdog completion and forced-parent recovery before publication.

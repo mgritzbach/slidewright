@@ -22,6 +22,26 @@ Use this path when a user supplies a native `.pptx` whose design system should b
 6. Re-extract and audit the result. Compare exact EMU geometry, themes, relationships, masters/layouts, guides, logos, recurring chrome, and symmetry contracts. Treat warnings or undeclared drift as failure.
 7. Save and reopen in Microsoft PowerPoint when available, render every slide, and inspect each render at full size.
 
+## Bounded source-native new-deck composition
+
+When the user is authorized to reuse the source, `g22-v2` can assemble a genuinely new slide sequence from source-native archetype slides. The content specification must set `mode` to `compose-source-archetypes`, declare `sourceRights` (`licensed` or `user-provided-authorized`), and provide at least two output slides. Each replacement remains stale-safe and shape-bound through exact `shapeName`, `before`, and `after` values.
+
+```powershell
+node scripts/slidewright.mjs derive <profile.json> --intent <design-intent.json> --content <composition-spec.json> --out <composition-plan.json>
+node scripts/slidewright.mjs compose-profile <source.pptx> --plan <composition-plan.json> --out <new-deck.pptx> --report <provenance.json>
+```
+
+The compositor clones the selected native slide XML and its source layout/master/theme inheritance, changes only declared native placeholder text, deterministically rebases duplicate creation IDs, rewrites the presentation sequence, and removes package parts unreachable from that new sequence. It is deliberately not an arbitrary importer: unsupported slide-local relationships fail instead of being flattened or silently discarded. The provenance binds source, plan, output, rights, source-to-output mappings, native edited shapes, package closure, and identity counts.
+
+Before delivery, run the independent composition audit, mapped render comparison, eight destructive controls, overflow check, process-owned PowerPoint save/reopen, semantic audit, and post-PowerPoint render comparison. Then have a named human or primary agent inspect all four composed and four roundtrip images individually at full size and record the reviewer kind. The public fixture workflow is:
+
+```powershell
+npm run setup:runtime
+node scripts/run-profile-composition-benchmark.mjs
+# complete outputs/profile-composition/full-size-review-template.json
+node scripts/finalize-profile-composition-review.mjs --input <completed-review.json>
+```
+
 ## New-deck reference grounding
 
 For a new deck that should visibly reuse a rich reference library, invoke the guarded request with the extracted profile:
@@ -39,4 +59,4 @@ Paired left/right or top/bottom rims and limiting lines must have exactly equal 
 
 ## Proof boundary
 
-The copy-only derivation path still clones a source deck and changes only declared native placeholder text. The new-deck grounding path reuses semantic composition concepts and source color/minor-font tokens through Slidewright's proven native archetypes; it does not currently transplant the source master/layout package, guides, logos, limiter lines, or recurring chrome into a newly authored deck. Those structures are provenance-only until an explicit, rights-aware native application mode and PowerPoint round-trip evidence exist. It also does not losslessly import arbitrary SmartArt, notes, video, animation, or every third-party object type. It must disclose fidelity warnings and provenance rather than claiming unrestricted structural import.
+The `g22-v1` copy-only path changes declared native placeholder text inside the original slide inventory. The `g22-v2` path is broader but still bounded: it creates a new sequence only from selected source-native archetype slides and retains their exact inheritance/chrome. The separate reference-grounding renderer continues to reconstruct semantic composition concepts through Slidewright's native adapters; it must not claim that it transplanted source package parts. Neither path claims lossless arbitrary SmartArt, notes, video, animation, arbitrary third-party objects, or unconstrained slide synthesis. Unsupported relationships and fidelity warnings must be disclosed rather than flattened or hidden.

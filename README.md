@@ -220,9 +220,11 @@ Slidewright can extract a deterministic, source-bound design profile from a nati
 node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs profile source.pptx --out profile.json
 node plugins/slidewright/skills/slidewright/scripts/slidewright.mjs derive profile.json --intent design-intent.json --content content-spec.json --out edit-plan.json
 npm run design-profile
+npm run setup:runtime
+node scripts/run-profile-composition-benchmark.mjs
 ```
 
-The verified `g22-v1` policy is deliberately clone-only: it edits declared native placeholder text inside a copy of the source deck and preserves undeclared objects. It does not claim arbitrary structural import or unrestricted generation from someone else's template. The benchmark uses a synthetic PowerPoint-authored fixture, exact-EMU geometry audits, eight destructive controls—including a rendered rim-geometry mutation—real PowerPoint save/reopen, and full-size visual review. Read the [design-profile contract](plugins/slidewright/skills/slidewright/references/design-profile.md) before applying it to an existing deck.
+The verified `g22-v1` policy is deliberately clone-only: it edits declared native placeholder text inside a copy of the source deck and preserves undeclared objects. The bounded `g22-v2` compositor creates a genuinely new sequence from licensed or explicitly authorized source-native archetype slides while preserving their editable OOXML, master/layout/theme inheritance, guides, logos, and recurring chrome; it rejects unsupported slide-local relationships and arbitrary import. Its automated scorecard is not final until a named human or primary agent reviews all four composed and four PowerPoint-roundtrip renders individually at full size. Neither path grants template rights or claims unrestricted import. Read the [design-profile contract](plugins/slidewright/skills/slidewright/references/design-profile.md) before applying it to an existing deck.
 
 ### Reference-grounded new decks
 

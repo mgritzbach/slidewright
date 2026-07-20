@@ -17,6 +17,7 @@ import {
   compileProfileDerivation,
   loadAndCompileProfileDerivation,
 } from "../plugins/slidewright/skills/slidewright/scripts/lib/compile_profile_derivation.mjs";
+import { compileProfileComposition } from "../plugins/slidewright/skills/slidewright/scripts/lib/compile_profile_composition.mjs";
 
 const python = process.env.SLIDEWRIGHT_PYTHON || "python";
 const designProfilePython = path.resolve("plugins/slidewright/skills/slidewright/scripts/design_profile");
@@ -451,6 +452,111 @@ test("maps exact shape-bound content specs into the clone-only plan", () => {
     }),
     /source text mismatch/u,
   );
+});
+
+test("compiles an explicit rights-aware multi-slide source-archetype composition plan", () => {
+  const profile = profileFixture();
+  const content = {
+    mode: "compose-source-archetypes",
+    sourceRights: { basis: "licensed", license: "MIT", redistributionAllowed: true },
+    slides: [
+      {
+        archetype: "Title and Content",
+        replacements: [{ shapeName: "MIT Fixture Title", before: "Quarterly operating review", after: "Launch strategy" }],
+      },
+      {
+        archetype: "Title and Content",
+        replacements: [{ shapeName: "MIT Fixture Title", before: "Quarterly operating review", after: "Decision requested" }],
+      },
+    ],
+  };
+  const plan = compileProfileComposition(profile, content);
+  assert.equal(plan.derivationVersion, "g22-v2");
+  assert.equal(plan.mode, "compose-source-archetypes");
+  assert.equal(plan.outputSlideCount, 2);
+  assert.deepEqual(plan.slides.map((slide) => slide.outputSlide), [1, 2]);
+  assert.deepEqual(plan.slides.map((slide) => slide.sourceSlide), [1, 1]);
+  assert.equal(plan.packagePolicy.garbageCollectUnreachableParts, true);
+  assert.equal(plan.packagePolicy.preserveSourceMasterLayoutTheme, true);
+  assert.equal(plan.sourceRights.sourceBytesPolicy, "license-governed");
+  assert.throws(() => compileProfileComposition(profile, { ...content, sourceRights: undefined }), /sourceRights/u);
+  assert.throws(() => compileProfileComposition(profile, { ...content, sourceRights: { basis: "user-provided-authorized", redistributionAllowed: false } }), /attestation/u);
+});
+
+test("g22-v2 composes deterministic native source slides, closes reachability, and rejects eight mutations", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "slidewright-profile-composition-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const fixture = path.resolve("fixtures/design-profile/mit-v1");
+  const source = path.join(fixture, "slidewright-design-profile-source.pptx");
+  const profile = path.join(directory, "profile.json");
+  const plan = path.join(directory, "plan.json");
+  const first = path.join(directory, "first.pptx");
+  const second = path.join(directory, "second.pptx");
+  const firstProvenance = path.join(directory, "first-provenance.json");
+  const secondProvenance = path.join(directory, "second-provenance.json");
+  const audit = path.join(directory, "audit.json");
+  const negatives = path.join(directory, "negative-controls.json");
+  const cli = path.resolve("plugins/slidewright/skills/slidewright/scripts/slidewright.mjs");
+  const run = (args) => spawnSync(process.execPath, [cli, ...args], { cwd: path.resolve("."), encoding: "utf8" });
+
+  let completed = run(["profile", source, "--asymmetry-manifest", path.join(fixture, "asymmetry-manifest.json"), "--out", profile]);
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  completed = run(["derive", profile, "--intent", path.join(fixture, "design-intent.json"), "--content", path.join(fixture, "composition-spec.json"), "--out", plan]);
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  completed = run(["compose-profile", source, "--plan", plan, "--out", first, "--report", firstProvenance]);
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  completed = run(["compose-profile", source, "--plan", plan, "--out", second, "--report", secondProvenance]);
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  assert.deepEqual(await fs.readFile(first), await fs.readFile(second));
+  assert.deepEqual(await fs.readFile(firstProvenance), await fs.readFile(secondProvenance));
+
+  const auditor = path.join(designProfilePython, "audit_profile_composition.py");
+  completed = spawnSync(python, [auditor, source, first, "--profile", profile, "--plan", plan, "--provenance", firstProvenance, "--asymmetry-manifest", path.join(fixture, "asymmetry-manifest.json"), "--json", audit], { encoding: "utf8" });
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  const auditValue = JSON.parse(await fs.readFile(audit, "utf8"));
+  assert.equal(auditValue.valid, true);
+  assert.equal(auditValue.summary.sourceSlides, 2);
+  assert.equal(auditValue.summary.outputSlides, 4);
+  assert.equal(auditValue.summary.nativePlaceholderEdits, 8);
+  assert.equal(auditValue.summary.sourceObjectBindings, 16);
+
+  const controls = path.join(designProfilePython, "profile_composition_negative_controls.py");
+  completed = spawnSync(python, [controls, source, first, profile, plan, firstProvenance, "--asymmetry-manifest", path.join(fixture, "asymmetry-manifest.json"), "--out-dir", path.join(directory, "negative"), "--json", negatives], { encoding: "utf8" });
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
+  const negativeValue = JSON.parse(await fs.readFile(negatives, "utf8"));
+  assert.equal(negativeValue.valid, true);
+  assert.equal(negativeValue.controls.length, 8);
+  assert.ok(negativeValue.controls.every((control) => control.rejected));
+});
+
+test("g22-v2 roundtrip normalization accepts relationship ID rebasing but rejects target drift", () => {
+  const moduleDirectory = JSON.stringify(designProfilePython);
+  const script = `
+import sys
+sys.path.insert(0, ${moduleDirectory})
+from audit_profile_composition_roundtrip import compare_composition_part
+
+rels = "ppt/slides/_rels/slide1.xml.rels"
+owner = "ppt/slides/slide1.xml"
+source = {
+    rels: b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="layout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>',
+    owner: b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:cSld r:id="rId1"/></p:sld>',
+}
+rebound = {
+    rels: b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId9" Type="layout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>',
+    owner: b'<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:cSld r:id="rId9"/></p:sld>',
+}
+drifted = {
+    rels: b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId9" Type="layout" Target="../slideLayouts/slideLayout2.xml"/></Relationships>',
+    owner: rebound[owner],
+}
+assert compare_composition_part(rels, source, rebound) == "relationship-id-rebase"
+assert compare_composition_part(owner, source, rebound) == "relationship-target-rebind"
+assert compare_composition_part(rels, source, drifted) is None
+assert compare_composition_part(owner, source, drifted) is None
+`;
+  const completed = spawnSync(python, ["-c", script], { encoding: "utf8" });
+  assert.equal(completed.status, 0, completed.stderr || completed.stdout);
 });
 
 

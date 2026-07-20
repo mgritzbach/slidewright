@@ -15,6 +15,7 @@ import { bootstrapArtifactWorkspace } from "./lib/artifact-runtime.mjs";
 import { applyNamedEditManifest } from "./lib/named-edits.mjs";
 import { adaptExtractedProfile } from "./lib/design-profile.mjs";
 import { compileProfileContentSpec } from "./lib/compile_profile_derivation.mjs";
+import { compileProfileComposition } from "./lib/compile_profile_composition.mjs";
 import { runRequestBuild, verifyRequestRun } from "./lib/request-build.mjs";
 import { adaptDeckCopyToFit } from "./lib/copy-adaptation.mjs";
 
@@ -30,6 +31,7 @@ Usage:
   slidewright iterate <plan.json> --manifest <edit.json> --out <updated-plan.json>
   slidewright profile <source.pptx> --out <profile.json> [--asymmetry-manifest <manifest.json>]
   slidewright derive <profile.json> --intent <design-intent.json> --content <content-spec.json> --out <edit-plan.json>
+  slidewright compose-profile <source.pptx> --plan <composition-plan.json> --out <deck.pptx> --report <provenance.json>
   slidewright lint <plan.json> --out <report.json>
   slidewright fonts <plan.json> --out <report.json>
   slidewright render <plan.json> --out <deck.pptx> [--preview-dir <dir>]
@@ -135,9 +137,25 @@ export async function main(args = process.argv.slice(2)) {
     const contentPath = option(args, "--content");
     if (!intentPath || !contentPath) throw new Error("--intent and --content are required for profile derivation.");
     const reuseProfile = adaptExtractedProfile(await readJson(input), await readJson(intentPath));
-    const plan = compileProfileContentSpec(reuseProfile, await readJson(contentPath));
+    const contentSpec = await readJson(contentPath);
+    const plan = contentSpec.mode === "compose-source-archetypes"
+      ? compileProfileComposition(reuseProfile, contentSpec)
+      : compileProfileContentSpec(reuseProfile, contentSpec);
     await writeJson(out, plan);
-    process.stdout.write("Compiled source-bound edit plan for slide " + plan.targetSlide + " with " + plan.edits.length + " edit(s).\n");
+    process.stdout.write(plan.mode === "compose-source-archetypes"
+      ? `Compiled source-native composition plan for ${plan.slides.length} slides.\n`
+      : "Compiled source-bound edit plan for slide " + plan.targetSlide + " with " + plan.edits.length + " edit(s).\n");
+    return 0;
+  }
+  if (command === "compose-profile") {
+    const planPath = option(args, "--plan");
+    const reportPath = option(args, "--report");
+    if (!planPath || !reportPath) throw new Error("--plan and --report are required for source-native composition.");
+    const compositor = path.join(path.dirname(fileURLToPath(import.meta.url)), "design_profile", "compose_profile_deck.py");
+    const result = spawnSync(process.env.SLIDEWRIGHT_PYTHON || "python", [compositor, input, planPath, out, "--json", reportPath], { stdio: "inherit" });
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error("Source-native profile composition failed with status " + result.status + ".");
+    process.stdout.write(`Composed source-native presentation to ${out}.\n`);
     return 0;
   }
   if (command === "iterate") {
