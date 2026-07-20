@@ -321,6 +321,7 @@ test("C19 LibreOffice adapter owns an isolated UNO process and performs a native
 
 test("C19 Google Slides importer is credential-free, revision-bound, and fails on collateral text edits", async () => {
   const runner = await fs.readFile(path.join(root, "scripts", "c19", "run_google_slides_suite.mjs"), "utf8");
+  const inventory = await fs.readFile(path.join(root, "scripts", "c19", "inventory_interop.py"), "utf8");
   const captureSchema = JSON.parse(await fs.readFile(path.join(root, "schemas", "c19-google-slides-capture.schema.json"), "utf8"));
   assert.equal(captureSchema.properties.captureOrigin.const, "authenticated-google-service-automation");
   assert.match(runner, /C19 Google Slides evidence requires an exact clean Git checkout/u);
@@ -333,4 +334,6 @@ test("C19 Google Slides importer is credential-free, revision-bound, and fails o
   assert.match(runner, /advanced\("native-chart", "charts"\)/u);
   assert.match(runner, /sourceDocument: manifest\.files\.resultPdf/u);
   assert.doesNotMatch(runner, /GOOGLE_APPLICATION_CREDENTIALS|Authorization:\s*Bearer|refreshToken/u);
+  assert.match(inventory, /def drawingml_text/u);
+  assert.match(inventory, /elif local == "br":\s+fragments\.append\("\\n"\)/u);
 });

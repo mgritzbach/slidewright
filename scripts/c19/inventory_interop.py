@@ -66,6 +66,31 @@ def has_mixed_emphasis(container: ET.Element) -> bool:
     return len(values) >= 2 and any(values) and not all(values)
 
 
+def drawingml_text(container: ET.Element) -> str:
+    """Read visible DrawingML text while preserving explicit line breaks.
+
+    Office producers may encode a visible line break either as a newline inside
+    ``a:t`` or as a sibling ``a:br`` element. Treat those encodings as the same
+    semantic text so an interoperability round trip is not failed merely for
+    switching between equivalent DrawingML representations.
+    """
+    paragraphs: list[str] = []
+    for paragraph in container.findall(".//a:p", NS):
+        fragments: list[str] = []
+        for node in paragraph.iter():
+            local = node.tag.rsplit("}", 1)[-1]
+            if local == "t":
+                fragments.append(node.text or "")
+            elif local == "br":
+                fragments.append("\n")
+            elif local == "tab":
+                fragments.append("\t")
+        text = "".join(fragments).strip()
+        if text:
+            paragraphs.append(text)
+    return "\n".join(paragraphs).strip()
+
+
 def ordered_native_text(element: ET.Element) -> list[str]:
     """Return native visible text in recursive shape-tree order.
 
@@ -75,12 +100,13 @@ def ordered_native_text(element: ET.Element) -> list[str]:
     """
     local = element.tag.rsplit("}", 1)[-1]
     if local == "sp":
-        text = "".join((item.text or "") for item in element.findall("./p:txBody//a:t", NS)).strip()
+        body = element.find("./p:txBody", NS)
+        text = drawingml_text(body) if body is not None else ""
         return [text] if text else []
     if local == "graphicFrame":
         values: list[str] = []
         for cell in element.findall(".//a:tc", NS):
-            text = "".join((item.text or "") for item in cell.findall(".//a:t", NS)).strip()
+            text = drawingml_text(cell)
             if text:
                 values.append(text)
         return values
@@ -129,13 +155,13 @@ def inventory(pptx: Path) -> dict:
             visible_text_order.append(slide_visible_order)
             visible_strings.extend(slide_visible_order)
             for shape in root.findall(".//p:sp", NS):
-                text = "".join((item.text or "") for item in shape.findall(".//a:t", NS)).strip()
+                text = drawingml_text(shape)
                 if text:
                     native_text += 1
                     if has_mixed_emphasis(shape):
                         mixed += 1
             for cell in root.findall(".//a:tc", NS):
-                text = "".join((item.text or "") for item in cell.findall(".//a:t", NS)).strip()
+                text = drawingml_text(cell)
                 if text:
                     native_text += 1
                     if has_mixed_emphasis(cell):
