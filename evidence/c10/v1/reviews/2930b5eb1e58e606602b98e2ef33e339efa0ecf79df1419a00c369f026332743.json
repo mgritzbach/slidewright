@@ -1,0 +1,1768 @@
+{
+  "schemaVersion": "slidewright-template-matrix-review/v1",
+  "valid": true,
+  "scorecardHash": "0bfa93f5bce6e46f3a84a5299aaf0fd7d2ce5f42f4f211849f892b23c483bef7",
+  "reviewer": {
+    "kind": "hash-bound-carry-forward",
+    "id": "41909f9c773cddd16b6f2334f9290d5d29963ccca5c382726fef7dfa75c37040"
+  },
+  "inspectionMethod": "Every source, edited, PowerPoint-round-tripped, and intentionally corrupted slide render was inspected individually at full size; montages were overview-only.",
+  "artifacts": [
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "edited",
+      "slide": 1,
+      "path": "fixtures/automizer-charts-mit/edited/slide-1.png",
+      "sha256": "53c1b5d04997e706c2084ed6a28236cffe792c5369b1017594d0e697b852b74b",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "edited",
+      "slide": 2,
+      "path": "fixtures/automizer-charts-mit/edited/slide-2.png",
+      "sha256": "365900e3679ae828018784e42b6a3c3e58aeee7460a12ed1b1c777d0fbd2187f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 1,
+      "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip/slide-1.png",
+      "sha256": "53c1b5d04997e706c2084ed6a28236cffe792c5369b1017594d0e697b852b74b",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 2,
+      "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip/slide-2.png",
+      "sha256": "365900e3679ae828018784e42b6a3c3e58aeee7460a12ed1b1c777d0fbd2187f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 1,
+      "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip-repeat/slide-1.png",
+      "sha256": "53c1b5d04997e706c2084ed6a28236cffe792c5369b1017594d0e697b852b74b",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 2,
+      "path": "fixtures/automizer-charts-mit/powerpoint-roundtrip-repeat/slide-2.png",
+      "sha256": "365900e3679ae828018784e42b6a3c3e58aeee7460a12ed1b1c777d0fbd2187f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "source",
+      "slide": 1,
+      "path": "fixtures/automizer-charts-mit/source/slide-1.png",
+      "sha256": "5a113a166dbc97af8d780804a04ce2afd49716ed769be41c23b8b17f81f87ad4",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "source",
+      "slide": 2,
+      "path": "fixtures/automizer-charts-mit/source/slide-2.png",
+      "sha256": "365900e3679ae828018784e42b6a3c3e58aeee7460a12ed1b1c777d0fbd2187f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "visible-negative",
+      "slide": 1,
+      "path": "fixtures/automizer-charts-mit/visible-negative/slide-1.png",
+      "sha256": "53c1b5d04997e706c2084ed6a28236cffe792c5369b1017594d0e697b852b74b",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-charts-mit",
+      "deck": "visible-negative",
+      "slide": 2,
+      "path": "fixtures/automizer-charts-mit/visible-negative/slide-2.png",
+      "sha256": "26ee2af428435531e154342ad2e4440749106b66e62be96406b1ceb874034521",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "edited",
+      "slide": 1,
+      "path": "fixtures/automizer-tables-mit/edited/slide-1.png",
+      "sha256": "12b233b96adf683f3f1b9b4a2bdc257f109d9e769c96bc55acc708ffeae1d8c3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "edited",
+      "slide": 2,
+      "path": "fixtures/automizer-tables-mit/edited/slide-2.png",
+      "sha256": "76ebd4035814cf66c2c9cb54892b852f1ed9796c83a07810d4b72441e6af62a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "edited",
+      "slide": 3,
+      "path": "fixtures/automizer-tables-mit/edited/slide-3.png",
+      "sha256": "e32a86959482c81f71e023635fbee009b7a2ac2a95733f80db17cd0558c81a97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 1,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip/slide-1.png",
+      "sha256": "12b233b96adf683f3f1b9b4a2bdc257f109d9e769c96bc55acc708ffeae1d8c3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 2,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip/slide-2.png",
+      "sha256": "76ebd4035814cf66c2c9cb54892b852f1ed9796c83a07810d4b72441e6af62a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 3,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip/slide-3.png",
+      "sha256": "e32a86959482c81f71e023635fbee009b7a2ac2a95733f80db17cd0558c81a97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 1,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat/slide-1.png",
+      "sha256": "12b233b96adf683f3f1b9b4a2bdc257f109d9e769c96bc55acc708ffeae1d8c3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 2,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat/slide-2.png",
+      "sha256": "76ebd4035814cf66c2c9cb54892b852f1ed9796c83a07810d4b72441e6af62a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 3,
+      "path": "fixtures/automizer-tables-mit/powerpoint-roundtrip-repeat/slide-3.png",
+      "sha256": "e32a86959482c81f71e023635fbee009b7a2ac2a95733f80db17cd0558c81a97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "source",
+      "slide": 1,
+      "path": "fixtures/automizer-tables-mit/source/slide-1.png",
+      "sha256": "765f345401f045e6d08999047d73cb45428898a1afbf89d9cb42efda2938b610",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "source",
+      "slide": 2,
+      "path": "fixtures/automizer-tables-mit/source/slide-2.png",
+      "sha256": "76ebd4035814cf66c2c9cb54892b852f1ed9796c83a07810d4b72441e6af62a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "source",
+      "slide": 3,
+      "path": "fixtures/automizer-tables-mit/source/slide-3.png",
+      "sha256": "e32a86959482c81f71e023635fbee009b7a2ac2a95733f80db17cd0558c81a97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "visible-negative",
+      "slide": 1,
+      "path": "fixtures/automizer-tables-mit/visible-negative/slide-1.png",
+      "sha256": "71222b68bb6e34db459994fd8f12c761f2c5ce2e4a7849c163b0cea5035fd697",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "visible-negative",
+      "slide": 2,
+      "path": "fixtures/automizer-tables-mit/visible-negative/slide-2.png",
+      "sha256": "76ebd4035814cf66c2c9cb54892b852f1ed9796c83a07810d4b72441e6af62a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "automizer-tables-mit",
+      "deck": "visible-negative",
+      "slide": 3,
+      "path": "fixtures/automizer-tables-mit/visible-negative/slide-3.png",
+      "sha256": "e32a86959482c81f71e023635fbee009b7a2ac2a95733f80db17cd0558c81a97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 1,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-1.png",
+      "sha256": "c0a38e5a769270180fa922d3c04eb13e6c628dd9f2fc1c047878bb5993f23865",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 2,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-2.png",
+      "sha256": "7c374a8e7f3fbe1181d9b06968447249ede3d9f9b2c12ca5951d3c6461c485c9",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 3,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-3.png",
+      "sha256": "4be54a0a37715952b3412ae853d60395d54f374855ef6c267186e23e6220874e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 4,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-4.png",
+      "sha256": "5d8c40a81139f5a6f7a6e76fb89f8aeaf5a2bad588820829491cca6d2d791fe2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 5,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-5.png",
+      "sha256": "4c9f7c282c4e69ae7728b6231a19c4ba0c4e58ecdd5d6beabc45817f6753cb28",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 6,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-6.png",
+      "sha256": "5dfe47421c95f58c0785b6d44b722562da852266dabe60ced789580351b066f8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 7,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-7.png",
+      "sha256": "77d046520df3099f8d5058a99d4d8aec3f4f50b25590f2583f98380b840ddd80",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 8,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-8.png",
+      "sha256": "b0f6d94d2bdbab0f550ddf0cf1542d37794aa1f3fe61f9fb5b43a6bde967c937",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 9,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-9.png",
+      "sha256": "aeed44c4210acbc20de0a710aaa6bde25ab587646e17883c82eab63be0d37704",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 10,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-10.png",
+      "sha256": "3d0fd003749b293023da30ccf41be196c8c00d7b268ed94468e67b2ac03ad838",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 11,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-11.png",
+      "sha256": "32cc9f01a515dd0e49ed23016456cceca702178338face8a5467887cb174b17f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 12,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-12.png",
+      "sha256": "fc52aababb2ed882ed750fa19bc5d95352b0d3061162d3eff2643494e4ad7d98",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 13,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-13.png",
+      "sha256": "9f192da854a55db0e1e25d7152755a4503d5f106549880230d4a78ab580893b0",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 14,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-14.png",
+      "sha256": "50577ebdca57129c3c2a1937cb3ef7f8192f35dd98b8a47c56a32a68fc449898",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 15,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-15.png",
+      "sha256": "5bb2d7772a89a60275e498ad9ed98d3021a8a6b0709b9a3883e868ccc7b2cd91",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 16,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-16.png",
+      "sha256": "9ce6283f5cc2a0bed6a7f30697c495eeecbe168823496fc88aa6d02bb435beaf",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 17,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-17.png",
+      "sha256": "c9c441353bb4436f1229c13b62f3e9c3901f0301ff08eb43fdc3abe92d2fad73",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 18,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-18.png",
+      "sha256": "1cff52de48834272f73072a4519a62b20c097106c1292951f7de898099e6e18d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 19,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-19.png",
+      "sha256": "f3bedde3edf948fccd8689e5215113fd1330ac184962bbdf42e5c512852f60e8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 20,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-20.png",
+      "sha256": "1133b9aa3b12b36dcedc34a6cb369e997081d20be7ac81a680e2b1b340ab07a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 21,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-21.png",
+      "sha256": "3b1fe6a39ab6627197199a1658fddb8bf30629e183543ddb40c1843a3684744c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 22,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-22.png",
+      "sha256": "20e55c1ea365ce848b218c3cf0a46cf36c15fe03cb8476d9d05efe9f17975b51",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 23,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-23.png",
+      "sha256": "9b75b4b3ff70476bc412891a7422d3a6ea1e9464ca4ae88adebe585ffd32cea5",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 24,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-24.png",
+      "sha256": "808e07f11a98e0b137b32ba8e6fb0ae75de3564f38efe549dfd64f479e738b0d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 25,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-25.png",
+      "sha256": "12e166ed225aa873587879ad44a2948eda72eebf141b1b5ef70065a7947f5863",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 26,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-26.png",
+      "sha256": "22d4cdf349c0e638408809b80e0a8b991df350eed5e9720bb481a260032a375e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 27,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-27.png",
+      "sha256": "76ccd6d11cb1e2ed6808ec436c443edd6e7ba7a000fabcb9b96667583dd24656",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 28,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-28.png",
+      "sha256": "d7acee886918f78c2dbd4f7071aacd22eb4b26bed18923ed14dc6132b99dd9f3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 29,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-29.png",
+      "sha256": "703f8ad8dd0858f7b06950ab5e63208eaaf6a39f44554cd3ebb643f205b9fc0f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 30,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-30.png",
+      "sha256": "b724e2da9797237c9b8d111be003a21994ca6189fb169d3338c144d4fd19ac97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 31,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-31.png",
+      "sha256": "40d242b954e7d42244d74efac6aceef3914a9e5727ca8aeac8b45d720f4815ec",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 32,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-32.png",
+      "sha256": "062bc072677e534526bbd11b307643ce74a261172a51cd8471795ab8e5f10b7a",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "edited",
+      "slide": 33,
+      "path": "fixtures/cats-cc0-sanitized/edited/slide-33.png",
+      "sha256": "6891952d80124c867a15d4115c2a5050959b511474a82afbdab8a79804ac42a2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 1,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-1.png",
+      "sha256": "c0a38e5a769270180fa922d3c04eb13e6c628dd9f2fc1c047878bb5993f23865",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 2,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-2.png",
+      "sha256": "7c374a8e7f3fbe1181d9b06968447249ede3d9f9b2c12ca5951d3c6461c485c9",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 3,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-3.png",
+      "sha256": "4be54a0a37715952b3412ae853d60395d54f374855ef6c267186e23e6220874e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 4,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-4.png",
+      "sha256": "5d8c40a81139f5a6f7a6e76fb89f8aeaf5a2bad588820829491cca6d2d791fe2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 5,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-5.png",
+      "sha256": "4c9f7c282c4e69ae7728b6231a19c4ba0c4e58ecdd5d6beabc45817f6753cb28",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 6,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-6.png",
+      "sha256": "5dfe47421c95f58c0785b6d44b722562da852266dabe60ced789580351b066f8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 7,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-7.png",
+      "sha256": "77d046520df3099f8d5058a99d4d8aec3f4f50b25590f2583f98380b840ddd80",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 8,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-8.png",
+      "sha256": "b0f6d94d2bdbab0f550ddf0cf1542d37794aa1f3fe61f9fb5b43a6bde967c937",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 9,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-9.png",
+      "sha256": "aeed44c4210acbc20de0a710aaa6bde25ab587646e17883c82eab63be0d37704",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 10,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-10.png",
+      "sha256": "3d0fd003749b293023da30ccf41be196c8c00d7b268ed94468e67b2ac03ad838",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 11,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-11.png",
+      "sha256": "32cc9f01a515dd0e49ed23016456cceca702178338face8a5467887cb174b17f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 12,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-12.png",
+      "sha256": "fc52aababb2ed882ed750fa19bc5d95352b0d3061162d3eff2643494e4ad7d98",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 13,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-13.png",
+      "sha256": "9f192da854a55db0e1e25d7152755a4503d5f106549880230d4a78ab580893b0",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 14,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-14.png",
+      "sha256": "50577ebdca57129c3c2a1937cb3ef7f8192f35dd98b8a47c56a32a68fc449898",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 15,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-15.png",
+      "sha256": "5bb2d7772a89a60275e498ad9ed98d3021a8a6b0709b9a3883e868ccc7b2cd91",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 16,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-16.png",
+      "sha256": "9ce6283f5cc2a0bed6a7f30697c495eeecbe168823496fc88aa6d02bb435beaf",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 17,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-17.png",
+      "sha256": "c9c441353bb4436f1229c13b62f3e9c3901f0301ff08eb43fdc3abe92d2fad73",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 18,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-18.png",
+      "sha256": "1cff52de48834272f73072a4519a62b20c097106c1292951f7de898099e6e18d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 19,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-19.png",
+      "sha256": "f3bedde3edf948fccd8689e5215113fd1330ac184962bbdf42e5c512852f60e8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 20,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-20.png",
+      "sha256": "1133b9aa3b12b36dcedc34a6cb369e997081d20be7ac81a680e2b1b340ab07a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 21,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-21.png",
+      "sha256": "3b1fe6a39ab6627197199a1658fddb8bf30629e183543ddb40c1843a3684744c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 22,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-22.png",
+      "sha256": "20e55c1ea365ce848b218c3cf0a46cf36c15fe03cb8476d9d05efe9f17975b51",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 23,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-23.png",
+      "sha256": "9b75b4b3ff70476bc412891a7422d3a6ea1e9464ca4ae88adebe585ffd32cea5",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 24,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-24.png",
+      "sha256": "808e07f11a98e0b137b32ba8e6fb0ae75de3564f38efe549dfd64f479e738b0d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 25,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-25.png",
+      "sha256": "12e166ed225aa873587879ad44a2948eda72eebf141b1b5ef70065a7947f5863",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 26,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-26.png",
+      "sha256": "22d4cdf349c0e638408809b80e0a8b991df350eed5e9720bb481a260032a375e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 27,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-27.png",
+      "sha256": "76ccd6d11cb1e2ed6808ec436c443edd6e7ba7a000fabcb9b96667583dd24656",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 28,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-28.png",
+      "sha256": "d7acee886918f78c2dbd4f7071aacd22eb4b26bed18923ed14dc6132b99dd9f3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 29,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-29.png",
+      "sha256": "703f8ad8dd0858f7b06950ab5e63208eaaf6a39f44554cd3ebb643f205b9fc0f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 30,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-30.png",
+      "sha256": "b724e2da9797237c9b8d111be003a21994ca6189fb169d3338c144d4fd19ac97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 31,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-31.png",
+      "sha256": "40d242b954e7d42244d74efac6aceef3914a9e5727ca8aeac8b45d720f4815ec",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 32,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-32.png",
+      "sha256": "062bc072677e534526bbd11b307643ce74a261172a51cd8471795ab8e5f10b7a",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip",
+      "slide": 33,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip/slide-33.png",
+      "sha256": "6891952d80124c867a15d4115c2a5050959b511474a82afbdab8a79804ac42a2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 1,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-1.png",
+      "sha256": "c0a38e5a769270180fa922d3c04eb13e6c628dd9f2fc1c047878bb5993f23865",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 2,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-2.png",
+      "sha256": "7c374a8e7f3fbe1181d9b06968447249ede3d9f9b2c12ca5951d3c6461c485c9",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 3,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-3.png",
+      "sha256": "4be54a0a37715952b3412ae853d60395d54f374855ef6c267186e23e6220874e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 4,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-4.png",
+      "sha256": "5d8c40a81139f5a6f7a6e76fb89f8aeaf5a2bad588820829491cca6d2d791fe2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 5,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-5.png",
+      "sha256": "4c9f7c282c4e69ae7728b6231a19c4ba0c4e58ecdd5d6beabc45817f6753cb28",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 6,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-6.png",
+      "sha256": "5dfe47421c95f58c0785b6d44b722562da852266dabe60ced789580351b066f8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 7,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-7.png",
+      "sha256": "77d046520df3099f8d5058a99d4d8aec3f4f50b25590f2583f98380b840ddd80",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 8,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-8.png",
+      "sha256": "b0f6d94d2bdbab0f550ddf0cf1542d37794aa1f3fe61f9fb5b43a6bde967c937",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 9,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-9.png",
+      "sha256": "aeed44c4210acbc20de0a710aaa6bde25ab587646e17883c82eab63be0d37704",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 10,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-10.png",
+      "sha256": "3d0fd003749b293023da30ccf41be196c8c00d7b268ed94468e67b2ac03ad838",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 11,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-11.png",
+      "sha256": "32cc9f01a515dd0e49ed23016456cceca702178338face8a5467887cb174b17f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 12,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-12.png",
+      "sha256": "fc52aababb2ed882ed750fa19bc5d95352b0d3061162d3eff2643494e4ad7d98",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 13,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-13.png",
+      "sha256": "9f192da854a55db0e1e25d7152755a4503d5f106549880230d4a78ab580893b0",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 14,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-14.png",
+      "sha256": "50577ebdca57129c3c2a1937cb3ef7f8192f35dd98b8a47c56a32a68fc449898",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 15,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-15.png",
+      "sha256": "5bb2d7772a89a60275e498ad9ed98d3021a8a6b0709b9a3883e868ccc7b2cd91",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 16,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-16.png",
+      "sha256": "9ce6283f5cc2a0bed6a7f30697c495eeecbe168823496fc88aa6d02bb435beaf",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 17,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-17.png",
+      "sha256": "c9c441353bb4436f1229c13b62f3e9c3901f0301ff08eb43fdc3abe92d2fad73",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 18,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-18.png",
+      "sha256": "1cff52de48834272f73072a4519a62b20c097106c1292951f7de898099e6e18d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 19,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-19.png",
+      "sha256": "f3bedde3edf948fccd8689e5215113fd1330ac184962bbdf42e5c512852f60e8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 20,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-20.png",
+      "sha256": "1133b9aa3b12b36dcedc34a6cb369e997081d20be7ac81a680e2b1b340ab07a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 21,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-21.png",
+      "sha256": "3b1fe6a39ab6627197199a1658fddb8bf30629e183543ddb40c1843a3684744c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 22,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-22.png",
+      "sha256": "20e55c1ea365ce848b218c3cf0a46cf36c15fe03cb8476d9d05efe9f17975b51",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 23,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-23.png",
+      "sha256": "9b75b4b3ff70476bc412891a7422d3a6ea1e9464ca4ae88adebe585ffd32cea5",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 24,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-24.png",
+      "sha256": "808e07f11a98e0b137b32ba8e6fb0ae75de3564f38efe549dfd64f479e738b0d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 25,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-25.png",
+      "sha256": "12e166ed225aa873587879ad44a2948eda72eebf141b1b5ef70065a7947f5863",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 26,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-26.png",
+      "sha256": "22d4cdf349c0e638408809b80e0a8b991df350eed5e9720bb481a260032a375e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 27,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-27.png",
+      "sha256": "76ccd6d11cb1e2ed6808ec436c443edd6e7ba7a000fabcb9b96667583dd24656",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 28,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-28.png",
+      "sha256": "d7acee886918f78c2dbd4f7071aacd22eb4b26bed18923ed14dc6132b99dd9f3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 29,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-29.png",
+      "sha256": "703f8ad8dd0858f7b06950ab5e63208eaaf6a39f44554cd3ebb643f205b9fc0f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 30,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-30.png",
+      "sha256": "b724e2da9797237c9b8d111be003a21994ca6189fb169d3338c144d4fd19ac97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 31,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-31.png",
+      "sha256": "40d242b954e7d42244d74efac6aceef3914a9e5727ca8aeac8b45d720f4815ec",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 32,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-32.png",
+      "sha256": "062bc072677e534526bbd11b307643ce74a261172a51cd8471795ab8e5f10b7a",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 33,
+      "path": "fixtures/cats-cc0-sanitized/powerpoint-roundtrip-repeat/slide-33.png",
+      "sha256": "6891952d80124c867a15d4115c2a5050959b511474a82afbdab8a79804ac42a2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 1,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-1.png",
+      "sha256": "c0a38e5a769270180fa922d3c04eb13e6c628dd9f2fc1c047878bb5993f23865",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 2,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-2.png",
+      "sha256": "7c374a8e7f3fbe1181d9b06968447249ede3d9f9b2c12ca5951d3c6461c485c9",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 3,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-3.png",
+      "sha256": "4be54a0a37715952b3412ae853d60395d54f374855ef6c267186e23e6220874e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 4,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-4.png",
+      "sha256": "5d8c40a81139f5a6f7a6e76fb89f8aeaf5a2bad588820829491cca6d2d791fe2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 5,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-5.png",
+      "sha256": "4c9f7c282c4e69ae7728b6231a19c4ba0c4e58ecdd5d6beabc45817f6753cb28",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 6,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-6.png",
+      "sha256": "5dfe47421c95f58c0785b6d44b722562da852266dabe60ced789580351b066f8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 7,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-7.png",
+      "sha256": "77d046520df3099f8d5058a99d4d8aec3f4f50b25590f2583f98380b840ddd80",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 8,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-8.png",
+      "sha256": "b0f6d94d2bdbab0f550ddf0cf1542d37794aa1f3fe61f9fb5b43a6bde967c937",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 9,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-9.png",
+      "sha256": "aeed44c4210acbc20de0a710aaa6bde25ab587646e17883c82eab63be0d37704",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 10,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-10.png",
+      "sha256": "3d0fd003749b293023da30ccf41be196c8c00d7b268ed94468e67b2ac03ad838",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 11,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-11.png",
+      "sha256": "32cc9f01a515dd0e49ed23016456cceca702178338face8a5467887cb174b17f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 12,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-12.png",
+      "sha256": "fc52aababb2ed882ed750fa19bc5d95352b0d3061162d3eff2643494e4ad7d98",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 13,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-13.png",
+      "sha256": "9f192da854a55db0e1e25d7152755a4503d5f106549880230d4a78ab580893b0",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 14,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-14.png",
+      "sha256": "50577ebdca57129c3c2a1937cb3ef7f8192f35dd98b8a47c56a32a68fc449898",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 15,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-15.png",
+      "sha256": "5bb2d7772a89a60275e498ad9ed98d3021a8a6b0709b9a3883e868ccc7b2cd91",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 16,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-16.png",
+      "sha256": "9ce6283f5cc2a0bed6a7f30697c495eeecbe168823496fc88aa6d02bb435beaf",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 17,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-17.png",
+      "sha256": "c9c441353bb4436f1229c13b62f3e9c3901f0301ff08eb43fdc3abe92d2fad73",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 18,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-18.png",
+      "sha256": "1cff52de48834272f73072a4519a62b20c097106c1292951f7de898099e6e18d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 19,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-19.png",
+      "sha256": "f3bedde3edf948fccd8689e5215113fd1330ac184962bbdf42e5c512852f60e8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 20,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-20.png",
+      "sha256": "1133b9aa3b12b36dcedc34a6cb369e997081d20be7ac81a680e2b1b340ab07a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 21,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-21.png",
+      "sha256": "3b1fe6a39ab6627197199a1658fddb8bf30629e183543ddb40c1843a3684744c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 22,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-22.png",
+      "sha256": "20e55c1ea365ce848b218c3cf0a46cf36c15fe03cb8476d9d05efe9f17975b51",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 23,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-23.png",
+      "sha256": "9b75b4b3ff70476bc412891a7422d3a6ea1e9464ca4ae88adebe585ffd32cea5",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 24,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-24.png",
+      "sha256": "808e07f11a98e0b137b32ba8e6fb0ae75de3564f38efe549dfd64f479e738b0d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 25,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-25.png",
+      "sha256": "12e166ed225aa873587879ad44a2948eda72eebf141b1b5ef70065a7947f5863",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 26,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-26.png",
+      "sha256": "22d4cdf349c0e638408809b80e0a8b991df350eed5e9720bb481a260032a375e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 27,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-27.png",
+      "sha256": "76ccd6d11cb1e2ed6808ec436c443edd6e7ba7a000fabcb9b96667583dd24656",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 28,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-28.png",
+      "sha256": "d7acee886918f78c2dbd4f7071aacd22eb4b26bed18923ed14dc6132b99dd9f3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 29,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-29.png",
+      "sha256": "703f8ad8dd0858f7b06950ab5e63208eaaf6a39f44554cd3ebb643f205b9fc0f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 30,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-30.png",
+      "sha256": "b724e2da9797237c9b8d111be003a21994ca6189fb169d3338c144d4fd19ac97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 31,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-31.png",
+      "sha256": "40d242b954e7d42244d74efac6aceef3914a9e5727ca8aeac8b45d720f4815ec",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 32,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-32.png",
+      "sha256": "062bc072677e534526bbd11b307643ce74a261172a51cd8471795ab8e5f10b7a",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "source",
+      "slide": 33,
+      "path": "fixtures/cats-cc0-sanitized/source/slide-33.png",
+      "sha256": "6891952d80124c867a15d4115c2a5050959b511474a82afbdab8a79804ac42a2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 1,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-1.png",
+      "sha256": "7e45f191c85abcb480715214ba094747aac5b01dceed14d581304db3ee374c56",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 2,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-2.png",
+      "sha256": "7c374a8e7f3fbe1181d9b06968447249ede3d9f9b2c12ca5951d3c6461c485c9",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 3,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-3.png",
+      "sha256": "4be54a0a37715952b3412ae853d60395d54f374855ef6c267186e23e6220874e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 4,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-4.png",
+      "sha256": "5d8c40a81139f5a6f7a6e76fb89f8aeaf5a2bad588820829491cca6d2d791fe2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 5,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-5.png",
+      "sha256": "4c9f7c282c4e69ae7728b6231a19c4ba0c4e58ecdd5d6beabc45817f6753cb28",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 6,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-6.png",
+      "sha256": "5dfe47421c95f58c0785b6d44b722562da852266dabe60ced789580351b066f8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 7,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-7.png",
+      "sha256": "77d046520df3099f8d5058a99d4d8aec3f4f50b25590f2583f98380b840ddd80",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 8,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-8.png",
+      "sha256": "b0f6d94d2bdbab0f550ddf0cf1542d37794aa1f3fe61f9fb5b43a6bde967c937",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 9,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-9.png",
+      "sha256": "aeed44c4210acbc20de0a710aaa6bde25ab587646e17883c82eab63be0d37704",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 10,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-10.png",
+      "sha256": "3d0fd003749b293023da30ccf41be196c8c00d7b268ed94468e67b2ac03ad838",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 11,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-11.png",
+      "sha256": "32cc9f01a515dd0e49ed23016456cceca702178338face8a5467887cb174b17f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 12,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-12.png",
+      "sha256": "fc52aababb2ed882ed750fa19bc5d95352b0d3061162d3eff2643494e4ad7d98",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 13,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-13.png",
+      "sha256": "9f192da854a55db0e1e25d7152755a4503d5f106549880230d4a78ab580893b0",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 14,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-14.png",
+      "sha256": "50577ebdca57129c3c2a1937cb3ef7f8192f35dd98b8a47c56a32a68fc449898",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 15,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-15.png",
+      "sha256": "5bb2d7772a89a60275e498ad9ed98d3021a8a6b0709b9a3883e868ccc7b2cd91",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 16,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-16.png",
+      "sha256": "9ce6283f5cc2a0bed6a7f30697c495eeecbe168823496fc88aa6d02bb435beaf",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 17,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-17.png",
+      "sha256": "c9c441353bb4436f1229c13b62f3e9c3901f0301ff08eb43fdc3abe92d2fad73",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 18,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-18.png",
+      "sha256": "1cff52de48834272f73072a4519a62b20c097106c1292951f7de898099e6e18d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 19,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-19.png",
+      "sha256": "f3bedde3edf948fccd8689e5215113fd1330ac184962bbdf42e5c512852f60e8",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 20,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-20.png",
+      "sha256": "1133b9aa3b12b36dcedc34a6cb369e997081d20be7ac81a680e2b1b340ab07a6",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 21,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-21.png",
+      "sha256": "3b1fe6a39ab6627197199a1658fddb8bf30629e183543ddb40c1843a3684744c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 22,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-22.png",
+      "sha256": "20e55c1ea365ce848b218c3cf0a46cf36c15fe03cb8476d9d05efe9f17975b51",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 23,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-23.png",
+      "sha256": "9b75b4b3ff70476bc412891a7422d3a6ea1e9464ca4ae88adebe585ffd32cea5",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 24,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-24.png",
+      "sha256": "808e07f11a98e0b137b32ba8e6fb0ae75de3564f38efe549dfd64f479e738b0d",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 25,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-25.png",
+      "sha256": "12e166ed225aa873587879ad44a2948eda72eebf141b1b5ef70065a7947f5863",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 26,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-26.png",
+      "sha256": "22d4cdf349c0e638408809b80e0a8b991df350eed5e9720bb481a260032a375e",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 27,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-27.png",
+      "sha256": "76ccd6d11cb1e2ed6808ec436c443edd6e7ba7a000fabcb9b96667583dd24656",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 28,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-28.png",
+      "sha256": "d7acee886918f78c2dbd4f7071aacd22eb4b26bed18923ed14dc6132b99dd9f3",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 29,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-29.png",
+      "sha256": "703f8ad8dd0858f7b06950ab5e63208eaaf6a39f44554cd3ebb643f205b9fc0f",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 30,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-30.png",
+      "sha256": "b724e2da9797237c9b8d111be003a21994ca6189fb169d3338c144d4fd19ac97",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 31,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-31.png",
+      "sha256": "40d242b954e7d42244d74efac6aceef3914a9e5727ca8aeac8b45d720f4815ec",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 32,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-32.png",
+      "sha256": "062bc072677e534526bbd11b307643ce74a261172a51cd8471795ab8e5f10b7a",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "cats-cc0-sanitized",
+      "deck": "visible-negative",
+      "slide": 33,
+      "path": "fixtures/cats-cc0-sanitized/visible-negative/slide-33.png",
+      "sha256": "6891952d80124c867a15d4115c2a5050959b511474a82afbdab8a79804ac42a2",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "martin-mit",
+      "deck": "edited",
+      "slide": 1,
+      "path": "fixtures/martin-mit/edited/slide-1.png",
+      "sha256": "55805034706127e6519dd8db8044b216926faa0be4c2dff6c63dc0e682db7a6c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "martin-mit",
+      "deck": "powerpoint-roundtrip",
+      "slide": 1,
+      "path": "fixtures/martin-mit/powerpoint-roundtrip/slide-1.png",
+      "sha256": "55805034706127e6519dd8db8044b216926faa0be4c2dff6c63dc0e682db7a6c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "martin-mit",
+      "deck": "powerpoint-roundtrip-repeat",
+      "slide": 1,
+      "path": "fixtures/martin-mit/powerpoint-roundtrip-repeat/slide-1.png",
+      "sha256": "55805034706127e6519dd8db8044b216926faa0be4c2dff6c63dc0e682db7a6c",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "martin-mit",
+      "deck": "source",
+      "slide": 1,
+      "path": "fixtures/martin-mit/source/slide-1.png",
+      "sha256": "06ddcc57e2887cb6dc4d7c70c1c0d202eeb64c0e6a7cd9b51a6e17b8ccbd3121",
+      "verdict": "pass",
+      "findings": []
+    },
+    {
+      "fixtureId": "martin-mit",
+      "deck": "visible-negative",
+      "slide": 1,
+      "path": "fixtures/martin-mit/visible-negative/slide-1.png",
+      "sha256": "b55dbafd0dcb5c0f365394af5aa592ded4674d6e24a9bca41da29e7b8b6814fd",
+      "verdict": "pass",
+      "findings": []
+    }
+  ],
+  "reviewHash": "2930b5eb1e58e606602b98e2ef33e339efa0ecf79df1419a00c369f026332743"
+}
