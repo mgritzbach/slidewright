@@ -20,6 +20,25 @@ export function externalFailures(metadata) {
   return failures;
 }
 
+export function publicationEvidenceFailures(metadata, evidence) {
+  const failures = [];
+  if (evidence?.schemaVersion !== "slidewright-build-week-publication-evidence/v1") failures.push("publication evidence schema is invalid");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(String(evidence?.verifiedAt || ""))
+      || Number.isNaN(Date.parse(evidence?.verifiedAt))) failures.push("publication evidence verification time is invalid");
+  if (evidence?.repository?.url !== metadata.repositoryUrl || evidence?.repository?.visibility !== "public") failures.push("publication evidence repository does not match the verified public repository");
+  if (evidence?.youtube?.url !== metadata.youtube?.url) failures.push("publication evidence YouTube URL does not match metadata");
+  const videoId = /^https:\/\/youtu\.be\/([A-Za-z0-9_-]+)\/?$/.exec(String(evidence?.youtube?.url || ""))?.[1];
+  if (!videoId || evidence?.youtube?.videoId !== videoId) failures.push("publication evidence YouTube ID is invalid");
+  if (Number(evidence?.youtube?.durationSeconds) !== Number(metadata.youtube?.durationSeconds)) failures.push("publication evidence video duration does not match metadata");
+  if (evidence?.youtube?.visibility !== "public" || evidence?.youtube?.publicationConfirmation !== "Video published") failures.push("publication evidence does not confirm a public video");
+  if (!/^\d+x\d+$/.test(String(evidence?.youtube?.resolution || "")) || !String(evidence?.youtube?.audio || "").trim()) failures.push("publication evidence video media details are incomplete");
+  if (String(evidence?.devpost?.submissionId || "") !== String(metadata.devpostSubmissionId || "")
+      || evidence?.devpost?.projectUrl !== metadata.devpostProjectUrl) failures.push("publication evidence Devpost identifiers do not match metadata");
+  if (evidence?.devpost?.status !== "submitted" || evidence?.devpost?.confirmation !== "Project submitted!") failures.push("publication evidence does not confirm Devpost submission");
+  if (evidence?.feedbackSessionId !== metadata.feedbackSessionId) failures.push("publication evidence feedback session does not match metadata");
+  return failures;
+}
+
 const expectedScreenshots = [
   "01-independent-reference.png",
   "02-editable-reconstruction.png",
@@ -81,6 +100,16 @@ export function runSubmissionCheck({ root, localOnly }) {
   const metadata = JSON.parse(fs.readFileSync(path.join(root, "submission", "metadata.json"), "utf8"));
   if (!localOnly) {
     failures.push(...externalFailures(metadata));
+    const evidencePath = path.join(root, "submission", "publication-evidence.json");
+    if (!fs.existsSync(evidencePath)) {
+      failures.push("publication evidence is missing");
+    } else {
+      try {
+        failures.push(...publicationEvidenceFailures(metadata, JSON.parse(fs.readFileSync(evidencePath, "utf8"))));
+      } catch {
+        failures.push("publication evidence is not valid JSON");
+      }
+    }
     const copy = fs.readFileSync(path.join(root, "submission", "SUBMISSION_COPY.md"), "utf8");
     const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
     const statement = String(metadata.gpt56UsageStatement || "").trim();

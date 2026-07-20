@@ -6,7 +6,7 @@
     "minimumIndependentDesigns": 21,
     "minimumLicensedSourceFamilies": 4,
     "candidateState": "powerpoint-roundtrip-repeat",
-    "independenceDefinition": "Each candidate is a distinct licensed source-deck slide lineage with a unique final rendered SHA-256. The selected corpus is greedily maximized for 64-bit perceptual-hash distance after stratified inclusion of every source family.",
+    "independenceDefinition": "Each candidate is a distinct licensed source-deck slide lineage with a unique final rendered SHA-256. A deterministic threshold-clique search selects 21 designs whose every pair meets the frozen 64-bit perceptual-hash distance while retaining all four licensed source families.",
     "minimumPairwisePerceptualDistance": 4
   },
   "blindExpert": {

@@ -45,7 +45,7 @@ Do not make a last item wider merely to fill space. Center the incomplete row. D
 
 ## Segmented polygon systems from triangle through dodecagon
 
-The `polygon-cycle` archetype supports three through twelve native editable points. Count selects the polygon only after the relationship has been declared. Every vertex lies on one true circumcircle, so squares, pentagons, and higher polygons remain regular instead of flattening to fill a rectangle. Each side is its own mitered native beam, with a deliberate corner gap, upright editable marker, optional emphasis state, and matched adjacent callout module. The callouts need no leader lines. Counts nine through twelve automatically use denser but still 16 pt two-column annotations instead of shrinking text.
+The `polygon-cycle` archetype supports three through twelve native editable points. Count selects the polygon only after the relationship has been declared. Every vertex lies on one true circumcircle; equal vertex radii, equal side lengths, equal apothems, and a 1:1 ring aspect are all compiled and linted, so squares, pentagons, and higher polygons cannot flatten to fill a rectangle. Each side is its own mitered native beam, with a deliberate corner gap, upright editable marker, optional emphasis state, and matched adjacent callout module. The callouts use `adjacent-no-leader` placement. Counts nine through twelve automatically use denser but still 16 pt two-column annotations instead of shrinking text.
 
 | Points | Native form | Appropriate meaning |
 |---:|---|---|
@@ -60,14 +60,15 @@ The `polygon-cycle` archetype supports three through twelve native editable poin
 | 11 | Undecagon | eleven controls forming a complete perimeter |
 | 12 | Dodecagon | a recurring monthly or twelve-move transformation cycle |
 
-Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon callouts keep equal dimensions and hierarchy, sit adjacent to their bound edge segment, and may surround one short shared outcome. The center statement is placed at the true visual center; the triangle receives a specifically protected central region so the statement cannot collide with its beams. At most one segment and its callout receive the emphasis variant.
+Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon callouts keep equal dimensions and hierarchy, sit adjacent to their bound edge segment, and may surround one short shared outcome. For four through twelve sides the center statement uses the true centroid. For a triangle, the compiler offsets all three beam edges inward by the beam half-width plus 12px clearance, calculates the largest axis-aligned rectangle inside that inner triangle, and centers the text on that usable-space rectangle rather than the circumcenter. Both the backing and native text must stay inside it. At most one segment and its callout receive the emphasis variant.
 
 ## Structural separation, flow, and connected patterns
 
 - Use `quadrant-focus` when four equal domains surround one decision or outcome. The compiler creates four open native zones, a symmetric central diamond, and four matching divider lines that terminate at and render beneath the diamond.
 - Use `chevron-flow` for three through five real handoffs. Direction is carried by equal native chevrons, so no decorative connector line is required; an optional takeaway spans the safe width below the sequence.
 - Use `icon-network` with `topology: "honeycomb"` for seven touching modular capabilities, `"pyramid"` for 3/6/10 hierarchical nodes, or `"square"` for 4/9 connected peers. One node may set `emphasis: true`; peer geometry and typography remain unchanged.
-- Prefer adjacency or intrinsic shape direction over leader lines. When a pyramid or square network requires a connector, create it before the nodes, run it center-to-center underneath them, and match its color to the destination node rim. A connector may never terminate visibly over a box or its text.
+- Prefer adjacency or intrinsic shape direction over leader lines. When a pyramid or square network requires a connector, create it before every node and child label, route it exactly center-to-center so both ends remain covered, and match both its color and thickness to the destination rim. A connector may never terminate visibly over a box or its text.
+- Treat emphasis as a semantic contract, not decoration. `point-grid`, `polygon-cycle`, `chevron-flow`, and `icon-network` may declare one `single-peer` focus; `quadrant-focus` uses one `synthesis` focus. The compiler records the unique target, peer set, accent encoding, and geometry invariant. Styling may change, but peer dimensions and typography may not.
 
 ## Shape-composition reference families
 
@@ -131,10 +132,11 @@ The source deck contains decorative cylinders, puzzle pieces, speedometers, Venn
 - `icon-network` accepts honeycomb (7), pyramid (3/6/10), or square (4/9) node counts with at most one emphasis state.
 - Every visible element remains a native editable PowerPoint object.
 - `SW031` rejects unequal peer geometry, wrong gutters, and off-center incomplete rows.
-- `SW032` rejects an unsupported polygon relationship, missing or non-native beam, wrong segment count, ring position/rotation drift, unequal callouts, broken marker binding, or center-binding drift.
+- `SW032` rejects an unsupported polygon relationship, missing or non-native beam, wrong segment count, ring position/rotation drift, unequal radii/edges/apothems, a non-square ring, leader-line reintroduction, unequal callouts, broken marker binding, or a triangle center that escapes its inscribed safe zone.
 - `SW033` rejects unequal quadrant zones, a non-symmetric center, late/overlaid dividers, or divider/rim color mismatch.
 - `SW034` rejects chevron count, geometry, baseline, or gap drift and any non-intrinsic connector mode.
-- `SW035` rejects invalid icon-network counts or geometry, visible/late connectors, endpoint drift, and connector/rim color mismatch.
+- `SW035` rejects invalid icon-network counts or geometry, visible/late connectors, endpoint/route drift, and connector/rim color or weight mismatch.
+- `SW036` rejects a missing focus target, a second accidental focus signal, lost synthesis emphasis, or focus-driven peer geometry drift.
 - Existing fit, overlap, padding, typography, run-emphasis, export, and rendered-layout rules remain mandatory.
 
 ## Public cross-checks

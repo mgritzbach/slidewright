@@ -49,6 +49,9 @@ Build presentations as verified artifacts. Separate content reasoning from deter
 - Treat undeclared sibling overlap, child escape from padded parents, low contrast, declared alignment drift, excess wrapping, and crowded layouts as build failures.
 - Split dense flexible copy into balanced native continuation slides before rejecting; if non-splittable text or the slide ceiling still cannot close above the configured minimum, recommend shortening or a different layout.
 - Use native charts, tables, shapes, and connectors when semantic editing matters. Rasterize only true visual assets.
+- Keep triangle center text inside its beam-aware inscribed safe zone, and keep every square-through-dodecagon ring regular on one true circumcircle.
+- Prefer adjacent labels and intrinsic flow shapes. If a connector is required, route it underneath all nodes and text, cover both endpoints inside the nodes, and match the destination rim color and weight.
+- Use at most one styling-only peer focus or one central synthesis focus; emphasis may not distort peer geometry or typography.
 
 ## References
 

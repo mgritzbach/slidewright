@@ -46,13 +46,13 @@ The four Stage Two criteria are equally weighted:
 
 ## Submission checklist
 
-- [ ] Join the challenge on Devpost.
-- [ ] Confirm entrant/team eligibility and representative.
+- [x] Join the challenge on Devpost.
+- [x] Confirm entrant/team eligibility and representative.
 - [ ] Request credits before the credit deadline if useful.
-- [ ] Freeze a tested release tag.
-- [ ] Make the judge install/test path take less than five minutes.
-- [ ] Record a 2:30–2:50 demo with captions and clean audio.
-- [ ] Upload the public YouTube video.
-- [ ] Add screenshots, description, repository URL, and testing instructions.
-- [ ] Run `/feedback` in the primary Codex build task and save the session ID.
-- [ ] Submit before July 21 at 5:00 PM Pacific; do not plan around the final hour.
+- [x] Freeze a tested release tag.
+- [x] Make the judge install/test path take less than five minutes.
+- [x] Record a public demo under three minutes with clean audio.
+- [x] Upload the public YouTube video.
+- [x] Add screenshots, description, repository URL, and testing instructions.
+- [x] Run `/feedback` in the primary Codex build task and save the session ID.
+- [x] Submit before July 21 at 5:00 PM Pacific; do not plan around the final hour.

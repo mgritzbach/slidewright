@@ -447,6 +447,45 @@ function polygonEdgeSegments(vertices, gap) {
   });
 }
 
+function triangleInscribedTextZone(centerX, centerY, radius, beamHeight, clearance = 12) {
+  const innerRadius = radius - beamHeight - clearance * 2;
+  const width = Math.sqrt(3) * innerRadius / 2;
+  const height = innerRadius * 3 / 4;
+  return {
+    kind: "largest-axis-aligned-inscribed-rectangle",
+    clearancePx: clearance,
+    innerCircumradius: innerRadius,
+    left: centerX - width / 2,
+    top: centerY - innerRadius / 4,
+    width,
+    height,
+    visualCenterX: centerX,
+    visualCenterY: centerY + innerRadius / 8,
+  };
+}
+
+function connectorPosition(start, end, thickness = 2) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  return {
+    left: (start.x + end.x) / 2 - length / 2,
+    top: (start.y + end.y) / 2 - thickness / 2,
+    width: length,
+    height: thickness,
+    rotation: Math.atan2(dy, dx) * 180 / Math.PI,
+  };
+}
+
+function positionMatches(actual, expected, tolerance) {
+  return actual && expected
+    && nearlyEqual(actual.left, expected.left, tolerance)
+    && nearlyEqual(actual.top, expected.top, tolerance)
+    && nearlyEqual(actual.width, expected.width, tolerance)
+    && nearlyEqual(actual.height, expected.height, tolerance)
+    && sameRotation(actual.rotation ?? 0, expected.rotation ?? 0, tolerance);
+}
+
 function sameRotation(a, b, tolerance) {
   const delta = Math.abs((((a - b) % 180) + 180) % 180);
   return Math.min(delta, 180 - delta) <= tolerance;
@@ -469,13 +508,36 @@ function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
   if (markers.length !== sideCount || markers.some((marker) => !marker)) reasons.push("segment marker binding does not match the side count");
   if (nodes.length !== sideCount || nodes.some((node) => !node)) reasons.push("node binding does not match the side count");
   if (topology.geometry !== POLYGON_GEOMETRY[sideCount]) reasons.push(`polygon metadata geometry must be '${POLYGON_GEOMETRY[sideCount]}'`);
-  if (topology.connectorMode !== "none" || (topology.connectorShapeIds ?? []).length !== 0) reasons.push("polygon callouts must be adjacent and connector-free");
-  if (topology.centerPlacement !== "visual-centroid") reasons.push("center statement must use the visual centroid");
+  if (topology.connectorMode !== "none" || topology.annotationMode !== "adjacent-no-leader" || (topology.connectorShapeIds ?? []).length !== 0) reasons.push("polygon callouts must be adjacent and connector-free");
+  const expectedPlacement = sideCount === 3 ? "triangle-inscribed-visual-center" : "visual-centroid";
+  if (topology.centerPlacement !== expectedPlacement) reasons.push(sideCount === 3 ? "triangle center statement must use its inscribed visual center" : "center statement must use the visual centroid");
   if (!reasons.length) {
     const ring = topology.ringBounds;
     const circle = topology.circumcircle ?? { centerX: Number.NaN, centerY: Number.NaN, radius: Number.NaN };
-    if (!topology.circumcircle || !nearlyEqual(ring.width, ring.height, tolerance) || !nearlyEqual(circle.radius * 2, ring.width, tolerance) || !nearlyEqual(circle.centerX, ring.left + ring.width / 2, tolerance) || !nearlyEqual(circle.centerY, ring.top + ring.height / 2, tolerance)) reasons.push("polygon ring is not bound to one true circumcircle");
+    if (!ring || !topology.circumcircle || !nearlyEqual(ring.width, ring.height, tolerance) || !nearlyEqual(circle.radius * 2, ring.width, tolerance) || !nearlyEqual(circle.centerX, ring.left + ring.width / 2, tolerance) || !nearlyEqual(circle.centerY, ring.top + ring.height / 2, tolerance)) reasons.push("polygon ring is not bound to one true circumcircle");
     const expectedVertices = polygonVertexCenters(sideCount, circle.centerX, circle.centerY, circle.radius);
+    const declaredVertices = topology.vertexCenters ?? [];
+    const declaredVerticesValid = declaredVertices.length === sideCount
+      && declaredVertices.every((vertex) => Number.isFinite(vertex?.x) && Number.isFinite(vertex?.y));
+    if (!declaredVerticesValid || declaredVertices.some((vertex, vertexIndex) => !nearlyEqual(vertex.x, expectedVertices[vertexIndex].x, tolerance) || !nearlyEqual(vertex.y, expectedVertices[vertexIndex].y, tolerance))) reasons.push("declared polygon vertices drifted from the true circumcircle");
+    const radii = declaredVerticesValid ? declaredVertices.map((vertex) => Math.hypot(vertex.x - circle.centerX, vertex.y - circle.centerY)) : [];
+    const edgeLengths = declaredVerticesValid ? declaredVertices.map((vertex, vertexIndex) => {
+      const next = declaredVertices[(vertexIndex + 1) % declaredVertices.length];
+      return Math.hypot(next.x - vertex.x, next.y - vertex.y);
+    }) : [];
+    const apothems = declaredVerticesValid ? declaredVertices.map((vertex, vertexIndex) => {
+      const next = declaredVertices[(vertexIndex + 1) % declaredVertices.length];
+      return Math.hypot((vertex.x + next.x) / 2 - circle.centerX, (vertex.y + next.y) / 2 - circle.centerY);
+    }) : [];
+    const expectedEdge = 2 * circle.radius * Math.sin(Math.PI / sideCount);
+    const expectedApothem = circle.radius * Math.cos(Math.PI / sideCount);
+    if (declaredVerticesValid && radii.some((value) => !nearlyEqual(value, circle.radius, tolerance))) reasons.push("polygon vertices do not share one radius");
+    if (declaredVerticesValid && edgeLengths.some((value) => !nearlyEqual(value, expectedEdge, tolerance))) reasons.push("polygon edge lengths are unequal");
+    if (declaredVerticesValid && apothems.some((value) => !nearlyEqual(value, expectedApothem, tolerance))) reasons.push("polygon edges do not share one apothem");
+    if (!nearlyEqual(topology.regularity?.vertexRadius, circle.radius, tolerance)
+      || !nearlyEqual(topology.regularity?.edgeLength, expectedEdge, tolerance)
+      || !nearlyEqual(topology.regularity?.apothem, expectedApothem, tolerance)
+      || !nearlyEqual(topology.regularity?.aspectRatio, 1, tolerance)) reasons.push("regular-polygon metric contract drifted");
     const expectedSegments = polygonEdgeSegments(expectedVertices, topology.beamGap);
     segments.forEach((segment, segmentIndex) => {
       const expected = expectedSegments[segmentIndex];
@@ -501,8 +563,17 @@ function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
       else {
         const centerX = centerSurface.position.left + centerSurface.position.width / 2;
         const centerY = centerSurface.position.top + centerSurface.position.height / 2;
-        if (!nearlyEqual(centerX, circle.centerX, tolerance) || !nearlyEqual(centerY, circle.centerY, tolerance)) reasons.push("center statement drifted from the polygon visual centroid");
-        if (sideCount === 3 && (centerSurface.position.width > circle.radius || centerSurface.position.height > circle.radius / 2)) reasons.push("triangle center statement exceeds the protected central region");
+        if (sideCount === 3) {
+          const expectedZone = triangleInscribedTextZone(circle.centerX, circle.centerY, circle.radius, topology.beamHeight, topology.centerSafeZone?.clearancePx ?? 12);
+          const actualZone = topology.centerSafeZone;
+          if (!actualZone || !positionMatches(actualZone, expectedZone, tolerance)
+            || actualZone.kind !== expectedZone.kind
+            || !nearlyEqual(actualZone.innerCircumradius, expectedZone.innerCircumradius, tolerance)
+            || !nearlyEqual(actualZone.visualCenterX, expectedZone.visualCenterX, tolerance)
+            || !nearlyEqual(actualZone.visualCenterY, expectedZone.visualCenterY, tolerance)) reasons.push("triangle protected center zone is not the largest inscribed text rectangle");
+          if (!actualZone || !contains({ left: actualZone.left, top: actualZone.top, right: actualZone.left + actualZone.width, bottom: actualZone.top + actualZone.height }, rect(centerSurface), tolerance)) reasons.push("triangle center statement escapes its protected inscribed zone");
+          if (!actualZone || !nearlyEqual(centerX, actualZone.visualCenterX, tolerance) || !nearlyEqual(centerY, actualZone.visualCenterY, tolerance)) reasons.push("triangle center statement drifted from the usable-space visual center");
+        } else if (!nearlyEqual(centerX, circle.centerX, tolerance) || !nearlyEqual(centerY, circle.centerY, tolerance)) reasons.push("center statement drifted from the polygon visual centroid");
       }
     }
   }
@@ -582,27 +653,70 @@ function lintNetworkTopology(slide, byId, diagnostics, tolerance) {
       : topology.topology === "square" && [4, 9].includes(nodes.length);
   if (!validCount || nodes.some((node) => !node || node.role !== "network-node")) reasons.push("network node count does not match its declared topology");
   if (!["honeycomb", "pyramid", "square"].includes(topology.topology)) reasons.push("network topology is unsupported");
-  if (nodes.some((node) => node.geometry !== topology.geometry)) reasons.push("network node geometry drifted");
+  if (nodes.some((node) => node && node.geometry !== topology.geometry)) reasons.push("network node geometry drifted");
   if (topology.emphasisIndex != null && (topology.emphasisIndex < -1 || topology.emphasisIndex >= nodes.length)) reasons.push("network emphasis index is invalid");
   if (topology.topology === "honeycomb") {
-    if (topology.connectorMode !== "adjacent" || connectors.length !== 0) reasons.push("honeycomb must communicate connection through adjacent hexagons without leader lines");
+    if (topology.connectorMode !== "adjacent" || topology.annotationMode !== "adjacent-no-leader" || topology.connectorWeightMode !== "none" || connectors.length !== 0) reasons.push("honeycomb must communicate connection through adjacent hexagons without leader lines");
   } else {
-    if (topology.connectorMode !== "underlay" || connectors.length !== (topology.connectorPairs ?? []).length || connectors.some((connector) => !connector)) reasons.push("network underlay connector binding is incomplete");
+    if (topology.connectorMode !== "underlay" || topology.annotationMode !== "node-contained-no-leader" || topology.connectorWeightMode !== "target-rim" || connectors.length !== (topology.connectorPairs ?? []).length || connectors.some((connector) => !connector)) reasons.push("network underlay connector binding is incomplete");
   }
   if (!reasons.length && topology.connectorMode === "underlay") {
-    const firstNodeIndex = Math.min(...nodes.map((node) => slide.shapes.findIndex((shape) => shape.id === node.id)));
+    const firstForegroundIndex = Math.min(...slide.shapes.map((shape, shapeIndex) => ({ shape, shapeIndex })).filter(({ shape }) => nodes.some((node) => shape.id === node.id || shape.parentId === node.id)).map(({ shapeIndex }) => shapeIndex));
     connectors.forEach((connector, connectorIndex) => {
       const [fromIndex, toIndex] = topology.connectorPairs[connectorIndex];
+      const source = nodes[fromIndex];
       const target = nodes[toIndex];
-      if (slide.shapes.findIndex((shape) => shape.id === connector.id) >= firstNodeIndex) reasons.push("network connector is not rendered beneath every node");
-      if (connector.semanticBinding?.fromSurfaceId !== nodes[fromIndex].id || connector.semanticBinding?.toSurfaceId !== target.id) reasons.push("network connector endpoint binding drifted");
-      if (fillColor(connector)?.toLowerCase() !== target.line?.color?.toLowerCase() || connector.semanticBinding?.targetRimColor?.toLowerCase() !== target.line?.color?.toLowerCase()) reasons.push("network connector does not match its target node rim color");
+      const start = { x: source.position.left + source.position.width / 2, y: source.position.top + source.position.height / 2 };
+      const end = { x: target.position.left + target.position.width / 2, y: target.position.top + target.position.height / 2 };
+      const expectedRoute = connectorPosition(start, end, target.line?.width);
+      if (slide.shapes.findIndex((shape) => shape.id === connector.id) >= firstForegroundIndex) reasons.push("network connector is not rendered beneath every node and text label");
+      if (connector.semanticBinding?.fromSurfaceId !== source.id || connector.semanticBinding?.toSurfaceId !== target.id
+        || connector.semanticBinding?.routeMode !== "center-to-center-covered"
+        || connector.semanticBinding?.zOrder !== "underlay-before-nodes-and-text") reasons.push("network connector endpoint or covered-route binding drifted");
+      if (!positionMatches(connector.position, expectedRoute, tolerance)) reasons.push("network connector is not routed center-to-center underneath both endpoint boxes");
+      if (fillColor(connector)?.toLowerCase() !== target.line?.color?.toLowerCase()
+        || connector.semanticBinding?.targetRimColor?.toLowerCase() !== target.line?.color?.toLowerCase()
+        || !nearlyEqual(connector.semanticBinding?.targetRimWidth, target.line?.width, tolerance)
+        || !nearlyEqual(connector.position.height, target.line?.width, tolerance)) reasons.push("network connector does not match its target node rim color and weight");
     });
   }
   if (reasons.length) diagnostics.push(diagnostic(
     "SW035", "error", slide.id, topology.nodeSurfaceIds?.[0] ?? null,
     `Icon network topology failed: ${[...new Set(reasons)].join("; ")}.`,
     "Restore the declared honeycomb, pyramid, or square node graph; render any required connectors beneath nodes and match the destination rim color.",
+  ));
+}
+
+function lintEmphasisPattern(slide, byId, diagnostics, tolerance) {
+  const pattern = slide.layoutContract?.emphasisPattern;
+  if (!pattern) return;
+  const reasons = [];
+  const peers = (pattern.peerSurfaceIds ?? []).map((id) => byId.get(id));
+  const target = pattern.targetSurfaceId == null ? null : byId.get(pattern.targetSurfaceId);
+  const encoding = pattern.targetEncoding ?? {};
+  const matchesEncoding = (shape) => shape
+    && fillColor(shape)?.toLowerCase() === String(encoding.fill ?? "").toLowerCase()
+    && shape.line?.color?.toLowerCase() === String(encoding.lineColor ?? "").toLowerCase()
+    && nearlyEqual(shape.line?.width, encoding.lineWidth, tolerance);
+  if (!['none', 'single-peer', 'synthesis'].includes(pattern.mode)) reasons.push("focus mode is unsupported");
+  if (!peers.length || peers.some((peer) => !peer)) reasons.push("focus pattern has missing peer surfaces");
+  if (pattern.mode === "none") {
+    if (target != null || peers.some(matchesEncoding)) reasons.push("an undeclared focus signal is present");
+  } else {
+    if (!target || !matchesEncoding(target)) reasons.push("the declared focus surface lost its unique accent encoding");
+    if (pattern.mode === "single-peer" && !peers.includes(target)) reasons.push("single-peer focus target is not one of the peer surfaces");
+    if (pattern.mode === "synthesis" && peers.includes(target)) reasons.push("synthesis focus must remain distinct from its peer surfaces");
+    const focusSignals = [...new Set([target, ...peers].filter(Boolean))].filter(matchesEncoding);
+    if (focusSignals.length !== 1) reasons.push("focus pattern must contain exactly one visually emphasized surface");
+  }
+  if (pattern.geometryInvariant === "equal-peer-surfaces" && peers.length && peers.every(Boolean)) {
+    const first = peers[0].position;
+    if (peers.some((peer) => !nearlyEqual(peer.position.width, first.width, tolerance) || !nearlyEqual(peer.position.height, first.height, tolerance))) reasons.push("focus changed peer geometry instead of styling only");
+  } else if (pattern.geometryInvariant !== "peer-grid-unchanged") reasons.push("focus geometry invariant is unsupported");
+  if (reasons.length) diagnostics.push(diagnostic(
+    "SW036", "error", slide.id, pattern.targetSurfaceId ?? pattern.peerSurfaceIds?.[0] ?? null,
+    `Single-focus emphasis failed: ${[...new Set(reasons)].join("; ")}.`,
+    "Keep exactly one accent-coded focus while preserving peer geometry; use a central synthesis focus only when the logic is an intersection or convergence.",
   ));
 }
 
@@ -702,6 +816,7 @@ export function lintPlan(plan) {
     lintQuadrantTopology(slide, byId, diagnostics, tolerance);
     lintFlowTopology(slide, byId, diagnostics, tolerance);
     lintNetworkTopology(slide, byId, diagnostics, tolerance);
+    lintEmphasisPattern(slide, byId, diagnostics, tolerance);
     const insetTokens = new Set(plan.designSystem?.insetTokensPx ?? []);
     const maximumInset = Number(plan.designSystem?.maximumInsetPx);
     const paragraphSpacing = new Set(plan.designSystem?.paragraphSpacingPt ?? []);

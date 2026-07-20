@@ -13,9 +13,11 @@ Then complete the external fields in `metadata.json` and run:
 npm run submission:check
 ```
 
-The full check remains red until the corrected public YouTube demo is under three minutes with audio, its final URL is recorded, and the Devpost project has a numeric submission ID, a submitted state, and a public project URL. The primary Codex `/feedback` session, verified GPT-5.6 statement, Devpost participation, public repository, and judge access are already recorded. This is intentional: G09 cannot be marked complete from a draft or an unpublished video.
+The full check is now green. The corrected narrated YouTube demo is public at 2:53, Devpost submission `1087402` is submitted at `https://devpost.com/software/slidewright`, the public repository is judge-accessible, and the primary Codex `/feedback` session plus verified GPT-5.6 statement are recorded. `publication-evidence.json` binds the external identifiers and authoritative publication confirmations.
 
 Files:
+
+- `publication-evidence.json` — public repository, YouTube, and Devpost identifiers plus the observed publication confirmations.
 
 - `SUBMISSION_COPY.md` — copy-ready category, tagline, descriptions, technical story, and Codex contribution statement.
 - `DEMO_SCRIPT.md` — a 2:45 shot list and voiceover.

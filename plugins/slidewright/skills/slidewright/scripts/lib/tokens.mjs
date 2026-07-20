@@ -48,6 +48,7 @@ export const DEFAULT_TYPOGRAPHY_ROLES = Object.freeze({
   icon: Object.freeze({ preferredSizePt: 28, minimumSizePt: 20, maximumLines: 1, lineHeight: 1, baseWeight: "regular" }),
   "chart-label": Object.freeze({ preferredSizePt: 12, minimumSizePt: 12, maximumLines: 1, lineHeight: 1, baseWeight: "regular" }),
   callout: Object.freeze({ preferredSizePt: 24, minimumSizePt: 16, maximumLines: 2, lineHeight: 1.08, baseWeight: "bold" }),
+  "compact-diagram-center": Object.freeze({ preferredSizePt: 20, minimumSizePt: 16, maximumLines: 3, lineHeight: 1.08, baseWeight: "bold" }),
 });
 
 export const DEFAULT_ARCHETYPES = Object.freeze({
@@ -77,7 +78,7 @@ export const DEFAULT_ARCHETYPES = Object.freeze({
   }),
   "polygon-cycle": Object.freeze({
     pageRole: "system-relationship",
-    requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body"]),
+    requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body", "compact-diagram-center"]),
     requiredBackedRoles: Object.freeze({ subheading: 3, body: 3 }),
     componentFamilies: Object.freeze({ "polygon-node": Object.freeze({ minimumInstances: 3, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
   }),

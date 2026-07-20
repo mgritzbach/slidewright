@@ -23,6 +23,15 @@ The frozen `c13-v1` contract therefore requires:
 separate administrator key from the current C10 licensed-template matrix. The
 packet hides fixture names, source identities, conditions, and slide lineage.
 The administrator key must never be provided to a reviewer before submission.
+Five deterministic files under `reviewer-packet/target-users/` route each user
+to exactly five candidate codes, opaque deck filenames, and slide numbers. They
+contain no fixture ids, source paths, hashes, or design identities. Give a user
+only the routing file whose assignment id they will submit.
+
+The packet's `RUBRIC.md` anchors every expert dimension from 1 (critical
+failure) through 5 (exceptional) and defines first-open acceptance as requiring
+no edit. Target-user timing starts when the assigned slide appears and stops
+when the participant would present it professionally.
 
 The generated scorecard distinguishes three states:
 
@@ -34,3 +43,17 @@ The generated scorecard distinguishes three states:
 An agent-authored response, an AI reviewer, an implementation-team member, a
 response that lacks the blindness attestations, or a response containing direct
 personal data is rejected and cannot advance C13.
+
+Import each completed response through the sanitizer; never copy raw responses
+into evidence manually:
+
+```powershell
+node scripts/import-professional-quality-response.mjs --input C:\path\to\response.json
+```
+
+The importer validates the exact blinded assignment, strict response fields,
+human and independence attestations, score/timing ranges, and privacy rules
+before writing. It replaces the participant-supplied pseudonym with a stable
+one-way identifier and refuses conflicting duplicate evidence. After importing
+all responses, rerun `npm run professional-quality:prepare` and then
+`npm run professional-quality:require-complete`.

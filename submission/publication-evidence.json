@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "slidewright-build-week-publication-evidence/v1",
+  "verifiedAt": "2026-07-19T22:53:52-07:00",
+  "repository": {
+    "url": "https://github.com/mgritzbach/slidewright",
+    "visibility": "public"
+  },
+  "youtube": {
+    "url": "https://youtu.be/3uxuClh4S7U",
+    "videoId": "3uxuClh4S7U",
+    "title": "Slidewright — Native, Editable PowerPoint from Codex | OpenAI Build Week",
+    "durationSeconds": 172.93,
+    "resolution": "1920x1080",
+    "audio": "stereo AAC 48 kHz",
+    "visibility": "public",
+    "copyrightCheck": "No issues found",
+    "publicationConfirmation": "Video published"
+  },
+  "devpost": {
+    "submissionId": "1087402",
+    "projectUrl": "https://devpost.com/software/slidewright",
+    "status": "submitted",
+    "confirmation": "Project submitted!",
+    "challenge": "OpenAI Build Week"
+  },
+  "feedbackSessionId": "019f6485-a254-7b30-8da7-f26d254bfcb8",
+  "notes": "The public Devpost page embeds the corrected public YouTube video and links the public GitHub repository. Browser verification observed the final YouTube duration as 2:53, public visibility selected, audio controls present, copyright checks complete, and Devpost's submitted confirmation."
+}

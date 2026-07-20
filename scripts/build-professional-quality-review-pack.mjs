@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { evaluateProfessionalQualityEvidence, minimumPairwiseDhashDistance, verifyProfessionalQualityScorecard } from "./verify-professional-quality-evidence.mjs";
+import { buildBlindedTargetUserRouting, evaluateProfessionalQualityEvidence, minimumPairwiseDhashDistance, verifyProfessionalQualityScorecard } from "./verify-professional-quality-evidence.mjs";
 
 const root = process.cwd();
 const output = path.join(root, "outputs", "professional-quality");
@@ -164,6 +164,8 @@ const assignmentsPath = path.join(packet, "target-user-assignments.json");
 const expertTemplatePath = path.join(packet, "expert-response-template.json");
 const userTemplatePath = path.join(packet, "target-user-response-template.json");
 const instructionsPath = path.join(packet, "INSTRUCTIONS.md");
+const rubricPath = path.join(packet, "RUBRIC.md");
+const routingDirectory = path.join(packet, "target-users");
 await writeJson(packetManifestPath, { schemaVersion: "slidewright-c13-blind-packet/v1", blinded: true, assignmentId: "expert-all-designs", candidates: expertCandidates });
 await writeJson(assignmentsPath, { schemaVersion: "slidewright-c13-assignments/v1", assignments });
 await writeJson(expertTemplatePath, {
@@ -182,7 +184,16 @@ await writeJson(userTemplatePath, {
   reviews: [{ candidateCode: "replace-from-assignment", firstOpenAcceptable: null, cleanupSeconds: null, repairActions: null }],
   submittedAt: null,
 });
-await fs.writeFile(instructionsPath, `# Blind C13 review packet\n\nDo not request or inspect the administrator key before submitting your response.\n\n## Blind expert\n\nOpen every image at full size. For each code, record first-open acceptance and integer 1-5 scores for hierarchy, spacing, readability, consistency, and professional polish. Use \`expert-response-template.json\`. Do not infer or research the file origin.\n\n## Target users\n\nUse the assigned five codes in \`target-user-assignments.json\`. Open the opaque deck in \`decks/\` and navigate to the slide number supplied separately by the study administrator. Start timing at first open. Stop when you consider the slide presentation-ready. Record zero cleanup seconds and zero repair actions only if you accept it without edits. Use \`target-user-response-template.json\`.\n\nResponses must use pseudonymous participant ids and contain no names, email addresses, employers, or other personal data.\n`, "utf8");
+const routingSheets = buildBlindedTargetUserRouting(assignments, selected.map((candidate) => ({ candidateCode: candidate.candidateCode, deckCode: candidate.deckCode, slide: candidate.slide })));
+await fs.mkdir(routingDirectory, { recursive: true });
+const routingSheetPaths = [];
+for (const routing of routingSheets) {
+  const routingPath = path.join(routingDirectory, `${routing.assignmentId}.json`);
+  await writeJson(routingPath, routing);
+  routingSheetPaths.push(routingPath);
+}
+await fs.writeFile(rubricPath, `# C13 anchored review rubric\n\n## First-open acceptance\n\nMark **true** only when the design is presentation-ready without any edit. Any required wording, hierarchy, spacing, readability, consistency, or polish change means **false**.\n\n## Expert 1-5 dimensions\n\nUse the same anchor for hierarchy, spacing, readability, consistency, and professional polish:\n\n- **1 - Critical failure:** unusable or visibly broken; requires fundamental redesign.\n- **2 - Major repair:** understandable, but several prominent defects require substantial work.\n- **3 - Usable with cleanup:** serviceable, but visible fixes are required before presenting.\n- **4 - Professional:** presentation-ready; only optional minor polish could improve it.\n- **5 - Exceptional:** unusually clear, refined, coherent, and immediately presentation-ready.\n\nScores must be integers. Do not average within a dimension.\n\n## Target-user timing\n\nStart timing when the assigned slide first appears. Stop only when you would present it professionally. Count each distinct edit operation as one repair action. Record zero seconds and zero repairs only when first-open acceptance is true.\n`, "utf8");
+await fs.writeFile(instructionsPath, `# Blind C13 review packet\n\nDo not request or inspect the administrator key before submitting your response. Read \`RUBRIC.md\` before starting.\n\n## Blind expert\n\nOpen every image at full size. For each code, record first-open acceptance and integer 1-5 scores for hierarchy, spacing, readability, consistency, and professional polish. Use \`expert-response-template.json\`. Do not infer or research the file origin.\n\n## Target users\n\nThe study administrator sends each participant exactly one matching file from \`target-users/\`. It lists five candidate codes, opaque deck paths, and slide numbers without source identities. Open each assigned deck and navigate to the listed slide. Start timing at first open. Stop when you consider the slide presentation-ready. Record zero cleanup seconds and zero repair actions only if you accept it without edits. Use \`target-user-response-template.json\`.\n\nComplete \`submittedAt\` with an ISO date-time. Responses must use pseudonymous participant ids and contain no names, email addresses, employers, or other personal data. The administrator imports each response with \`node scripts/import-professional-quality-response.mjs --input <response.json>\`.\n`, "utf8");
 
 const adminKeyPath = path.join(admin, "candidate-key.json");
 await writeJson(adminKeyPath, {
@@ -214,12 +225,13 @@ if (evaluation.metrics.distinctDesignsCoveredByUsers < contract.targetUsers.mini
 const artifacts = [];
 for (const candidate of selected) artifacts.push(await artifact(candidate.packetImage, "blind-candidate-image"));
 for (const deckCode of deckCodes.values()) artifacts.push(await artifact(path.join(packet, "decks", `${deckCode}.pptx`), "blind-editable-deck"));
-for (const candidate of [packetManifestPath, assignmentsPath, expertTemplatePath, userTemplatePath, instructionsPath, adminKeyPath, fingerprintOutput, c10ScorecardPath, c10ReviewPath]) artifacts.push(await artifact(candidate, "study-evidence"));
+for (const candidate of [packetManifestPath, assignmentsPath, expertTemplatePath, userTemplatePath, instructionsPath, rubricPath, ...routingSheetPaths, adminKeyPath, fingerprintOutput, c10ScorecardPath, c10ReviewPath]) artifacts.push(await artifact(candidate, "study-evidence"));
 for (const responseFile of responseFiles) artifacts.push(await artifact(responseFile, "external-human-response"));
 for (const candidate of [
   contractPath,
   imageTool,
   path.join(root, "scripts", "build-professional-quality-review-pack.mjs"),
+  path.join(root, "scripts", "import-professional-quality-response.mjs"),
   path.join(root, "scripts", "verify-professional-quality-evidence.mjs"),
   path.join(root, "tests", "professional-quality.test.mjs"),
   path.join(root, "docs", "C13_PROFESSIONAL_QUALITY.md"),
@@ -263,6 +275,11 @@ const scorecard = {
     candidateManifest: relative(packetManifestPath),
     assignments: relative(assignmentsPath),
     adminKey: relative(adminKeyPath),
+    rubric: relative(rubricPath),
+    routingSheets: await Promise.all(routingSheetPaths.map(async (routingPath) => {
+      const routing = await readJson(routingPath);
+      return { assignmentId: routing.assignmentId, path: relative(routingPath), sha256: await sha256File(routingPath), designCount: routing.designs.length, sourceFieldsExcluded: routing.designs.every((design) => Object.keys(design).every((key) => ["candidateCode", "deck", "slide"].includes(key))) };
+    })),
     packetSha256: await sha256File(packetManifestPath),
     adminKeySha256: await sha256File(adminKeyPath),
   },

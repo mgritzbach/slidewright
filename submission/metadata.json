@@ -4,16 +4,16 @@
   "category": "Work & Productivity",
   "repositoryUrl": "https://github.com/mgritzbach/slidewright",
   "youtube": {
-    "url": null,
-    "durationSeconds": null,
-    "audioConfirmed": false
+    "url": "https://youtu.be/3uxuClh4S7U",
+    "durationSeconds": 172.93,
+    "audioConfirmed": true
   },
   "feedbackSessionId": "019f6485-a254-7b30-8da7-f26d254bfcb8",
   "gpt56UsageVerified": true,
   "gpt56UsageStatement": "GPT-5.6 in Codex (model gpt-5.6-sol, high reasoning) was used in the primary Slidewright build and review session to implement and verify the compiler, auditors, benchmarks, and release evidence.",
   "joinedDevpost": true,
   "devpostSubmissionId": "1087402",
-  "devpostSubmitted": false,
-  "devpostProjectUrl": null,
+  "devpostSubmitted": true,
+  "devpostProjectUrl": "https://devpost.com/software/slidewright",
   "judgeAccessConfirmed": true
 }

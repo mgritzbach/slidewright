@@ -30,6 +30,10 @@
 - Preserve emphasis through rich-text runs, not separate raster labels.
 - Re-run the formatting linter after every named edit. Reject an edit that collapses a mixed-emphasis boundary or makes one peer explanation inherit its label emphasis.
 - Use native semantic charts, tables, shapes, and connectors when users may edit them.
+- Place triangle center text inside a mathematically inscribed safe zone based on the actual beam thickness; use the usable-space visual center rather than forcing a large box onto the circumcenter.
+- Keep regular polygons on one true circumcircle with equal radii, side lengths, and apothems. A square through dodecagon may not be stretched into a non-square bounding field.
+- Prefer adjacent labels and intrinsic directional shapes over leader lines. Required relationship connectors must render beneath every endpoint node and text child, terminate under opaque node interiors, and match the destination rim color and weight.
+- A focus pattern may accent exactly one peer or one central synthesis outcome. Emphasis changes styling only; it may not change peer dimensions, type roles, or spacing.
 - Bind every non-decorative icon to the exact label and a declared semantic concept. The icon name must be allowed by the deck's ontology; for example, `Goal` maps to `target` or `bullseye`.
 - Rasterize only photographs, illustrations, and other true visual assets.
 

@@ -599,7 +599,19 @@ function compilePointGrid(slide, index, frame, theme) {
     }
   });
   forceCommonTextSize(bodyShapes, 16);
-  return { shapes, peerGroups: [{ id: `s${index + 1}-point-cells`, memberIds: surfaces.map((shape) => shape.id), rows, gap, equalWithinRows: true, centeredIncompleteRows: true }] };
+  const peerSurfaceIds = surfaces.map((shape) => shape.id);
+  const emphasisIndex = slide.items.findIndex((item) => item.emphasis === true);
+  return {
+    shapes,
+    peerGroups: [{ id: `s${index + 1}-point-cells`, memberIds: peerSurfaceIds, rows, gap, equalWithinRows: true, centeredIncompleteRows: true }],
+    emphasisPattern: {
+      mode: emphasisIndex >= 0 ? "single-peer" : "none",
+      targetSurfaceId: emphasisIndex >= 0 ? peerSurfaceIds[emphasisIndex] : null,
+      peerSurfaceIds,
+      targetEncoding: { fill: theme.colors.accentSoft, lineColor: theme.colors.accent, lineWidth: 2 },
+      geometryInvariant: "peer-grid-unchanged",
+    },
+  };
 }
 
 const POLYGON_GEOMETRY = Object.freeze({
@@ -641,6 +653,29 @@ function polygonEdgeSegments(vertices, gap) {
   });
 }
 
+function triangleInscribedTextZone(centerX, centerY, radius, beamHeight, clearance = 12) {
+  // For an upright equilateral triangle, moving every edge inward by d
+  // produces a similar triangle whose circumradius is radius - 2d. The
+  // largest axis-aligned rectangle in that inner triangle occupies the lower
+  // three quarters of its height. This is the visual center of usable space,
+  // not the circumcenter that caused center labels to touch the sloping beams.
+  const innerRadius = radius - beamHeight - clearance * 2;
+  if (innerRadius <= 0) throw new Error("Triangle beam geometry leaves no protected center text zone.");
+  const width = Math.sqrt(3) * innerRadius / 2;
+  const height = innerRadius * 3 / 4;
+  return {
+    kind: "largest-axis-aligned-inscribed-rectangle",
+    clearancePx: clearance,
+    innerCircumradius: innerRadius,
+    left: centerX - width / 2,
+    top: centerY - innerRadius / 4,
+    width,
+    height,
+    visualCenterX: centerX,
+    visualCenterY: centerY + innerRadius / 8,
+  };
+}
+
 function connectorPosition(start, end, thickness = 2) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -667,14 +702,14 @@ function compilePolygonCycle(slide, index, frame, theme) {
   const contentHeight = frame.height - 128;
   const centerX = frame.left + frame.width / 2;
   const centerY = contentTop + contentHeight / 2;
-  const radius = count === 3 ? 156 : count <= 6 ? 154 : count <= 8 ? 148 : 136;
+  const radius = count === 3 ? 188 : count <= 6 ? 154 : count <= 8 ? 148 : 136;
   const nodeWidth = count === 3 ? 248 : count >= 9 ? 264 : 288;
   const sideRows = Math.ceil(count / 2);
   const nodeGap = count >= 9 ? 8 : 12;
   const nodeHeight = count === 3 ? 96 : Math.min(84, Math.floor((contentHeight - (sideRows - 1) * nodeGap) / sideRows));
   const nodePadding = { top: 8, right: 8, bottom: 8, left: 8 };
-  const beamHeight = count <= 3 ? 52 : count <= 6 ? 44 : count <= 8 ? 36 : 28;
-  const beamGap = count === 3 ? 80 : count === 4 ? 14 : count <= 8 ? 10 : 8;
+  const beamHeight = count <= 3 ? 36 : count <= 6 ? 44 : count <= 8 ? 36 : 28;
+  const beamGap = count === 3 ? 18 : count === 4 ? 14 : count <= 8 ? 10 : 8;
   const markerOffset = count === 3 ? 6 : 0;
   const vertices = polygonVertexCenters(count, centerX, centerY, radius);
   const segments = polygonEdgeSegments(vertices, beamGap);
@@ -736,7 +771,7 @@ function compilePolygonCycle(slide, index, frame, theme) {
     };
     shapes.push(textShape({
       id: segmentMarkerIds[segmentIndex], role: "eyebrow", typographyRole: "eyebrow", parentId: segmentIds[segmentIndex],
-      constraints: { allowOverlapWith: [fieldId, ...connectorIds] },
+      constraints: { allowOverlapWith: [fieldId, ...connectorIds, ...segmentIds.filter((_, candidateIndex) => candidateIndex !== segmentIndex)] },
       position: { left: markerCenter.x - 16, top: markerCenter.y - 10, width: 32, height: 20 },
       value: item.marker ?? String(segmentIndex + 1).padStart(2, "0"),
       style: { color: item.emphasis === true ? "#FFFFFF" : theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
@@ -832,23 +867,26 @@ function compilePolygonCycle(slide, index, frame, theme) {
     shapes.push(body);
   });
   forceCommonTextSize(bodyShapes, 16);
+  const triangleSafeZone = count === 3 ? triangleInscribedTextZone(centerX, centerY, radius, beamHeight) : null;
   if (centerId) {
-    const centerWidth = count === 3 ? 132 : 168;
-    const centerHeight = count === 3 ? 64 : 72;
+    const centerWidth = count === 3 ? triangleSafeZone.width - 8 : 168;
+    const centerHeight = count === 3 ? triangleSafeZone.height - 8 : 72;
     const centerPadding = count === 3 ? 8 : 12;
+    const centerVisualX = count === 3 ? triangleSafeZone.visualCenterX : centerX;
+    const centerVisualY = count === 3 ? triangleSafeZone.visualCenterY : centerY;
     shapes.push(surfaceShape({
       id: centerSurfaceId, role: "polygon-center", geometry: "roundRect",
-      position: { left: centerX - centerWidth / 2, top: centerY - centerHeight / 2, width: centerWidth, height: centerHeight },
+      position: { left: centerVisualX - centerWidth / 2, top: centerVisualY - centerHeight / 2, width: centerWidth, height: centerHeight },
       fill: theme.colors.surface, line: { color: theme.colors.accent, width: 2 },
       padding: { top: centerPadding, right: centerPadding, bottom: centerPadding, left: centerPadding },
       constraints: { allowOverlapWith: [fieldId] },
     }));
     shapes.push(textShape({
-      id: centerId, role: "callout", typographyRole: "callout", parentId: centerSurfaceId,
+      id: centerId, role: "callout", typographyRole: "compact-diagram-center", parentId: centerSurfaceId,
       constraints: { allowOverlapWith: [fieldId] },
-      position: { left: centerX - centerWidth / 2 + centerPadding, top: centerY - centerHeight / 2 + centerPadding, width: centerWidth - centerPadding * 2, height: centerHeight - centerPadding * 2 },
+      position: { left: centerVisualX - centerWidth / 2 + centerPadding, top: centerVisualY - centerHeight / 2 + centerPadding, width: centerWidth - centerPadding * 2, height: centerHeight - centerPadding * 2 },
       value: slide.center, style: { color: theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
-      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.08 },
+      fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 3, lineHeight: 1.08 },
     }));
   }
   return {
@@ -862,7 +900,15 @@ function compilePolygonCycle(slide, index, frame, theme) {
       fieldShapeId: fieldId,
       ringBounds: { left: centerX - radius, top: centerY - radius, width: radius * 2, height: radius * 2 },
       circumcircle: { centerX, centerY, radius },
-      centerPlacement: "visual-centroid",
+      vertexCenters: vertices,
+      regularity: {
+        vertexRadius: radius,
+        edgeLength: 2 * radius * Math.sin(Math.PI / count),
+        apothem: radius * Math.cos(Math.PI / count),
+        aspectRatio: 1,
+      },
+      centerPlacement: count === 3 ? "triangle-inscribed-visual-center" : "visual-centroid",
+      centerSafeZone: triangleSafeZone,
       beamHeight,
       beamGap,
       markerOffset,
@@ -870,9 +916,17 @@ function compilePolygonCycle(slide, index, frame, theme) {
       segmentMarkerIds,
       connectorShapeIds: connectorIds,
       connectorMode: "none",
+      annotationMode: "adjacent-no-leader",
       nodeSurfaceIds: surfaceIds,
       centerSurfaceId,
       centerShapeId: centerId,
+    },
+    emphasisPattern: {
+      mode: slide.items.some((item) => item.emphasis === true) ? "single-peer" : "none",
+      targetSurfaceId: slide.items.some((item) => item.emphasis === true) ? surfaceIds[slide.items.findIndex((item) => item.emphasis === true)] : null,
+      peerSurfaceIds: surfaceIds,
+      targetEncoding: { fill: theme.colors.accentSoft, lineColor: theme.colors.accent, lineWidth: 2 },
+      geometryInvariant: "equal-peer-surfaces",
     },
   };
 }
@@ -980,6 +1034,13 @@ function compileQuadrantFocus(slide, index, frame, theme) {
       centerGeometry: "diamond",
       dividerMode: "center-terminated-underlay",
     },
+    emphasisPattern: {
+      mode: "synthesis",
+      targetSurfaceId: centerSurfaceId,
+      peerSurfaceIds: zoneIds,
+      targetEncoding: { fill: theme.colors.accent, lineColor: theme.colors.accent, lineWidth: 2 },
+      geometryInvariant: "equal-peer-surfaces",
+    },
   };
 }
 
@@ -1064,6 +1125,13 @@ function compileChevronFlow(slide, index, frame, theme) {
   return {
     shapes,
     flowTopology: { stepSurfaceIds: stepIds, sequenceCount: count, geometry: "chevron", gap, connectorMode: "intrinsic", takeawaySurfaceId },
+    emphasisPattern: {
+      mode: slide.items.some((item) => item.emphasis === true) ? "single-peer" : "none",
+      targetSurfaceId: slide.items.some((item) => item.emphasis === true) ? stepIds[slide.items.findIndex((item) => item.emphasis === true)] : null,
+      peerSurfaceIds: stepIds,
+      targetEncoding: { fill: theme.colors.accentSoft, lineColor: theme.colors.accent, lineWidth: 2 },
+      geometryInvariant: "equal-peer-surfaces",
+    },
   };
 }
 
@@ -1137,12 +1205,20 @@ function compileIconNetwork(slide, index, frame, theme) {
     const start = { x: from.left + from.width / 2, y: from.top + from.height / 2 };
     const end = { x: to.left + to.width / 2, y: to.top + to.height / 2 };
     const color = slide.items[toIndex].emphasis === true ? theme.colors.accent : theme.colors.border;
+    const targetRimWidth = slide.items[toIndex].emphasis === true ? 2 : 1;
     const connector = surfaceShape({
-      id: connectorIds[connectorIndex], role: "network-connector", geometry: "rect", position: connectorPosition(start, end, 2),
+      id: connectorIds[connectorIndex], role: "network-connector", geometry: "rect", position: connectorPosition(start, end, targetRimWidth),
       fill: color, line: { color, width: 0 }, padding: { top: 0, right: 0, bottom: 0, left: 0 },
       constraints: { allowOverlapWith: [...surfaceIds, ...connectorIds.filter((id) => id !== connectorIds[connectorIndex])] },
       semanticType: "structural-relationship-connector",
-      semanticBinding: { fromSurfaceId: surfaceIds[fromIndex], toSurfaceId: surfaceIds[toIndex], targetRimColor: color },
+      semanticBinding: {
+        fromSurfaceId: surfaceIds[fromIndex],
+        toSurfaceId: surfaceIds[toIndex],
+        targetRimColor: color,
+        targetRimWidth,
+        routeMode: "center-to-center-covered",
+        zOrder: "underlay-before-nodes-and-text",
+      },
     });
     shapes.push(connector);
   });
@@ -1203,7 +1279,16 @@ function compileIconNetwork(slide, index, frame, theme) {
       connectorShapeIds: connectorIds,
       connectorPairs: layout.connectorPairs,
       connectorMode: slide.topology === "honeycomb" ? "adjacent" : "underlay",
+      annotationMode: slide.topology === "honeycomb" ? "adjacent-no-leader" : "node-contained-no-leader",
+      connectorWeightMode: slide.topology === "honeycomb" ? "none" : "target-rim",
       emphasisIndex: slide.items.findIndex((item) => item.emphasis === true),
+    },
+    emphasisPattern: {
+      mode: slide.items.some((item) => item.emphasis === true) ? "single-peer" : "none",
+      targetSurfaceId: slide.items.some((item) => item.emphasis === true) ? surfaceIds[slide.items.findIndex((item) => item.emphasis === true)] : null,
+      peerSurfaceIds: surfaceIds,
+      targetEncoding: { fill: theme.colors.accent, lineColor: theme.colors.accent, lineWidth: 2 },
+      geometryInvariant: "equal-peer-surfaces",
     },
   };
 }
@@ -1371,6 +1456,7 @@ export function compileDeck(input) {
         ...(compiled?.quadrantTopology ? { quadrantTopology: compiled.quadrantTopology } : {}),
         ...(compiled?.flowTopology ? { flowTopology: compiled.flowTopology } : {}),
         ...(compiled?.networkTopology ? { networkTopology: compiled.networkTopology } : {}),
+        ...(compiled?.emphasisPattern ? { emphasisPattern: compiled.emphasisPattern } : {}),
         reservedRegionIds: [],
         ...(slide.layout === "two-column" ? { type: "two-column", columnGap: slide.columnGap ?? 24 } : {}),
       },

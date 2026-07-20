@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { assetBundleFailures, externalFailures } from "../submission/check-submission.mjs";
+import { assetBundleFailures, externalFailures, publicationEvidenceFailures } from "../submission/check-submission.mjs";
 
 test("submission checker keeps every external requirement red when metadata is empty", () => {
   const failures = externalFailures({ youtube: {} });
@@ -37,6 +37,41 @@ test("submission checker accepts a fully verified external record", () => {
     judgeAccessConfirmed: true,
   });
   assert.deepEqual(failures, []);
+});
+
+test("submission checker binds publication evidence to verified metadata", () => {
+  const metadata = {
+    repositoryUrl: "https://github.com/example/slidewright",
+    youtube: { url: "https://youtu.be/abcdefghijk", durationSeconds: 172.93, audioConfirmed: true },
+    feedbackSessionId: "session_12345678",
+    devpostSubmissionId: "1087402",
+    devpostProjectUrl: "https://devpost.com/software/slidewright",
+  };
+  const evidence = {
+    schemaVersion: "slidewright-build-week-publication-evidence/v1",
+    verifiedAt: "2026-07-19T22:53:52-07:00",
+    repository: { url: metadata.repositoryUrl, visibility: "public" },
+    youtube: {
+      url: metadata.youtube.url,
+      videoId: "abcdefghijk",
+      durationSeconds: 172.93,
+      resolution: "1920x1080",
+      audio: "stereo AAC 48 kHz",
+      visibility: "public",
+      publicationConfirmation: "Video published",
+    },
+    devpost: {
+      submissionId: "1087402",
+      projectUrl: metadata.devpostProjectUrl,
+      status: "submitted",
+      confirmation: "Project submitted!",
+    },
+    feedbackSessionId: metadata.feedbackSessionId,
+  };
+  assert.deepEqual(publicationEvidenceFailures(metadata, evidence), []);
+  assert.match(publicationEvidenceFailures(metadata, { ...evidence, youtube: { ...evidence.youtube, videoId: "forged" } }).join("\n"), /YouTube ID is invalid/);
+  assert.match(publicationEvidenceFailures(metadata, { ...evidence, devpost: { ...evidence.devpost, status: "draft" } }).join("\n"), /does not confirm Devpost submission/);
+  assert.match(publicationEvidenceFailures(metadata, { ...evidence, feedbackSessionId: "other_session" }).join("\n"), /feedback session does not match/);
 });
 
 test("submission checker verifies all six screenshot bytes and hashes", (t) => {

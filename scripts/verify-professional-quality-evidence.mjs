@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultScorecard = path.join(root, "outputs", "professional-quality", "scorecard.json");
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -54,6 +55,7 @@ function validateParticipant(response) {
   onlyKeys(response.attestations, ["candidateOriginsHidden", "conditionLabelsHidden", "adminKeyUnavailableBeforeSubmission", "noDirectPersonalData", "timedWithoutAssistance"], "attestations");
   invariant(response.attestations.noDirectPersonalData === true, "Response lacks the privacy attestation.");
   invariant(Array.isArray(response.reviews), "Response reviews must be an array.");
+  invariant(typeof response.submittedAt === "string" && ISO_DATE_TIME.test(response.submittedAt) && Number.isFinite(Date.parse(response.submittedAt)), "submittedAt must be a valid ISO date-time string.");
   return participant;
 }
 
@@ -95,6 +97,42 @@ function validateTargetResponse(response, assignment, candidateCodes) {
     invariant(Number.isInteger(review.repairActions) && review.repairActions >= 0 && review.repairActions <= 50, "repairActions must be an integer from 0 to 50.");
     invariant(review.firstOpenAcceptable === (review.cleanupSeconds === 0 && review.repairActions === 0), "First-open acceptance must correspond to zero cleanup time and zero repair actions.");
   }
+}
+
+export function validateProfessionalQualityResponse(response, { contract, candidates, assignments }) {
+  const candidateCodes = new Set(candidates.map((candidate) => candidate.candidateCode));
+  const participant = validateParticipant(response);
+  if (participant.role === "blind-expert") validateExpertResponse(response, candidateCodes, contract);
+  else {
+    const assignment = assignments.find((item) => item.assignmentId === response.assignmentId);
+    invariant(assignment, `Unknown target-user assignment: ${response.assignmentId}`);
+    validateTargetResponse(response, assignment, candidateCodes);
+  }
+  return true;
+}
+
+export function sanitizeProfessionalQualityResponse(response, { contract, candidates, assignments }) {
+  validateProfessionalQualityResponse(response, { contract, candidates, assignments });
+  const sanitized = structuredClone(response);
+  sanitized.participant.id = `p-${crypto.createHmac("sha256", contract.selectionSeed).update(`${sanitized.participant.role}:${sanitized.participant.id}`).digest("hex").slice(0, 16)}`;
+  validateProfessionalQualityResponse(sanitized, { contract, candidates, assignments });
+  return sanitized;
+}
+
+export function buildBlindedTargetUserRouting(assignments, candidateRouting) {
+  const routeByCode = new Map(candidateRouting.map((route) => [route.candidateCode, route]));
+  return assignments.map((assignment) => ({
+    schemaVersion: "slidewright-c13-target-user-routing/v1",
+    assignmentId: assignment.assignmentId,
+    blinded: true,
+    designs: assignment.candidateCodes.map((candidateCode) => {
+      const route = routeByCode.get(candidateCode);
+      invariant(route, `No route exists for assigned candidate ${candidateCode}.`);
+      return { candidateCode, deck: `decks/${route.deckCode}.pptx`, slide: route.slide };
+    }),
+    responseTemplate: "target-user-response-template.json",
+    rubric: "RUBRIC.md",
+  }));
 }
 
 export function evaluateProfessionalQualityEvidence({ contract, candidates, assignments, responses }) {
@@ -199,6 +237,25 @@ export async function verifyProfessionalQualityScorecard(scorecard, { repository
     invariant(sha256(await fs.readFile(absolute)) === artifact.sha256, `Artifact hash mismatch: ${artifact.path}`);
   }
   invariant(scorecard.reviewPacket.blinded === true && scorecard.reviewPacket.adminKeyExcluded === true, "Reviewer packet is not proven blind.");
+  const rubric = await fs.readFile(path.resolve(repositoryRoot, scorecard.reviewPacket.rubric), "utf8");
+  for (const anchor of ["1 - Critical failure", "2 - Major repair", "3 - Usable with cleanup", "4 - Professional", "5 - Exceptional"]) invariant(rubric.includes(anchor), `C13 rubric lacks anchor: ${anchor}.`);
+  invariant(rubric.includes("presentation-ready without any edit"), "C13 rubric does not define first-open acceptance strictly.");
+  invariant(Array.isArray(scorecard.reviewPacket.routingSheets) && scorecard.reviewPacket.routingSheets.length === scorecard.contract.targetUsers.minimumIndependentHumanUsers, "C13 packet lacks one blinded routing sheet per target user.");
+  const assignmentDocument = JSON.parse(await fs.readFile(path.resolve(repositoryRoot, scorecard.reviewPacket.assignments), "utf8"));
+  for (const routingRecord of scorecard.reviewPacket.routingSheets) {
+    invariant(routingRecord.designCount === scorecard.contract.targetUsers.designsPerUser && routingRecord.sourceFieldsExcluded === true, `Routing sheet ${routingRecord.assignmentId} is incomplete or leaks source fields.`);
+    const routing = JSON.parse(await fs.readFile(path.resolve(repositoryRoot, routingRecord.path), "utf8"));
+    onlyKeys(routing, ["schemaVersion", "assignmentId", "blinded", "designs", "responseTemplate", "rubric"], "routing sheet");
+    invariant(routing.schemaVersion === "slidewright-c13-target-user-routing/v1" && routing.blinded === true && routing.assignmentId === routingRecord.assignmentId, `Routing sheet ${routingRecord.assignmentId} identity is invalid.`);
+    const assignment = assignmentDocument.assignments.find((item) => item.assignmentId === routing.assignmentId);
+    invariant(assignment && JSON.stringify(routing.designs.map((design) => design.candidateCode)) === JSON.stringify(assignment.candidateCodes), `Routing sheet ${routing.assignmentId} does not match its frozen assignment.`);
+    for (const design of routing.designs) {
+      onlyKeys(design, ["candidateCode", "deck", "slide"], "blinded route");
+      invariant(/^D-[0-9A-F]{10}$/u.test(design.candidateCode), `Routing sheet ${routing.assignmentId} has an invalid candidate code.`);
+      invariant(/^decks\/P-[0-9A-F]{10}\.pptx$/u.test(design.deck), `Routing sheet ${routing.assignmentId} has a non-opaque deck path.`);
+      invariant(Number.isInteger(design.slide) && design.slide >= 1, `Routing sheet ${routing.assignmentId} has an invalid slide number.`);
+    }
+  }
   if (requireComplete) invariant(scorecard.c13Satisfied === true, `C13 remains incomplete: ${scorecard.externalEvidence.missing.join("; ")}`);
   return true;
 }
