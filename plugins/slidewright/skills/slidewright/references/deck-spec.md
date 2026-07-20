@@ -63,6 +63,12 @@ Use `layout: "point-grid"` for 2-9 logically parallel points. Each item needs a 
 
 `auto` resolves to `2`, `3`, `2+2`, `3+2`, `3+3`, `4+3`, `4+4`, and `3+3+3` rows for counts 2 through 9. Incomplete rows are centered. `SW031` enforces equal peer geometry and exact gutters.
 
+## Polygon relationship system
+
+Use `layout: "polygon-cycle"` only when 3-8 points form a genuine `cycle`, `system`, `perimeter`, or `mutual-reinforcement` relationship. The count determines a native editable triangle, square, pentagon, hexagon, heptagon, or octagon outline; it does not justify the topology by itself. Each item requires `id`, `label`, and `body`; optional `center` names the shared outcome or system. At most one point may set `emphasis: true`.
+
+The compiler binds equal native point surfaces to the polygon vertices. `SW032` rejects a missing semantic relationship, the wrong native polygon, unequal nodes, or vertex drift. Use `point-grid` instead when the items are merely parallel, and use steps or a timeline when order is one-way rather than cyclical.
+
 ## Opposition and synthesis
 
 Use `layout: "opposition"` for two genuinely conflicting positions. Provide a native editable `title`, `left.heading`, `left.body`, `right.heading`, and `right.body`. `axisLabel` defaults to `VS`. Add optional `synthesis` when the recommendation combines the two sides or defines a conditional boundary. Use a comparison table instead when there are more than two alternatives or several repeated criteria.

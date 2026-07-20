@@ -75,6 +75,12 @@ export const DEFAULT_ARCHETYPES = Object.freeze({
     requiredBackedRoles: Object.freeze({ subheading: 2, body: 2 }),
     componentFamilies: Object.freeze({ "point-cell": Object.freeze({ minimumInstances: 2, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
   }),
+  "polygon-cycle": Object.freeze({
+    pageRole: "system-relationship",
+    requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body"]),
+    requiredBackedRoles: Object.freeze({ subheading: 3, body: 3 }),
+    componentFamilies: Object.freeze({ "polygon-node": Object.freeze({ minimumInstances: 3, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
+  }),
   opposition: Object.freeze({
     pageRole: "opposition",
     requiredStyleRoles: Object.freeze(["slide-title", "component-heading", "component-body"]),

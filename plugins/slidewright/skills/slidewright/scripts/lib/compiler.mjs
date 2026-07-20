@@ -63,7 +63,7 @@ export function validateDeckSpec(spec) {
 
   spec.slides.forEach((slide, index) => {
     if (!slide || typeof slide !== "object") throw new Error(`slides[${index}] must be an object.`);
-    if (!["hero", "two-column", "section", "continuation", "table", "icon-list", "point-grid", "opposition"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', 'continuation', 'table', 'icon-list', 'point-grid', or 'opposition'.`);
+    if (!["hero", "two-column", "section", "continuation", "table", "icon-list", "point-grid", "polygon-cycle", "opposition"].includes(slide.layout)) throw new Error(`slides[${index}].layout must be 'hero', 'two-column', 'section', 'continuation', 'table', 'icon-list', 'point-grid', 'polygon-cycle', or 'opposition'.`);
     if (slide.columnGap != null && (!Number.isFinite(slide.columnGap) || slide.columnGap < 16 || slide.columnGap > 96)) throw new Error(`slides[${index}].columnGap must be between 16 and 96.`);
     if (slide.headlineSplit != null && (!slide.headlineSplit || !["center", "two-thirds"].includes(slide.headlineSplit.ratio) || !["left", "right"].includes(slide.headlineSplit.side))) throw new Error(`slides[${index}].headlineSplit must declare ratio center|two-thirds and side left|right.`);
     if (slide.reviewIntent != null && (!slide.reviewIntent || !REVIEW_RELATIONSHIPS.has(slide.reviewIntent.relationship))) throw new Error(`slides[${index}].reviewIntent.relationship must be one of ${[...REVIEW_RELATIONSHIPS].join(" | ")}.`);
@@ -129,6 +129,21 @@ export function validateDeckSpec(spec) {
       });
       if (new Set(itemIds).size !== itemIds.length) throw new Error(`slides[${index}].items ids must be unique.`);
       if (slide.items.filter((item) => item.emphasis === true).length > 1) throw new Error(`slides[${index}] may emphasize at most one point.`);
+    } else if (slide.layout === "polygon-cycle") {
+      assertText(slide.title, `slides[${index}].title`, true);
+      if (!Array.isArray(slide.items) || slide.items.length < 3 || slide.items.length > 8) throw new Error(`slides[${index}].items must contain 3-8 related points.`);
+      if (!['cycle', 'system', 'perimeter', 'mutual-reinforcement'].includes(slide.relationship)) throw new Error(`slides[${index}].relationship must be 'cycle', 'system', 'perimeter', or 'mutual-reinforcement'.`);
+      if (slide.center != null) assertText(slide.center, `slides[${index}].center`, true);
+      const itemIds = [];
+      slide.items.forEach((item, itemIndex) => {
+        assertString(item?.id, `slides[${index}].items[${itemIndex}].id`);
+        assertText(item?.label, `slides[${index}].items[${itemIndex}].label`, true);
+        assertText(item?.body, `slides[${index}].items[${itemIndex}].body`);
+        if (item.emphasis != null && typeof item.emphasis !== "boolean") throw new Error(`slides[${index}].items[${itemIndex}].emphasis must be boolean.`);
+        itemIds.push(item.id);
+      });
+      if (new Set(itemIds).size !== itemIds.length) throw new Error(`slides[${index}].items ids must be unique.`);
+      if (slide.items.filter((item) => item.emphasis === true).length > 1) throw new Error(`slides[${index}] may emphasize at most one polygon point.`);
     } else {
       assertText(slide.title, `slides[${index}].title`, true);
       for (const side of ["left", "right"]) {
@@ -204,8 +219,8 @@ function forceCommonTextSize(shapes, fontSizePt) {
   }
 }
 
-function surfaceShape({ id, position, fill, line, radius = 18, padding, role, geometry = "roundRect" }) {
-  return { id, type: "shape", ...(role ? { role } : {}), geometry, position, fill, line, ...(geometry === "roundRect" ? { radius } : {}), padding, editable: true };
+function surfaceShape({ id, position, fill, line, radius = 18, padding, role, geometry = "roundRect", constraints, semanticType, semanticBinding }) {
+  return { id, type: "shape", ...(role ? { role } : {}), ...(semanticType ? { semanticType } : {}), ...(semanticBinding ? { semanticBinding } : {}), geometry, position, fill, line, ...(geometry === "roundRect" ? { radius } : {}), padding, ...(constraints ? { constraints } : {}), editable: true };
 }
 
 function tableShape({ id, position, columns, rows, theme }) {
@@ -528,6 +543,128 @@ function compilePointGrid(slide, index, frame, theme) {
   return { shapes, peerGroups: [{ id: `s${index + 1}-point-cells`, memberIds: surfaces.map((shape) => shape.id), rows, gap, equalWithinRows: true, centeredIncompleteRows: true }] };
 }
 
+const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon" });
+
+function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
+  if (count === 3) return [
+    { x: centerX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY + radiusY },
+    { x: centerX - radiusX, y: centerY + radiusY },
+  ];
+  if (count === 4) return [
+    { x: centerX - radiusX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY + radiusY },
+    { x: centerX - radiusX, y: centerY + radiusY },
+  ];
+  return Array.from({ length: count }, (_, pointIndex) => {
+    const angle = -Math.PI / 2 + pointIndex * 2 * Math.PI / count;
+    return { x: centerX + Math.cos(angle) * radiusX, y: centerY + Math.sin(angle) * radiusY };
+  });
+}
+
+function compilePolygonCycle(slide, index, frame, theme) {
+  const slideNumber = index + 1;
+  const count = slide.items.length;
+  const shapes = [textShape({
+    id: `s${slideNumber}-title`, role: "title", typographyRole: "slide-title",
+    position: { left: frame.left, top: frame.top, width: frame.width, height: 96 },
+    value: slide.title, style: { color: theme.colors.text }, theme, defaultBold: true,
+    fit: { preferredSizePt: 36, minSizePt: 28, maxLines: 2, lineHeight: 1.02, glyphFactor: 0.5 },
+  })];
+  const contentTop = frame.top + 128;
+  const contentHeight = frame.height - 128;
+  const centerX = frame.left + frame.width / 2;
+  const centerY = contentTop + contentHeight / 2;
+  const radiusX = count === 3 ? 300 : count === 4 ? 180 : count >= 7 ? 280 : 260;
+  const radiusY = 180;
+  const nodeWidth = count === 3 ? 260 : count === 4 ? 220 : count <= 6 ? 210 : 180;
+  const nodeHeight = 104;
+  const nodePadding = { top: 8, right: 8, bottom: 8, left: 8 };
+  const vertices = polygonVertexCenters(count, centerX, centerY, radiusX, radiusY);
+  const nodeIds = slide.items.flatMap((item) => [
+    `s${slideNumber}-${item.id}-surface`,
+    `s${slideNumber}-${item.id}-label`,
+    `s${slideNumber}-${item.id}-body`,
+  ]);
+  const centerId = slide.center == null ? null : `s${slideNumber}-center`;
+  const outlineId = `s${slideNumber}-polygon-outline`;
+  const outlinePosition = { left: centerX - radiusX, top: centerY - radiusY, width: radiusX * 2, height: radiusY * 2 };
+  const outline = surfaceShape({
+    id: outlineId,
+    role: "polygon-outline",
+    semanticType: "structural-relationship",
+    semanticBinding: { relationship: slide.relationship, sideCount: count },
+    geometry: POLYGON_GEOMETRY[count],
+    position: outlinePosition,
+    fill: theme.colors.background,
+    line: { color: theme.colors.accent, width: 2 },
+    padding: { top: 24, right: 24, bottom: 24, left: 24 },
+    constraints: { allowOverlapWith: [...nodeIds, ...(centerId ? [centerId] : [])] },
+  });
+  shapes.push(outline);
+  const surfaceIds = [];
+  const bodyShapes = [];
+  slide.items.forEach((item, itemIndex) => {
+    const vertex = vertices[itemIndex];
+    const position = { left: vertex.x - nodeWidth / 2, top: vertex.y - nodeHeight / 2, width: nodeWidth, height: nodeHeight };
+    const surfaceId = `s${slideNumber}-${item.id}-surface`;
+    const variantId = item.emphasis === true ? "emphasis" : "default";
+    const surface = surfaceShape({
+      id: surfaceId,
+      role: "polygon-node",
+      geometry: "rect",
+      position,
+      fill: item.emphasis === true ? theme.colors.accentSoft : theme.colors.surface,
+      line: { color: item.emphasis === true ? theme.colors.accent : theme.colors.border, width: item.emphasis === true ? 2 : 1 },
+      padding: nodePadding,
+      constraints: { allowOverlapWith: [outlineId] },
+    });
+    surface.polygonVertex = { index: itemIndex, sideCount: count };
+    surfaceIds.push(surfaceId);
+    shapes.push(surface);
+    shapes.push(textShape({
+      id: `s${slideNumber}-${item.id}-label`, role: "subheading", typographyRole: "component-heading", parentId: surfaceId,
+      componentPattern: { familyId: "polygon-node", instanceId: item.id, slot: "heading", variantId },
+      constraints: { allowOverlapWith: [outlineId] },
+      position: { left: position.left + nodePadding.left, top: position.top + nodePadding.top, width: position.width - nodePadding.left - nodePadding.right, height: 24 },
+      value: item.label, style: { color: item.emphasis === true ? theme.colors.accent : theme.colors.text, alignment: "center" }, theme, defaultBold: true,
+      fit: { preferredSizePt: 20, minSizePt: 16, maxLines: 2, lineHeight: 1 },
+    }));
+    const body = textShape({
+      id: `s${slideNumber}-${item.id}-body`, role: "body", typographyRole: "component-body", parentId: surfaceId,
+      componentPattern: { familyId: "polygon-node", instanceId: item.id, slot: "body", variantId },
+      constraints: { allowOverlapWith: [outlineId] },
+      position: { left: position.left + nodePadding.left, top: position.top + nodePadding.top + 30, width: position.width - nodePadding.left - nodePadding.right, height: position.height - nodePadding.top - nodePadding.bottom - 30 },
+      value: item.body, style: { color: theme.colors.muted, alignment: "center", verticalAlignment: "middle" }, theme,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.22 },
+    });
+    bodyShapes.push(body);
+    shapes.push(body);
+  });
+  forceCommonTextSize(bodyShapes, 16);
+  if (centerId) {
+    shapes.push(textShape({
+      id: centerId, role: "callout", typographyRole: "callout", parentId: outlineId,
+      constraints: { allowOverlapWith: [outlineId] },
+      position: { left: centerX - 140, top: centerY - 38, width: 280, height: 76 },
+      value: slide.center, style: { color: theme.colors.text, alignment: "center", verticalAlignment: "middle" }, theme, defaultBold: true,
+      fit: { preferredSizePt: 24, minSizePt: 16, maxLines: 2, lineHeight: 1.08 },
+    }));
+  }
+  return {
+    shapes,
+    polygonTopology: {
+      relationship: slide.relationship,
+      sideCount: count,
+      geometry: POLYGON_GEOMETRY[count],
+      outlineShapeId: outlineId,
+      nodeSurfaceIds: surfaceIds,
+      centerShapeId: centerId,
+    },
+  };
+}
+
 function compileOpposition(slide, index, frame, theme) {
   const shapes = [textShape({
     id: `s${index + 1}-title`, role: "title", typographyRole: "slide-title",
@@ -616,6 +753,8 @@ export function compileDeck(input) {
   const slides = spec.slides.map((slide, index) => {
     const compiled = slide.layout === "point-grid"
       ? compilePointGrid(slide, index, frame, theme)
+      : slide.layout === "polygon-cycle"
+        ? compilePolygonCycle(slide, index, frame, theme)
       : slide.layout === "opposition"
         ? compileOpposition(slide, index, frame, theme)
         : null;
@@ -676,6 +815,7 @@ export function compileDeck(input) {
         fitSurfaces: titleSurfaceId ? [{ surfaceId: titleSurfaceId, childIds: [headlineId], minHeight: 128, exactBottom: true }] : [],
         backings: shapes.filter((shape) => shape.type === "text" && shape.backingId).map((shape) => ({ backingId: shape.backingId, contentIds: [shape.id] })),
         peerGroups: compiled?.peerGroups ?? [],
+        ...(compiled?.polygonTopology ? { polygonTopology: compiled.polygonTopology } : {}),
         reservedRegionIds: [],
         ...(slide.layout === "two-column" ? { type: "two-column", columnGap: slide.columnGap ?? 24 } : {}),
       },

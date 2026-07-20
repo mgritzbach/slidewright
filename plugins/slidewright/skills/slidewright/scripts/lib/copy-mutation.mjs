@@ -22,7 +22,7 @@ function mutateText(value, factor) {
 export function mutateDeckCopy(input, factor) {
   const spec = structuredClone(input);
   for (const slide of spec.slides) {
-    for (const key of ["eyebrow", "title", "body", "callout"]) {
+    for (const key of ["eyebrow", "title", "body", "callout", "center"]) {
       if (slide[key] != null) slide[key] = mutateText(slide[key], factor);
     }
     for (const side of ["left", "right"]) {
@@ -53,7 +53,7 @@ export function mutateFlexibleDeckCopy(input, factor) {
       slide.subtitle = mutateText(slide.subtitle, factor);
     } else if (slide.layout === "continuation") {
       slide.body = mutateText(slide.body, factor);
-    } else if (slide.layout === "point-grid") {
+    } else if (["point-grid", "polygon-cycle"].includes(slide.layout)) {
       for (const item of slide.items ?? []) item.body = mutateText(item.body, factor);
     } else if (slide.layout === "opposition") {
       slide.left.body = mutateText(slide.left.body, factor);

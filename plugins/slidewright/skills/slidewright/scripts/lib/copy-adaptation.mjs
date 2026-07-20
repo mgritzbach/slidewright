@@ -187,7 +187,7 @@ function descriptorsFor(slide) {
     shapeId: `s1-${item.id ?? `item-${index + 1}`}-body`,
     defaultBold: false,
   }));
-  if (slide.layout === "point-grid") return (slide.items ?? []).map((item, index) => ({
+  if (["point-grid", "polygon-cycle"].includes(slide.layout)) return (slide.items ?? []).map((item, index) => ({
     key: `point-${item.id ?? index + 1}`,
     label: `${item.label ?? "POINT"}`.toUpperCase(),
     path: ["items", index, "body"],

@@ -421,6 +421,64 @@ function lintPeerGroups(slide, byId, diagnostics, tolerance) {
   }
 }
 
+const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon" });
+const POLYGON_RELATIONSHIPS = new Set(["cycle", "system", "perimeter", "mutual-reinforcement"]);
+
+function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
+  if (count === 3) return [
+    { x: centerX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY + radiusY },
+    { x: centerX - radiusX, y: centerY + radiusY },
+  ];
+  if (count === 4) return [
+    { x: centerX - radiusX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY - radiusY },
+    { x: centerX + radiusX, y: centerY + radiusY },
+    { x: centerX - radiusX, y: centerY + radiusY },
+  ];
+  return Array.from({ length: count }, (_, pointIndex) => {
+    const angle = -Math.PI / 2 + pointIndex * 2 * Math.PI / count;
+    return { x: centerX + Math.cos(angle) * radiusX, y: centerY + Math.sin(angle) * radiusY };
+  });
+}
+
+function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
+  const topology = slide.layoutContract?.polygonTopology;
+  if (!topology) return;
+  const reasons = [];
+  const sideCount = Number(topology.sideCount);
+  const outline = byId.get(topology.outlineShapeId);
+  const nodes = (topology.nodeSurfaceIds ?? []).map((id) => byId.get(id));
+  if (!Number.isInteger(sideCount) || sideCount < 3 || sideCount > 8) reasons.push("side count must be an integer from 3 through 8");
+  if (!POLYGON_RELATIONSHIPS.has(topology.relationship)) reasons.push("semantic relationship is not a cycle, system, perimeter, or mutual reinforcement");
+  if (!outline) reasons.push("outline binding is missing");
+  if (nodes.length !== sideCount || nodes.some((node) => !node)) reasons.push("node binding does not match the side count");
+  if (outline && outline.geometry !== POLYGON_GEOMETRY[sideCount]) reasons.push(`outline geometry must be '${POLYGON_GEOMETRY[sideCount]}'`);
+  if (outline && (outline.semanticBinding?.relationship !== topology.relationship || Number(outline.semanticBinding?.sideCount) !== sideCount)) reasons.push("outline semantic binding drifted from the topology contract");
+  if (!reasons.length) {
+    const outlineRect = rect(outline);
+    const expected = polygonVertexCenters(sideCount, (outlineRect.left + outlineRect.right) / 2, (outlineRect.top + outlineRect.bottom) / 2, outlineRect.width / 2, outlineRect.height / 2);
+    const width = nodes[0].position.width;
+    const height = nodes[0].position.height;
+    nodes.forEach((node, nodeIndex) => {
+      if (node.role !== "polygon-node" || node.geometry !== "rect") reasons.push(`node ${nodeIndex + 1} is not a native polygon-node surface`);
+      if (!nearlyEqual(node.position.width, width, tolerance) || !nearlyEqual(node.position.height, height, tolerance)) reasons.push("polygon nodes do not share equal width and height");
+      const actualCenter = { x: node.position.left + node.position.width / 2, y: node.position.top + node.position.height / 2 };
+      if (!nearlyEqual(actualCenter.x, expected[nodeIndex].x, tolerance) || !nearlyEqual(actualCenter.y, expected[nodeIndex].y, tolerance)) reasons.push(`node ${nodeIndex + 1} is not centered on its declared polygon vertex`);
+      if (node.polygonVertex?.index !== nodeIndex || node.polygonVertex?.sideCount !== sideCount) reasons.push(`node ${nodeIndex + 1} vertex metadata drifted`);
+    });
+    if (topology.centerShapeId != null) {
+      const center = byId.get(topology.centerShapeId);
+      if (!center || center.parentId !== outline.id || center.backingId !== outline.id) reasons.push("center statement is not bound inside the polygon outline");
+    }
+  }
+  if (reasons.length) diagnostics.push(diagnostic(
+    "SW032", "error", slide.id, topology.outlineShapeId ?? null,
+    `Polygon relationship topology failed: ${[...new Set(reasons)].join("; ")}.`,
+    "Restore the native 3-8 sided outline and equal vertex-bound nodes, or use a grid when the points are merely parallel.",
+  ));
+}
+
 function effectiveTextBackground(slide, shapes, textIndex, tolerance) {
   const textRect = rect(shapes[textIndex]);
   const containers = shapes
@@ -513,6 +571,7 @@ export function lintPlan(plan) {
     const shapes = slide.shapes ?? [];
     const byId = new Map(shapes.map((shape) => [shape.id, shape]));
     lintPeerGroups(slide, byId, diagnostics, tolerance);
+    lintPolygonTopology(slide, byId, diagnostics, tolerance);
     const insetTokens = new Set(plan.designSystem?.insetTokensPx ?? []);
     const maximumInset = Number(plan.designSystem?.maximumInsetPx);
     const paragraphSpacing = new Set(plan.designSystem?.paragraphSpacingPt ?? []);

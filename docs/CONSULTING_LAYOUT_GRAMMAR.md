@@ -23,7 +23,8 @@ Public consulting material reinforces the semantic choices. McKinsey's account o
 4. Use a matrix or table when the audience must compare the same criteria across options.
 5. Use opposition for two genuinely conflicting positions. Add a synthesis band when the recommendation combines them.
 6. Use a pyramid for hierarchy or narrowing, not merely because there are three points.
-7. Use Venn, puzzle, or radial structures only when overlap, interdependence, or a shared center is the message.
+7. Use a triangle, square, pentagon, hexagon, heptagon, or octagon only when the points form a cycle, system, perimeter, or mutually reinforcing model.
+8. Use Venn, puzzle, or radial structures only when overlap, interdependence, or a shared center is the message.
 
 ## Count-aware default for parallel points
 
@@ -41,6 +42,21 @@ The `point-grid` archetype supports two through nine native point cells. `arrang
 | 9 | `3 + 3 + 3` | nine-part system | matrix only when rows and columns have meaning |
 
 Do not make a last item wider merely to fill space. Center the incomplete row. Do not emphasize more than one peer unless the semantics define multiple named variants.
+
+## Polygon systems from triangle through octagon
+
+The `polygon-cycle` archetype supports three through eight native editable points. Count selects the polygon only after the relationship has been declared.
+
+| Points | Native form | Appropriate meaning |
+|---:|---|---|
+| 3 | Triangle | three mutually reinforcing foundations or tensions |
+| 4 | Square | four controls forming one bounded operating system |
+| 5 | Pentagon | a five-stage recurring cycle or five-part system |
+| 6 | Hexagon | six connected capabilities around one outcome |
+| 7 | Heptagon | seven guardrails defining a perimeter |
+| 8 | Octagon | eight linked levers in a complete system |
+
+Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon nodes keep equal dimensions and hierarchy, sit on exact vertices, and may surround one short shared outcome. At most one node receives the emphasis variant.
 
 ## Opposition, pro/con, and contradiction
 
@@ -66,14 +82,16 @@ Use `layout: "opposition"` for two positions that must be read against one anoth
 
 ## Patterns not promoted to defaults
 
-The source deck contains decorative cylinders, hexagons, puzzle pieces, speedometers, Venns, and stepped rails. They remain available as semantic concepts, but they are not count-based defaults: ornamental geometry increases object count, reduces text capacity, and often implies a relationship the content does not have. Slidewright prefers the simplest structure that makes the logic visible.
+The source deck contains decorative cylinders, puzzle pieces, speedometers, Venns, stepped rails, and polygon motifs. They are never count-based defaults: ornamental geometry increases object count, reduces text capacity, and often implies a relationship the content does not have. Polygon forms are now available only through the semantically guarded `polygon-cycle` archetype. Slidewright still prefers the simplest structure that makes the logic visible.
 
 ## Compiler and lint contract
 
 - `point-grid` accepts 2–9 stable items and `auto|columns|rows|grid` arrangement.
 - `opposition` accepts two sides, a short axis label, and an optional synthesis statement.
+- `polygon-cycle` accepts 3-8 stable items plus an explicit relationship and emits a native triangle through octagon.
 - Every visible element remains a native editable PowerPoint object.
 - `SW031` rejects unequal peer geometry, wrong gutters, and off-center incomplete rows.
+- `SW032` rejects an unsupported polygon relationship, wrong native outline, unequal nodes, or vertex drift.
 - Existing fit, overlap, padding, typography, run-emphasis, export, and rendered-layout rules remain mandatory.
 
 ## Public cross-checks

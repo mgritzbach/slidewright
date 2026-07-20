@@ -51,10 +51,45 @@ test("opposition preserves a balanced decision boundary and optional synthesis b
   assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
 });
 
+test("polygon-cycle compiles native triangle through octagon relationship topologies", () => {
+  const plan = compileDeck(fixture);
+  const polygons = plan.slides.filter((slide) => slide.layout === "polygon-cycle");
+  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.sideCount), [3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(polygons.map((slide) => slide.layoutContract.polygonTopology.geometry), ["triangle", "rect", "pentagon", "hexagon", "heptagon", "octagon"]);
+  for (const slide of polygons) {
+    const topology = slide.layoutContract.polygonTopology;
+    const outline = slide.shapes.find((shape) => shape.id === topology.outlineShapeId);
+    assert.equal(outline.type, "shape");
+    assert.equal(outline.editable, true);
+    assert.equal(topology.nodeSurfaceIds.length, topology.sideCount);
+  }
+  assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
+});
+
+test("polygon-cycle rejects decorative count matching and SW032 catches vertex drift", () => {
+  const invalidRelationship = structuredClone(fixture.slides.find((slide) => slide.id === "triangle-system"));
+  invalidRelationship.relationship = "three-items";
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [invalidRelationship] }), /relationship must be/u);
+
+  const tooFew = structuredClone(invalidRelationship);
+  tooFew.relationship = "system";
+  tooFew.items = tooFew.items.slice(0, 2);
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [tooFew] }), /3-8 related points/u);
+
+  const plan = compileDeck(fixture);
+  const slide = plan.slides.find((item) => item.id === "octagon-system");
+  const nodeId = slide.layoutContract.polygonTopology.nodeSurfaceIds[2];
+  slide.shapes.find((shape) => shape.id === nodeId).position.left += 6;
+  const report = lintPlan(plan);
+  assert.equal(report.valid, false);
+  assert.ok(report.diagnostics.some((item) => item.ruleId === "SW032" && item.slideId === "octagon-system"));
+});
+
 test("copy adaptation preserves the new consulting layouts and their rich-text ownership", () => {
   const result = adaptDeckCopyToFit(fixture);
   const audit = auditAdaptedDeckCopy(fixture, result.spec, result.manifest, result.plan);
   assert.equal(audit.valid, true, JSON.stringify(audit.diagnostics, null, 2));
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "point-grid").length, 8);
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "opposition").length, 1);
+  assert.equal(result.spec.slides.filter((slide) => slide.layout === "polygon-cycle").length, 6);
 });

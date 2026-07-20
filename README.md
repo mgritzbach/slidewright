@@ -17,7 +17,7 @@ The Build Week entry targets **Work & Productivity**. The initial vertical slice
 - overflow, clipping, and formatting lint rules;
 - machine-readable QA evidence for every build.
 
-These are deck-wide contracts, not demo-specific styling. Schema `0.2` resolves a logical design master, page archetypes, typography roles, compact inset tokens, native paragraph spacing, repeated-component families, semantic icon bindings, headline budgets, and strict text/backing containment before any slide is exported. Built-in archetypes now include hero, section, comparison, continuation, native table, semantic icon-list, count-aware 2-9 point-grid, and balanced opposition/synthesis pages. The evidence-based selection rules are documented in [the consulting layout grammar](docs/CONSULTING_LAYOUT_GRAMMAR.md).
+These are deck-wide contracts, not demo-specific styling. Schema `0.2` resolves a logical design master, page archetypes, typography roles, compact inset tokens, native paragraph spacing, repeated-component families, semantic icon bindings, headline budgets, and strict text/backing containment before any slide is exported. Built-in archetypes now include hero, section, comparison, continuation, native table, semantic icon-list, count-aware 2-9 point-grid, semantically guarded triangle-through-octagon relationship systems, and balanced opposition/synthesis pages. The evidence-based selection rules are documented in [the consulting layout grammar](docs/CONSULTING_LAYOUT_GRAMMAR.md).
 
 ## Quick start
 

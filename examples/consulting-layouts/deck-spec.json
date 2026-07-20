@@ -130,6 +130,93 @@
         "body": "Keep customer decisions, rapid experimentation, and market-specific trade-offs close to the operating teams."
       },
       "synthesis": { "runs": [ { "text": "Recommended model — ", "bold": true }, { "text": "centralize standards and platforms; localize customer-facing decisions within explicit guardrails.", "bold": false } ] }
+    },
+    {
+      "id": "triangle-system",
+      "layout": "polygon-cycle",
+      "relationship": "mutual-reinforcement",
+      "title": "Three reinforcing disciplines keep delivery credible",
+      "center": "Credible delivery",
+      "items": [
+        { "id": "evidence", "label": "Evidence", "body": "Ground choices" },
+        { "id": "ownership", "label": "Ownership", "body": "Fix accountability" },
+        { "id": "cadence", "label": "Cadence", "body": "Learn and adapt" }
+      ]
+    },
+    {
+      "id": "square-system",
+      "layout": "polygon-cycle",
+      "relationship": "system",
+      "title": "Four controls form the operating system",
+      "center": "Operating system",
+      "items": [
+        { "id": "scope", "label": "Scope", "body": "Set boundaries" },
+        { "id": "roles", "label": "Roles", "body": "Assign decisions" },
+        { "id": "routines", "label": "Routines", "body": "Coordinate work" },
+        { "id": "measures", "label": "Measures", "body": "Track outcomes" }
+      ]
+    },
+    {
+      "id": "pentagon-cycle",
+      "layout": "polygon-cycle",
+      "relationship": "cycle",
+      "title": "Five stages turn insight into sustained adoption",
+      "center": "Continuous improvement",
+      "items": [
+        { "id": "observe", "label": "Observe", "body": "Gather signals" },
+        { "id": "frame", "label": "Frame", "body": "Define the need" },
+        { "id": "design", "label": "Design", "body": "Shape the answer" },
+        { "id": "deploy", "label": "Deploy", "body": "Put it to work" },
+        { "id": "learn", "label": "Learn", "body": "Improve the model" }
+      ]
+    },
+    {
+      "id": "hexagon-system",
+      "layout": "polygon-cycle",
+      "relationship": "system",
+      "title": "Six connected capabilities sustain customer value",
+      "center": "Customer value",
+      "items": [
+        { "id": "insight-system", "label": "Insight", "body": "Know the job" },
+        { "id": "product", "label": "Product", "body": "Solve the need" },
+        { "id": "channel-system", "label": "Channel", "body": "Reach demand" },
+        { "id": "service", "label": "Service", "body": "Deliver reliably" },
+        { "id": "data", "label": "Data", "body": "Guide choices" },
+        { "id": "talent", "label": "Talent", "body": "Build capability" }
+      ]
+    },
+    {
+      "id": "heptagon-perimeter",
+      "layout": "polygon-cycle",
+      "relationship": "perimeter",
+      "title": "Seven guardrails protect execution without slowing it",
+      "center": "Safe execution",
+      "items": [
+        { "id": "purpose", "label": "Purpose", "body": "Clarify intent" },
+        { "id": "rights", "label": "Rights", "body": "Fix authority" },
+        { "id": "funding", "label": "Funding", "body": "Bound exposure" },
+        { "id": "data-guardrail", "label": "Data", "body": "Protect access" },
+        { "id": "risk-guardrail", "label": "Risk", "body": "Set tolerance" },
+        { "id": "review-guardrail", "label": "Review", "body": "Test evidence" },
+        { "id": "escalation", "label": "Escalation", "body": "Resolve exceptions" }
+      ]
+    },
+    {
+      "id": "octagon-system",
+      "layout": "polygon-cycle",
+      "relationship": "mutual-reinforcement",
+      "title": "Eight linked levers determine whether transformation lasts",
+      "center": "Durable change",
+      "items": [
+        { "id": "direction", "label": "Direction", "body": "Set ambition" },
+        { "id": "portfolio-system", "label": "Portfolio", "body": "Choose priorities" },
+        { "id": "process-system", "label": "Process", "body": "Redesign work" },
+        { "id": "technology-system", "label": "Technology", "body": "Enable scale" },
+        { "id": "people-system", "label": "People", "body": "Build skills" },
+        { "id": "governance-system", "label": "Governance", "body": "Make decisions" },
+        { "id": "metrics-system", "label": "Metrics", "body": "Track value" },
+        { "id": "adoption-system", "label": "Adoption", "body": "Change behavior" }
+      ]
     }
   ]
 }
