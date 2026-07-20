@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -23,19 +24,53 @@ function command(name, args = ["--version"]) {
   return result.status === 0 ? String(result.stdout || result.stderr).trim().split(/\r?\n/u)[0] : null;
 }
 
+function firstFile(candidates) {
+  return candidates.find((candidate) => candidate && fsSync.existsSync(candidate)) ?? null;
+}
+
+function libreOfficeExecutable(platform) {
+  if (process.env.SLIDEWRIGHT_LIBREOFFICE) return path.resolve(process.env.SLIDEWRIGHT_LIBREOFFICE);
+  if (platform === "win32") return firstFile([
+    "C:\\Program Files\\LibreOffice\\program\\soffice.com",
+    "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+    "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.com",
+    "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
+  ]);
+  if (platform === "darwin") return firstFile(["/Applications/LibreOffice.app/Contents/MacOS/soffice"]);
+  return command("sh", ["-lc", "command -v soffice || command -v libreoffice"]);
+}
+
+function pdfRendererExecutable(platform) {
+  if (process.env.SLIDEWRIGHT_PDFTOPPM) return path.resolve(process.env.SLIDEWRIGHT_PDFTOPPM);
+  if (platform === "win32") return firstFile([
+    path.join(os.homedir(), ".cache", "codex-runtimes", "codex-primary-runtime", "dependencies", "native", "poppler", "Library", "bin", "pdftoppm.exe"),
+  ]) ?? "pdftoppm.exe";
+  return "pdftoppm";
+}
+
 function capabilityStatus() {
   const platform = process.platform;
   const powerpointPath = platform === "win32"
     ? "C:\\Program Files\\Microsoft Office\\Root\\Office16\\POWERPNT.EXE"
     : "/Applications/Microsoft PowerPoint.app";
   const keynotePath = "/Applications/Keynote.app";
-  const libreOfficeVersion = command(platform === "win32" ? "soffice.exe" : "soffice");
+  const libreOfficePath = libreOfficeExecutable(platform);
+  const libreOfficeVersion = libreOfficePath ? command(libreOfficePath) : null;
+  const libreOfficeRunner = firstFile([
+    path.join(process.cwd(), "scripts", "c19", "run_libreoffice_suite.mjs"),
+  ]);
+  const javaAvailable = Boolean(command("java", ["-version"]));
+  const javacAvailable = Boolean(command("javac", ["-version"]));
+  const pdfRendererAvailable = Boolean(command(pdfRendererExecutable(platform), ["-v"]));
+  const libreOfficeCallable = Boolean(libreOfficeVersion && libreOfficeRunner && javaAvailable && javacAvailable && pdfRendererAvailable);
   return [
     { id: "powerpoint-windows", callable: platform === "win32" && command("powershell", ["-NoProfile", "-Command", `(Test-Path '${powerpointPath.replaceAll("'", "''")}')`]) === "True", evidence: false, reason: platform === "win32" ? "Application detected; a clean-commit COM suite run is still required." : "Requires a Windows suite host." },
     { id: "powerpoint-macos", callable: platform === "darwin" && command("test", ["-d", powerpointPath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
     { id: "google-slides", callable: false, evidence: false, reason: "Requires an authenticated browser-automation import/edit/export job; URL access alone is not evidence." },
     { id: "keynote-macos", callable: platform === "darwin" && command("test", ["-d", keynotePath]) !== null, evidence: false, reason: "Requires a clean-commit macOS AppleScript suite run." },
-    { id: "libreoffice", callable: Boolean(libreOfficeVersion), evidence: false, reason: libreOfficeVersion ? `Detected ${libreOfficeVersion}; a clean-commit UNO suite run is still required.` : "LibreOffice/soffice was not detected on this host." },
+    { id: "libreoffice", callable: libreOfficeCallable, evidence: false, reason: libreOfficeCallable
+      ? `Detected ${libreOfficeVersion} with UNO Java bridge runner and PDF renderer; a clean-commit suite run is still required.`
+      : "LibreOffice suite requires soffice, Java/Javac, pdftoppm, and the repository UNO runner on one host." },
     { id: "canva", callable: false, evidence: false, reason: "Requires an authenticated browser-automation import/edit/export job; URL access alone is not evidence." },
   ];
 }

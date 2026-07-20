@@ -226,3 +226,18 @@ test("C19 PowerPoint Windows adapter owns an isolated application and performs a
   assert.match(runner, /verifyArtifactBodies: true/u);
   assert.match(runner, /runC19DestructiveControls/u);
 });
+
+test("C19 LibreOffice adapter owns an isolated UNO process and performs a native edit", async () => {
+  const worker = await fs.readFile(path.join(root, "scripts", "c19", "LibreOfficeUnoWorker.java"), "utf8");
+  const runner = await fs.readFile(path.join(root, "scripts", "c19", "run_libreoffice_suite.mjs"), "utf8");
+  assert.match(runner, /requires LibreOffice to be fully closed/u);
+  assert.match(runner, /--accept=socket,host=127\.0\.0\.1/u);
+  assert.match(runner, /ownedProcessExitedNaturally: true/u);
+  assert.doesNotMatch(runner, /taskkill|Stop-Process|\.kill\s*\(/iu);
+  assert.match(worker, /targetText\.setString\(replacement\)/u);
+  assert.match(worker, /Impress MS PowerPoint 2007 XML/u);
+  assert.match(worker, /reopenedNativeTextMatched/u);
+  assert.match(worker, /impress_pdf_Export/u);
+  assert.match(runner, /verifyArtifactBodies: true/u);
+  assert.match(runner, /runC19DestructiveControls/u);
+});

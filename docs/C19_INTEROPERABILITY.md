@@ -39,6 +39,14 @@ The Windows adapter uses a newly owned hidden PowerPoint COM process, refuses a 
 node scripts/c19/run_powerpoint_windows_suite.mjs --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
 ```
 
+The LibreOffice adapter refuses every pre-existing LibreOffice process, launches an isolated headless profile and socket, performs the sentinel edit through the real UNO Java bridge, exports and reopens PPTX, exports a PDF through Impress, renders every PDF page, waits for natural application termination, and applies the same independent OOXML and destructive-control gates:
+
+```text
+npm run interoperability:libreoffice -- --source <semantic-surface.pptx> --out <artifact-root> --repository <owner/repo>
+```
+
+The host must provide LibreOffice, Java/Javac, and `pdftoppm`. Override discovery only with explicit executable paths: `SLIDEWRIGHT_LIBREOFFICE`, `SLIDEWRIGHT_JAVA`, `SLIDEWRIGHT_JAVAC`, and `SLIDEWRIGHT_PDFTOPPM`. Installation or detection never counts as evidence; only a clean-commit bundle that independently validates does.
+
 After all seven GitHub artifacts (six suite bundles and the matrix artifact) are downloaded, publish only through:
 
 ```text
@@ -50,4 +58,4 @@ Running the benchmark without `--evidence` prints capability and publication sta
 
 ## Current proof boundary
 
-The contract, importer, verifier, destructive controls, and host harness exist. Until six real bundles are imported, `evidence/c19/v1/current.json` does not exist and the release verifier fails. That explicit pending state is intentional. The current Windows host detects PowerPoint, but detection is not credited and the macOS and authenticated web suites require their respective hosts and sessions.
+The contract, importer, verifier, destructive controls, PowerPoint Windows adapter, and LibreOffice UNO adapter exist. Until six real bundles are imported, `evidence/c19/v1/current.json` does not exist and the release verifier fails. That explicit pending state is intentional. Application detection is not credited, and the macOS and authenticated web suites require their respective hosts and sessions.
