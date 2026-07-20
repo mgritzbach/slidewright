@@ -217,6 +217,16 @@ function inspectText(value, objectPath, diagnostics) {
   inspectTextStructure(value, objectPath, diagnostics);
 }
 
+function inspectStructuredItems(items, objectPath, diagnostics, allowedKeys) {
+  if (!Array.isArray(items)) return;
+  items.forEach((item, itemIndex) => {
+    const itemPath = `${objectPath}.items[${itemIndex}]`;
+    unknownKeys(item, allowedKeys, itemPath, diagnostics);
+    inspectText(item?.label, `${itemPath}.label`, diagnostics);
+    inspectText(item?.body, `${itemPath}.body`, diagnostics);
+  });
+}
+
 function specStructureDiagnostics(spec) {
   const diagnostics = [];
   unknownKeys(spec, ["version", "title", "canvas", "layout", "theme", "coverage", "slides"], "spec", diagnostics);
@@ -275,6 +285,46 @@ function specStructureDiagnostics(spec) {
       if (Array.isArray(slide.items)) slide.items.forEach((item, itemIndex) => {
         unknownKeys(item, ["id", "label", "body", "conceptId", "icon"], `${objectPath}.items[${itemIndex}]`, diagnostics);
         inspectText(item?.body, `${objectPath}.items[${itemIndex}].body`, diagnostics);
+      });
+    } else if (slide.layout === "point-grid") {
+      unknownKeys(slide, [...shared, "title", "items", "arrangement"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectStructuredItems(slide.items, objectPath, diagnostics, ["id", "label", "body", "emphasis"]);
+    } else if (slide.layout === "polygon-cycle") {
+      unknownKeys(slide, [...shared, "title", "center", "items", "relationship"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectText(slide.center, `${objectPath}.center`, diagnostics);
+      inspectStructuredItems(slide.items, objectPath, diagnostics, ["id", "label", "body", "marker", "emphasis"]);
+    } else if (slide.layout === "opposition") {
+      unknownKeys(slide, [...shared, "title", "axisLabel", "left", "right", "synthesis"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectText(slide.synthesis, `${objectPath}.synthesis`, diagnostics);
+      for (const side of ["left", "right"]) {
+        unknownKeys(slide[side], ["heading", "body"], `${objectPath}.${side}`, diagnostics);
+        inspectText(slide[side]?.heading, `${objectPath}.${side}.heading`, diagnostics);
+        inspectText(slide[side]?.body, `${objectPath}.${side}.body`, diagnostics);
+      }
+    } else if (slide.layout === "quadrant-focus") {
+      unknownKeys(slide, [...shared, "title", "center", "items"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectText(slide.center, `${objectPath}.center`, diagnostics);
+      inspectStructuredItems(slide.items, objectPath, diagnostics, ["id", "label", "body", "conceptId", "icon"]);
+    } else if (slide.layout === "chevron-flow") {
+      unknownKeys(slide, [...shared, "title", "subtitle", "takeaway", "items"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectText(slide.subtitle, `${objectPath}.subtitle`, diagnostics);
+      inspectText(slide.takeaway, `${objectPath}.takeaway`, diagnostics);
+      inspectStructuredItems(slide.items, objectPath, diagnostics, ["id", "label", "body", "conceptId", "icon", "emphasis"]);
+    } else if (slide.layout === "icon-network") {
+      unknownKeys(slide, [...shared, "title", "topology", "items"], objectPath, diagnostics);
+      inspectText(slide.title, `${objectPath}.title`, diagnostics);
+      inspectStructuredItems(slide.items, objectPath, diagnostics, ["id", "label", "body", "conceptId", "icon", "emphasis"]);
+    } else {
+      diagnostics.push({
+        ruleId: "SWP009",
+        severity: "error",
+        message: `${objectPath}.layout is not a guarded Slidewright archetype.`,
+        remediation: "Use one of the twelve compiler-owned layouts; custom geometry is not accepted through the guarded request path.",
       });
     }
     unknownKeys(slide.headlineSplit, ["ratio", "side"], `${objectPath}.headlineSplit`, diagnostics);

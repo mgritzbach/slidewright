@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slidewright.dev/schemas/pattern-catalog-v1.json",
+  "title": "Slidewright consulting pattern catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogVersion", "title", "portfolioPolicy", "patterns"],
+  "properties": {
+    "schemaVersion": { "const": "slidewright-pattern-catalog/v1" },
+    "catalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "portfolioPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classicAnalytical", "contemporaryGeometric", "boldNarrative", "principle"],
+      "properties": {
+        "classicAnalytical": { "const": 60 },
+        "contemporaryGeometric": { "const": 30 },
+        "boldNarrative": { "const": 10 },
+        "principle": { "type": "string", "minLength": 1 }
+      }
+    },
+    "patterns": {
+      "type": "array",
+      "minItems": 100,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "ordinal", "name", "family", "familyLabel", "archetype",
+          "implementationLevel", "selector", "variantParams", "slotContract",
+          "designContract", "semanticSignature", "visualReview", "styleClass", "qualityTags", "provenance"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^c[0-9]{3}-[a-z0-9-]+$" },
+          "ordinal": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "name": { "type": "string", "minLength": 1 },
+          "family": { "type": "string", "minLength": 1 },
+          "familyLabel": { "type": "string", "minLength": 1 },
+          "archetype": {
+            "enum": ["hero", "two-column", "section", "continuation", "table", "icon-list", "point-grid", "polygon-cycle", "opposition", "quadrant-focus", "chevron-flow", "icon-network"]
+          },
+          "implementationLevel": { "enum": ["reviewed-release-candidate", "engine-backed-recipe", "structural-blueprint"] },
+          "selector": { "type": "object" },
+          "variantParams": { "type": "object" },
+          "slotContract": { "type": "object" },
+          "designContract": { "type": "object" },
+          "semanticSignature": { "type": "object" },
+          "visualReview": { "type": "object" },
+          "styleClass": { "enum": ["classic-analytical", "contemporary-geometric", "bold-narrative"] },
+          "qualityTags": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "provenance": { "type": "object" }
+        }
+      }
+    }
+  }
+}

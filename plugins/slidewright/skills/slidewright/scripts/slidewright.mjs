@@ -18,12 +18,16 @@ import { compileProfileContentSpec } from "./lib/compile_profile_derivation.mjs"
 import { compileProfileComposition } from "./lib/compile_profile_composition.mjs";
 import { runRequestBuild, verifyRequestRun } from "./lib/request-build.mjs";
 import { adaptDeckCopyToFit } from "./lib/copy-adaptation.mjs";
+import { instantiatePatternRequest, listPatterns, loadPatternCatalog, selectPattern } from "./lib/pattern-catalog.mjs";
 
 function usage() {
   return `Slidewright
 
 Usage:
   slidewright bootstrap
+  slidewright patterns list --out <catalog-index.json>
+  slidewright patterns select <intent.json> --out <selection-receipt.json>
+  slidewright patterns generate <pattern-request.json> --out <deck-spec.json> --receipt <selection-receipt.json>
   slidewright request <request.json> --out <run-directory> [--reference-profile <profile.json>]
   slidewright request-verify <run-directory> --out <report.json>
   slidewright adapt <spec.json> --out <adapted-spec.json> --manifest <adaptation.json>
@@ -74,6 +78,43 @@ export async function main(args = process.argv.slice(2)) {
     await writeJson(out, report);
     process.stdout.write(`Preflight ${report.valid ? "passed" : "failed"}: ${report.checks.filter((check) => check.required && !check.ok).length} required capability failure(s)\n`);
     return report.valid ? 0 : 2;
+  }
+  if (command === "patterns") {
+    const action = input;
+    if (action === "list") {
+      const catalog = await loadPatternCatalog();
+      const patterns = await listPatterns({
+        family: option(args, "--family"),
+        archetype: option(args, "--archetype"),
+        styleClass: option(args, "--style-class"),
+      });
+      await writeJson(out, {
+        schemaVersion: catalog.schemaVersion,
+        catalogVersion: catalog.catalogVersion,
+        patternCount: patterns.length,
+        patterns: patterns.map(({ id, ordinal, name, family, familyLabel, archetype, implementationLevel, styleClass, selector, semanticSignature, visualReview, qualityTags }) => ({ id, ordinal, name, family, familyLabel, archetype, implementationLevel, styleClass, selector, semanticSignature, visualReview, qualityTags })),
+      });
+      process.stdout.write(`Listed ${patterns.length} Slidewright consulting patterns.\n`);
+      return 0;
+    }
+    const requestPath = args[2];
+    if (!requestPath) throw new Error(`An input file is required for 'patterns ${action ?? "<action>"}'.`);
+    if (action === "select") {
+      const receipt = await selectPattern(await readJson(requestPath));
+      await writeJson(out, receipt);
+      process.stdout.write(`Selected pattern ${receipt.selectedId} with deterministic catalog receipt.\n`);
+      return 0;
+    }
+    if (action === "generate") {
+      const receiptPath = option(args, "--receipt");
+      if (!receiptPath) throw new Error("--receipt is required for pattern generation.");
+      const result = await instantiatePatternRequest(await readJson(requestPath));
+      await writeJson(out, result.spec);
+      await writeJson(receiptPath, result.receipt);
+      process.stdout.write(`Generated ordinary v0.2 deck spec from pattern ${result.receipt.selectedId}.\n`);
+      return 0;
+    }
+    throw new Error(`Unknown patterns action '${action}'. Expected list, select, or generate.`);
   }
   if (!input) throw new Error(`An input file is required for '${command}'.`);
   if (command === "request") {

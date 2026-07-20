@@ -12,6 +12,7 @@ import {
 } from "../plugins/slidewright/skills/slidewright/scripts/lib/request-policy.mjs";
 import { runRequestBuild, verifyRequestRun } from "../plugins/slidewright/skills/slidewright/scripts/lib/request-build.mjs";
 import { parseStrictJson } from "../plugins/slidewright/skills/slidewright/scripts/lib/strict-json.mjs";
+import { instantiatePattern } from "../plugins/slidewright/skills/slidewright/scripts/lib/pattern-catalog.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureDir = path.join(root, "fixtures", "prompt-robustness", "v1");
@@ -109,6 +110,27 @@ test("strict policy permits only the declared domain-independent executive-revie
   const unknownControl = evaluateRequestPolicy(request);
   assert.equal(unknownControl.valid, false);
   assert.ok(unknownControl.diagnostics.some((item) => item.ruleId === "SWP009" && /overrideQualityGate/u.test(item.message)));
+});
+
+test("strict policy fails closed on unknown controls for all six consulting archetypes", async () => {
+  const representatives = [
+    "c007-ceo-four-priority-scorecard",
+    "c040-three-discipline-triangle",
+    "c011-pro-con-with-asymmetric-recommendation",
+    "c017-risk-reward-quadrant",
+    "c023-three-step-chevrons",
+    "c044-six-node-hexagonal-hub",
+  ];
+  for (const [index, patternId] of representatives.entries()) {
+    const spec = await instantiatePattern(patternId);
+    const slide = spec.slides[0];
+    const valid = evaluateRequestPolicy({ schemaVersion: REQUEST_SCHEMA_VERSION, id: `consulting-valid-${index}`, prompt: "Build the declared slide.", spec });
+    assert.equal(valid.valid, true, `${patternId}: ${JSON.stringify(valid.diagnostics)}`);
+    slide.overrideGeometry = { left: 0, top: 0 };
+    const invalid = evaluateRequestPolicy({ schemaVersion: REQUEST_SCHEMA_VERSION, id: `consulting-invalid-${index}`, prompt: "Build the declared slide.", spec });
+    assert.equal(invalid.valid, false, patternId);
+    assert.ok(invalid.diagnostics.some((item) => item.ruleId === "SWP009" && /overrideGeometry/u.test(item.message)), patternId);
+  }
 });
 
 test("a rejected request atomically publishes only inert evidence and cannot create a deck", async () => {
