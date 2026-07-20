@@ -424,21 +424,11 @@ function lintPeerGroups(slide, byId, diagnostics, tolerance) {
 const POLYGON_GEOMETRY = Object.freeze({ 3: "triangle", 4: "rect", 5: "pentagon", 6: "hexagon", 7: "heptagon", 8: "octagon", 9: "nonagon", 10: "decagon", 11: "undecagon", 12: "dodecagon" });
 const POLYGON_RELATIONSHIPS = new Set(["cycle", "system", "perimeter", "mutual-reinforcement"]);
 
-function polygonVertexCenters(count, centerX, centerY, radiusX, radiusY) {
-  if (count === 3) return [
-    { x: centerX, y: centerY - radiusY },
-    { x: centerX + radiusX, y: centerY + radiusY },
-    { x: centerX - radiusX, y: centerY + radiusY },
-  ];
-  if (count === 4) return [
-    { x: centerX - radiusX, y: centerY - radiusY },
-    { x: centerX + radiusX, y: centerY - radiusY },
-    { x: centerX + radiusX, y: centerY + radiusY },
-    { x: centerX - radiusX, y: centerY + radiusY },
-  ];
+function polygonVertexCenters(count, centerX, centerY, radius) {
+  const startAngle = count % 2 === 0 ? -Math.PI / 2 - Math.PI / count : -Math.PI / 2;
   return Array.from({ length: count }, (_, pointIndex) => {
-    const angle = -Math.PI / 2 + pointIndex * 2 * Math.PI / count;
-    return { x: centerX + Math.cos(angle) * radiusX, y: centerY + Math.sin(angle) * radiusY };
+    const angle = startAngle + pointIndex * 2 * Math.PI / count;
+    return { x: centerX + Math.cos(angle) * radius, y: centerY + Math.sin(angle) * radius };
   });
 }
 
@@ -479,9 +469,13 @@ function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
   if (markers.length !== sideCount || markers.some((marker) => !marker)) reasons.push("segment marker binding does not match the side count");
   if (nodes.length !== sideCount || nodes.some((node) => !node)) reasons.push("node binding does not match the side count");
   if (topology.geometry !== POLYGON_GEOMETRY[sideCount]) reasons.push(`polygon metadata geometry must be '${POLYGON_GEOMETRY[sideCount]}'`);
+  if (topology.connectorMode !== "none" || (topology.connectorShapeIds ?? []).length !== 0) reasons.push("polygon callouts must be adjacent and connector-free");
+  if (topology.centerPlacement !== "visual-centroid") reasons.push("center statement must use the visual centroid");
   if (!reasons.length) {
     const ring = topology.ringBounds;
-    const expectedVertices = polygonVertexCenters(sideCount, ring.left + ring.width / 2, ring.top + ring.height / 2, ring.width / 2, ring.height / 2);
+    const circle = topology.circumcircle ?? { centerX: Number.NaN, centerY: Number.NaN, radius: Number.NaN };
+    if (!topology.circumcircle || !nearlyEqual(ring.width, ring.height, tolerance) || !nearlyEqual(circle.radius * 2, ring.width, tolerance) || !nearlyEqual(circle.centerX, ring.left + ring.width / 2, tolerance) || !nearlyEqual(circle.centerY, ring.top + ring.height / 2, tolerance)) reasons.push("polygon ring is not bound to one true circumcircle");
+    const expectedVertices = polygonVertexCenters(sideCount, circle.centerX, circle.centerY, circle.radius);
     const expectedSegments = polygonEdgeSegments(expectedVertices, topology.beamGap);
     segments.forEach((segment, segmentIndex) => {
       const expected = expectedSegments[segmentIndex];
@@ -504,12 +498,111 @@ function lintPolygonTopology(slide, byId, diagnostics, tolerance) {
       const center = byId.get(topology.centerShapeId);
       const centerSurface = byId.get(topology.centerSurfaceId);
       if (!centerSurface || centerSurface.role !== "polygon-center" || !center || center.parentId !== centerSurface.id || center.backingId !== centerSurface.id) reasons.push("center statement is not bound inside the segmented polygon ring");
+      else {
+        const centerX = centerSurface.position.left + centerSurface.position.width / 2;
+        const centerY = centerSurface.position.top + centerSurface.position.height / 2;
+        if (!nearlyEqual(centerX, circle.centerX, tolerance) || !nearlyEqual(centerY, circle.centerY, tolerance)) reasons.push("center statement drifted from the polygon visual centroid");
+        if (sideCount === 3 && (centerSurface.position.width > circle.radius || centerSurface.position.height > circle.radius / 2)) reasons.push("triangle center statement exceeds the protected central region");
+      }
     }
   }
   if (reasons.length) diagnostics.push(diagnostic(
     "SW032", "error", slide.id, topology.fieldShapeId ?? null,
     `Polygon relationship topology failed: ${[...new Set(reasons)].join("; ")}.`,
     "Restore the native 3-12 sided segmented ring, its editable edge beams, and the segment-bound callouts; use a grid when the points are merely parallel.",
+  ));
+}
+
+function lintQuadrantTopology(slide, byId, diagnostics, tolerance) {
+  const topology = slide.layoutContract?.quadrantTopology;
+  if (!topology) return;
+  const reasons = [];
+  const zones = (topology.zoneSurfaceIds ?? []).map((id) => byId.get(id));
+  const dividers = (topology.dividerShapeIds ?? []).map((id) => byId.get(id));
+  const center = byId.get(topology.centerSurfaceId);
+  const centerText = byId.get(topology.centerTextId);
+  if (zones.length !== 4 || zones.some((zone) => !zone || zone.role !== "quadrant-zone")) reasons.push("quadrant must bind exactly four native zones");
+  if (dividers.length !== 4 || dividers.some((divider) => !divider || divider.role !== "quadrant-divider")) reasons.push("quadrant must bind four center-terminated dividers");
+  if (!center || center.role !== "quadrant-center" || center.geometry !== "diamond" || topology.centerGeometry !== "diamond") reasons.push("quadrant center must be one native diamond");
+  if (!centerText || centerText.parentId !== center?.id || centerText.backingId !== center?.id) reasons.push("quadrant center text is not bound inside the diamond");
+  if (topology.dividerMode !== "center-terminated-underlay") reasons.push("quadrant dividers must terminate at and render beneath the center diamond");
+  if (!reasons.length) {
+    const width = zones[0].position.width;
+    const height = zones[0].position.height;
+    if (zones.some((zone) => !nearlyEqual(zone.position.width, width, tolerance) || !nearlyEqual(zone.position.height, height, tolerance))) reasons.push("quadrant zones do not share equal dimensions");
+    if (!nearlyEqual(center.position.width, center.position.height, tolerance)) reasons.push("quadrant center diamond is not symmetric");
+    const centerIndex = slide.shapes.findIndex((shape) => shape.id === center.id);
+    if (dividers.some((divider) => slide.shapes.findIndex((shape) => shape.id === divider.id) >= centerIndex)) reasons.push("quadrant divider is not rendered beneath the center diamond");
+    if (dividers.some((divider) => fillColor(divider)?.toLowerCase() !== center.line?.color?.toLowerCase())) reasons.push("quadrant divider color does not match the center rim");
+  }
+  if (reasons.length) diagnostics.push(diagnostic(
+    "SW033", "error", slide.id, topology.centerSurfaceId ?? null,
+    `Quadrant separation topology failed: ${[...new Set(reasons)].join("; ")}.`,
+    "Restore four equal open zones, center-terminated matching dividers, and the native central diamond.",
+  ));
+}
+
+function lintFlowTopology(slide, byId, diagnostics, tolerance) {
+  const topology = slide.layoutContract?.flowTopology;
+  if (!topology) return;
+  const reasons = [];
+  const count = Number(topology.sequenceCount);
+  const steps = (topology.stepSurfaceIds ?? []).map((id) => byId.get(id));
+  if (!Number.isInteger(count) || count < 3 || count > 5 || steps.length !== count || steps.some((step) => !step)) reasons.push("flow must bind three through five steps");
+  if (topology.geometry !== "chevron" || topology.connectorMode !== "intrinsic") reasons.push("flow must use intrinsic native chevrons without leader lines");
+  if (!reasons.length) {
+    const first = steps[0].position;
+    steps.forEach((step, stepIndex) => {
+      if (step.role !== "flow-step" || step.geometry !== "chevron") reasons.push(`step ${stepIndex + 1} is not a native chevron`);
+      if (!nearlyEqual(step.position.top, first.top, tolerance) || !nearlyEqual(step.position.width, first.width, tolerance) || !nearlyEqual(step.position.height, first.height, tolerance)) reasons.push("flow steps do not share one baseline and equal geometry");
+      if (stepIndex > 0) {
+        const previous = steps[stepIndex - 1].position;
+        const actualGap = step.position.left - previous.left - previous.width;
+        if (!nearlyEqual(actualGap, topology.gap, tolerance)) reasons.push("flow step gap drifted from the sequence contract");
+      }
+    });
+  }
+  if (reasons.length) diagnostics.push(diagnostic(
+    "SW034", "error", slide.id, topology.stepSurfaceIds?.[0] ?? null,
+    `Chevron flow topology failed: ${[...new Set(reasons)].join("; ")}.`,
+    "Restore the ordered equal-size native chevrons; directional shape geometry should carry the flow without extra connectors.",
+  ));
+}
+
+function lintNetworkTopology(slide, byId, diagnostics, tolerance) {
+  const topology = slide.layoutContract?.networkTopology;
+  if (!topology) return;
+  const reasons = [];
+  const nodes = (topology.nodeSurfaceIds ?? []).map((id) => byId.get(id));
+  const connectors = (topology.connectorShapeIds ?? []).map((id) => byId.get(id));
+  const validCount = topology.topology === "honeycomb"
+    ? nodes.length === 7
+    : topology.topology === "pyramid"
+      ? [3, 6, 10].includes(nodes.length)
+      : topology.topology === "square" && [4, 9].includes(nodes.length);
+  if (!validCount || nodes.some((node) => !node || node.role !== "network-node")) reasons.push("network node count does not match its declared topology");
+  if (!["honeycomb", "pyramid", "square"].includes(topology.topology)) reasons.push("network topology is unsupported");
+  if (nodes.some((node) => node.geometry !== topology.geometry)) reasons.push("network node geometry drifted");
+  if (topology.emphasisIndex != null && (topology.emphasisIndex < -1 || topology.emphasisIndex >= nodes.length)) reasons.push("network emphasis index is invalid");
+  if (topology.topology === "honeycomb") {
+    if (topology.connectorMode !== "adjacent" || connectors.length !== 0) reasons.push("honeycomb must communicate connection through adjacent hexagons without leader lines");
+  } else {
+    if (topology.connectorMode !== "underlay" || connectors.length !== (topology.connectorPairs ?? []).length || connectors.some((connector) => !connector)) reasons.push("network underlay connector binding is incomplete");
+  }
+  if (!reasons.length && topology.connectorMode === "underlay") {
+    const firstNodeIndex = Math.min(...nodes.map((node) => slide.shapes.findIndex((shape) => shape.id === node.id)));
+    connectors.forEach((connector, connectorIndex) => {
+      const [fromIndex, toIndex] = topology.connectorPairs[connectorIndex];
+      const target = nodes[toIndex];
+      if (slide.shapes.findIndex((shape) => shape.id === connector.id) >= firstNodeIndex) reasons.push("network connector is not rendered beneath every node");
+      if (connector.semanticBinding?.fromSurfaceId !== nodes[fromIndex].id || connector.semanticBinding?.toSurfaceId !== target.id) reasons.push("network connector endpoint binding drifted");
+      if (fillColor(connector)?.toLowerCase() !== target.line?.color?.toLowerCase() || connector.semanticBinding?.targetRimColor?.toLowerCase() !== target.line?.color?.toLowerCase()) reasons.push("network connector does not match its target node rim color");
+    });
+  }
+  if (reasons.length) diagnostics.push(diagnostic(
+    "SW035", "error", slide.id, topology.nodeSurfaceIds?.[0] ?? null,
+    `Icon network topology failed: ${[...new Set(reasons)].join("; ")}.`,
+    "Restore the declared honeycomb, pyramid, or square node graph; render any required connectors beneath nodes and match the destination rim color.",
   ));
 }
 
@@ -606,6 +699,9 @@ export function lintPlan(plan) {
     const byId = new Map(shapes.map((shape) => [shape.id, shape]));
     lintPeerGroups(slide, byId, diagnostics, tolerance);
     lintPolygonTopology(slide, byId, diagnostics, tolerance);
+    lintQuadrantTopology(slide, byId, diagnostics, tolerance);
+    lintFlowTopology(slide, byId, diagnostics, tolerance);
+    lintNetworkTopology(slide, byId, diagnostics, tolerance);
     const insetTokens = new Set(plan.designSystem?.insetTokensPx ?? []);
     const maximumInset = Number(plan.designSystem?.maximumInsetPx);
     const paragraphSpacing = new Set(plan.designSystem?.paragraphSpacingPt ?? []);
@@ -940,9 +1036,10 @@ export function lintPlan(plan) {
     }
 
     const frameRect = { left: slide.frame.left, top: slide.frame.top, right: slide.frame.left + slide.frame.width, bottom: slide.frame.top + slide.frame.height };
+    const structuralSplitIds = new Set((slide.layoutContract?.structuralSplits ?? []).map((split) => split.shapeId));
     const topLevelShapes = shapes
       .filter((shape, index) => !shapes.some((candidate, candidateIndex) => candidateIndex !== index && candidate.type === "shape" && contains(rect(candidate), rect(shape), tolerance)))
-      .filter((shape) => shape.role !== "polygon-field");
+      .filter((shape) => shape.role !== "polygon-field" && !structuralSplitIds.has(shape.id));
     const topLevelRects = topLevelShapes
       .map((shape) => rect(shape))
       .map((item) => ({
@@ -961,7 +1058,6 @@ export function lintPlan(plan) {
       for (let rightIndex = leftIndex + 1; rightIndex < topLevelShapes.length; rightIndex += 1) {
         const leftPeer = topLevelShapes[leftIndex];
         const rightPeer = topLevelShapes[rightIndex];
-        const structuralSplitIds = new Set((slide.layoutContract?.structuralSplits ?? []).map((split) => split.shapeId));
         if (structuralSplitIds.has(leftPeer.id) || structuralSplitIds.has(rightPeer.id)) continue;
         const a = rect(leftPeer);
         const b = rect(rightPeer);

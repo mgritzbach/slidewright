@@ -87,6 +87,30 @@ export const DEFAULT_ARCHETYPES = Object.freeze({
     requiredBackedRoles: Object.freeze({ subheading: 2, body: 2 }),
     componentFamilies: Object.freeze({ "opposition-side": Object.freeze({ minimumInstances: 2, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["left", "right"]) }) }),
   }),
+  "quadrant-focus": Object.freeze({
+    pageRole: "structured-separation",
+    requiredStyleRoles: Object.freeze(["slide-title", "icon", "component-heading", "component-body", "callout"]),
+    requiredBackedRoles: Object.freeze({ icon: 4, subheading: 4, body: 4, callout: 1 }),
+    componentFamilies: Object.freeze({ "quadrant-item": Object.freeze({ minimumInstances: 4, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default"]) }) }),
+    requiresSemanticIcons: true,
+    minimumSemanticIcons: 4,
+  }),
+  "chevron-flow": Object.freeze({
+    pageRole: "process-flow",
+    requiredStyleRoles: Object.freeze(["slide-title", "icon", "component-heading", "component-body"]),
+    requiredBackedRoles: Object.freeze({ icon: 3, subheading: 3, body: 3 }),
+    componentFamilies: Object.freeze({ "flow-step": Object.freeze({ minimumInstances: 3, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
+    requiresSemanticIcons: true,
+    minimumSemanticIcons: 3,
+  }),
+  "icon-network": Object.freeze({
+    pageRole: "relationship-network",
+    requiredStyleRoles: Object.freeze(["slide-title", "icon", "component-heading", "component-body"]),
+    requiredBackedRoles: Object.freeze({ icon: 3, subheading: 3, body: 3 }),
+    componentFamilies: Object.freeze({ "network-node": Object.freeze({ minimumInstances: 3, requiredSlots: Object.freeze(["heading", "body"]), allowedVariants: Object.freeze(["default", "emphasis"]) }) }),
+    requiresSemanticIcons: true,
+    minimumSemanticIcons: 3,
+  }),
 });
 
 export const DEFAULT_ICON_ONTOLOGY = Object.freeze({

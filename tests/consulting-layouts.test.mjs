@@ -62,6 +62,13 @@ test("polygon-cycle compiles native triangle through dodecagon segmented relatio
     assert.equal(segments.length, topology.sideCount);
     assert.ok(segments.every((segment) => segment.type === "shape" && segment.geometry === "trapezoid" && segment.editable === true));
     assert.equal(topology.nodeSurfaceIds.length, topology.sideCount);
+    assert.equal(topology.ringBounds.width, topology.ringBounds.height);
+    assert.equal(topology.connectorMode, "none");
+    assert.deepEqual(topology.connectorShapeIds, []);
+    assert.equal(topology.centerPlacement, "visual-centroid");
+    const center = slide.shapes.find((shape) => shape.id === topology.centerSurfaceId);
+    assert.equal(center.position.left + center.position.width / 2, topology.circumcircle.centerX);
+    assert.equal(center.position.top + center.position.height / 2, topology.circumcircle.centerY);
   }
   assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
 });
@@ -93,6 +100,53 @@ test("polygon-cycle rejects decorative count matching and SW032 catches vertex d
   assert.ok(report.diagnostics.some((item) => item.ruleId === "SW032" && item.slideId === "octagon-system"));
 });
 
+test("quadrant, chevron, and icon-network archetypes compile as editable structural graphics", () => {
+  const plan = compileDeck(fixture);
+  const quadrant = plan.slides.find((slide) => slide.id === "quadrant-focus");
+  const flow = plan.slides.find((slide) => slide.id === "chevron-flow");
+  const networks = plan.slides.filter((slide) => slide.layout === "icon-network");
+
+  assert.equal(quadrant.layoutContract.quadrantTopology.zoneSurfaceIds.length, 4);
+  assert.equal(quadrant.layoutContract.quadrantTopology.dividerMode, "center-terminated-underlay");
+  assert.equal(flow.layoutContract.flowTopology.connectorMode, "intrinsic");
+  assert.ok(flow.layoutContract.flowTopology.stepSurfaceIds.every((id) => flow.shapes.find((shape) => shape.id === id)?.geometry === "chevron"));
+  assert.deepEqual(networks.map((slide) => slide.layoutContract.networkTopology.topology), ["honeycomb", "pyramid", "square"]);
+  assert.equal(networks[0].layoutContract.networkTopology.connectorShapeIds.length, 0);
+  assert.ok(networks.slice(1).every((slide) => slide.layoutContract.networkTopology.connectorShapeIds.length > 0));
+  assert.ok(plan.slides.flatMap((slide) => slide.shapes).every((shape) => shape.editable === true));
+  assert.equal(lintPlan(plan).valid, true, JSON.stringify(lintPlan(plan).diagnostics, null, 2));
+});
+
+test("SW033-SW035 reject unsafe structural drift", () => {
+  const quadrantPlan = compileDeck(fixture);
+  const quadrant = quadrantPlan.slides.find((slide) => slide.id === "quadrant-focus");
+  const dividerId = quadrant.layoutContract.quadrantTopology.dividerShapeIds[0];
+  quadrant.shapes.find((shape) => shape.id === dividerId).fill = "#000000";
+  assert.ok(lintPlan(quadrantPlan).diagnostics.some((item) => item.ruleId === "SW033" && item.slideId === quadrant.id));
+
+  const flowPlan = compileDeck(fixture);
+  const flow = flowPlan.slides.find((slide) => slide.id === "chevron-flow");
+  const secondStep = flow.shapes.find((shape) => shape.id === flow.layoutContract.flowTopology.stepSurfaceIds[1]);
+  secondStep.position.left += 5;
+  assert.ok(lintPlan(flowPlan).diagnostics.some((item) => item.ruleId === "SW034" && item.slideId === flow.id));
+
+  const networkPlan = compileDeck(fixture);
+  const network = networkPlan.slides.find((slide) => slide.id === "pyramid-network");
+  const connector = network.shapes.find((shape) => shape.id === network.layoutContract.networkTopology.connectorShapeIds[0]);
+  connector.fill = "#000000";
+  assert.ok(lintPlan(networkPlan).diagnostics.some((item) => item.ruleId === "SW035" && item.slideId === network.id));
+});
+
+test("icon networks reject invalid topology counts and multiple focus points", () => {
+  const honeycomb = structuredClone(fixture.slides.find((slide) => slide.id === "honeycomb-network"));
+  honeycomb.items.pop();
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [honeycomb] }), /count does not match/u);
+
+  const square = structuredClone(fixture.slides.find((slide) => slide.id === "single-focus-network"));
+  square.items[0].emphasis = true;
+  assert.throws(() => validateDeckSpec({ version: "0.2", title: "x", slides: [square] }), /at most one network node/u);
+});
+
 test("copy adaptation preserves the new consulting layouts and their rich-text ownership", () => {
   const result = adaptDeckCopyToFit(fixture);
   const audit = auditAdaptedDeckCopy(fixture, result.spec, result.manifest, result.plan);
@@ -100,4 +154,7 @@ test("copy adaptation preserves the new consulting layouts and their rich-text o
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "point-grid").length, 8);
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "opposition").length, 1);
   assert.equal(result.spec.slides.filter((slide) => slide.layout === "polygon-cycle").length, 10);
+  assert.equal(result.spec.slides.filter((slide) => slide.layout === "quadrant-focus").length, 1);
+  assert.equal(result.spec.slides.filter((slide) => slide.layout === "chevron-flow").length, 1);
+  assert.equal(result.spec.slides.filter((slide) => slide.layout === "icon-network").length, 3);
 });

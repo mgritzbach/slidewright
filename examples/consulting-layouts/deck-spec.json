@@ -295,6 +295,71 @@
         { "id": "learn-12", "label": "Learn", "body": "Capture insight" },
         { "id": "renew-12", "label": "Renew", "body": "Reset choices" }
       ]
+    },
+    {
+      "id": "quadrant-focus",
+      "layout": "quadrant-focus",
+      "title": "Four operating lenses converge on one decision standard",
+      "center": "Decision quality",
+      "items": [
+        { "id": "value-quadrant", "label": "Value", "body": "Quantify the outcome and the economic threshold that makes action worthwhile.", "conceptId": "goal", "icon": "target" },
+        { "id": "context-quadrant", "label": "Context", "body": "Read the market, stakeholders, and constraints surrounding the decision.", "conceptId": "context", "icon": "globe" },
+        { "id": "risk-quadrant", "label": "Risk", "body": "Make exposure, reversibility, and escalation boundaries explicit.", "conceptId": "constraints", "icon": "shield" },
+        { "id": "proof-quadrant", "label": "Proof", "body": "Define the evidence required to commit, adapt, or stop.", "conceptId": "completion", "icon": "check" }
+      ]
+    },
+    {
+      "id": "chevron-flow",
+      "layout": "chevron-flow",
+      "title": "Three linked moves turn evidence into action",
+      "subtitle": "The directional shape carries the sequence without additional arrows",
+      "takeaway": "The handoff succeeds only when each step produces the input required by the next.",
+      "items": [
+        { "id": "frame-flow", "label": "Frame the choice", "body": "Set the outcome, scope, and decision threshold before analysis begins.", "conceptId": "goal", "icon": "target" },
+        { "id": "test-flow", "label": "Test the case", "body": "Use the smallest decisive evidence set and expose unresolved assumptions.", "conceptId": "context", "icon": "globe", "emphasis": true },
+        { "id": "commit-flow", "label": "Commit the owner", "body": "Name the action, accountable leader, review date, and stopping rule.", "conceptId": "completion", "icon": "check" }
+      ]
+    },
+    {
+      "id": "honeycomb-network",
+      "layout": "icon-network",
+      "topology": "honeycomb",
+      "title": "Six specialist capabilities reinforce one shared operating core",
+      "items": [
+        { "id": "core-network", "label": "Shared core", "body": "One standard", "conceptId": "goal", "icon": "target", "emphasis": true },
+        { "id": "insight-network", "label": "Insight", "body": "Read signals", "conceptId": "context", "icon": "globe" },
+        { "id": "guard-network", "label": "Guardrails", "body": "Bound risk", "conceptId": "constraints", "icon": "shield" },
+        { "id": "delivery-network", "label": "Delivery", "body": "Close work", "conceptId": "completion", "icon": "check" },
+        { "id": "focus-network", "label": "Focus", "body": "Set priority", "conceptId": "goal", "icon": "target" },
+        { "id": "market-network", "label": "Market", "body": "Read context", "conceptId": "context", "icon": "globe" },
+        { "id": "control-network", "label": "Control", "body": "Protect value", "conceptId": "constraints", "icon": "guardrail" }
+      ]
+    },
+    {
+      "id": "pyramid-network",
+      "layout": "icon-network",
+      "topology": "pyramid",
+      "title": "A capability pyramid connects strategic intent to execution routines",
+      "items": [
+        { "id": "north-star", "label": "North star", "body": "Set direction", "conceptId": "goal", "icon": "target", "emphasis": true },
+        { "id": "market-context", "label": "Market", "body": "Read demand", "conceptId": "context", "icon": "globe" },
+        { "id": "guardrails-layer", "label": "Guardrails", "body": "Set limits", "conceptId": "constraints", "icon": "shield" },
+        { "id": "decision-layer", "label": "Decisions", "body": "Fix owners", "conceptId": "completion", "icon": "check" },
+        { "id": "learning-layer", "label": "Learning", "body": "Update choices", "conceptId": "context", "icon": "context-ring" },
+        { "id": "proof-layer", "label": "Proof", "body": "Verify value", "conceptId": "completion", "icon": "check" }
+      ]
+    },
+    {
+      "id": "single-focus-network",
+      "layout": "icon-network",
+      "topology": "square",
+      "title": "One highlighted capability shows where management attention belongs",
+      "items": [
+        { "id": "diagnose-focus", "label": "Diagnose", "body": "Read evidence", "conceptId": "context", "icon": "globe" },
+        { "id": "design-focus", "label": "Design", "body": "Shape response", "conceptId": "goal", "icon": "target" },
+        { "id": "protect-focus", "label": "Protect", "body": "Bound exposure", "conceptId": "constraints", "icon": "shield" },
+        { "id": "deliver-focus", "label": "Deliver", "body": "Prove impact", "conceptId": "completion", "icon": "check", "emphasis": true }
+      ]
     }
   ]
 }

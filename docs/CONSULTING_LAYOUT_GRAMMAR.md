@@ -45,7 +45,7 @@ Do not make a last item wider merely to fill space. Center the incomplete row. D
 
 ## Segmented polygon systems from triangle through dodecagon
 
-The `polygon-cycle` archetype supports three through twelve native editable points. Count selects the polygon only after the relationship has been declared. Each side is its own mitered native beam, with a deliberate corner gap, upright editable marker, optional emphasis state, connector, and matched callout module. Counts nine through twelve automatically use denser but still 16 pt two-column annotations instead of shrinking text.
+The `polygon-cycle` archetype supports three through twelve native editable points. Count selects the polygon only after the relationship has been declared. Every vertex lies on one true circumcircle, so squares, pentagons, and higher polygons remain regular instead of flattening to fill a rectangle. Each side is its own mitered native beam, with a deliberate corner gap, upright editable marker, optional emphasis state, and matched adjacent callout module. The callouts need no leader lines. Counts nine through twelve automatically use denser but still 16 pt two-column annotations instead of shrinking text.
 
 | Points | Native form | Appropriate meaning |
 |---:|---|---|
@@ -60,7 +60,14 @@ The `polygon-cycle` archetype supports three through twelve native editable poin
 | 11 | Undecagon | eleven controls forming a complete perimeter |
 | 12 | Dodecagon | a recurring monthly or twelve-move transformation cycle |
 
-Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon callouts keep equal dimensions and hierarchy, bind to the exact edge segment, and may surround one short shared outcome. At most one segment and its callout receive the emphasis variant.
+Do not use the polygon merely because the item count matches. Parallel pillars remain a grid; a one-way process remains steps; criteria-versus-options remains a matrix. Polygon callouts keep equal dimensions and hierarchy, sit adjacent to their bound edge segment, and may surround one short shared outcome. The center statement is placed at the true visual center; the triangle receives a specifically protected central region so the statement cannot collide with its beams. At most one segment and its callout receive the emphasis variant.
+
+## Structural separation, flow, and connected patterns
+
+- Use `quadrant-focus` when four equal domains surround one decision or outcome. The compiler creates four open native zones, a symmetric central diamond, and four matching divider lines that terminate at and render beneath the diamond.
+- Use `chevron-flow` for three through five real handoffs. Direction is carried by equal native chevrons, so no decorative connector line is required; an optional takeaway spans the safe width below the sequence.
+- Use `icon-network` with `topology: "honeycomb"` for seven touching modular capabilities, `"pyramid"` for 3/6/10 hierarchical nodes, or `"square"` for 4/9 connected peers. One node may set `emphasis: true`; peer geometry and typography remain unchanged.
+- Prefer adjacency or intrinsic shape direction over leader lines. When a pyramid or square network requires a connector, create it before the nodes, run it center-to-center underneath them, and match its color to the destination node rim. A connector may never terminate visibly over a box or its text.
 
 ## Shape-composition reference families
 
@@ -78,10 +85,10 @@ The user-supplied references add a reusable composition set. These are semantic 
 | Asymmetric comparison | two positions conflict and one side is selected | unequal but intentional fields, central `VS` pivot, identical internal text hierarchy |
 | Speech-tab comparison | two alternatives need compact framing before evidence | equal tabbed header blocks with a centered pivot and aligned bullets below |
 | Mirrored feature scorecard | two options must be compared against the same numbered criteria | mirrored central option panels, equal numbered side rails, criterion text aligned across both sides |
-| Quadrant with center | four domains connect through one shared decision | crosshair guides, central diamond or square, four symmetric annotation zones |
+| Quadrant with center | four domains connect through one shared decision | open equal zones, center-terminated underlay guides, central symmetric diamond, four semantic icon/annotation modules |
 | Funnel or cylinder | stages narrow, accumulate, or filter | stacked tapered native segments with one-to-one aligned explanations |
-| Hub and spoke | one outcome depends on multiple satellite capabilities | dominant center hub, radial connectors, equal icon nodes, external annotations |
-| Honeycomb system | modular capabilities touch through a central capability | native adjacent hexagons, consistent gaps, one center emphasis, paired callouts |
+| Hub and spoke | one outcome depends on multiple satellite capabilities | dominant center hub, underlay radial connectors, equal icon nodes, external annotations |
+| Honeycomb system | modular capabilities touch through a central capability | native adjacent hexagons, regular geometry, one center emphasis, labels contained inside nodes |
 | Four-part overlap | four lenses jointly define one ideal or combined answer | four equal circles, quiet central overlap field, synthesis in the center, external text in four quadrants |
 | Chevron sequence | two to five true handoffs lead to one conclusion | contiguous native chevrons, repeated step/heading/body hierarchy, semantic icon per step, full-width takeaway band |
 
@@ -108,6 +115,7 @@ Use `layout: "opposition"` for two positions that must be read against one anoth
 - Preserve one deck-wide title, component-heading, body, table, and source-note hierarchy. Shorten or relayout before shrinking below the minimum.
 - Use one deliberate highlight for the recommendation, risk, current step, or exception. All other peer geometry remains unchanged.
 - A background or header block must grow with its text. Text may never escape or overlap another text box.
+- Prefer text beside its semantic shape. If a connector is necessary, route it underneath every node and label, bind it to exact source/target nodes, and match the target rim color.
 
 ## Patterns not promoted to defaults
 
@@ -118,9 +126,15 @@ The source deck contains decorative cylinders, puzzle pieces, speedometers, Venn
 - `point-grid` accepts 2–9 stable items and `auto|columns|rows|grid` arrangement.
 - `opposition` accepts two sides, a short axis label, and an optional synthesis statement.
 - `polygon-cycle` accepts 3-12 stable items plus an explicit relationship and emits a segmented native triangle through dodecagon.
+- `quadrant-focus` accepts exactly four icon-bound items plus one central statement.
+- `chevron-flow` accepts 3-5 ordered icon-bound steps and an optional takeaway.
+- `icon-network` accepts honeycomb (7), pyramid (3/6/10), or square (4/9) node counts with at most one emphasis state.
 - Every visible element remains a native editable PowerPoint object.
 - `SW031` rejects unequal peer geometry, wrong gutters, and off-center incomplete rows.
 - `SW032` rejects an unsupported polygon relationship, missing or non-native beam, wrong segment count, ring position/rotation drift, unequal callouts, broken marker binding, or center-binding drift.
+- `SW033` rejects unequal quadrant zones, a non-symmetric center, late/overlaid dividers, or divider/rim color mismatch.
+- `SW034` rejects chevron count, geometry, baseline, or gap drift and any non-intrinsic connector mode.
+- `SW035` rejects invalid icon-network counts or geometry, visible/late connectors, endpoint drift, and connector/rim color mismatch.
 - Existing fit, overlap, padding, typography, run-emphasis, export, and rendered-layout rules remain mandatory.
 
 ## Public cross-checks

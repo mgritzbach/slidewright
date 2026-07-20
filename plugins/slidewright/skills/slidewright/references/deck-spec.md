@@ -65,9 +65,17 @@ Use `layout: "point-grid"` for 2-9 logically parallel points. Each item needs a 
 
 ## Polygon relationship system
 
-Use `layout: "polygon-cycle"` only when 3-12 points form a genuine `cycle`, `system`, `perimeter`, or `mutual-reinforcement` relationship. The count determines a native editable segmented triangle through dodecagon; it does not justify the topology by itself. Every side is an independent trapezoidal beam with an upright editable marker, connector, and matched annotation module. Each item requires `id`, `label`, and `body`; optional `marker` replaces its two-digit segment number, and optional `center` names the shared outcome or system. At most one point may set `emphasis: true`, which highlights the beam and its bound annotation without changing peer geometry or typography.
+Use `layout: "polygon-cycle"` only when 3-12 points form a genuine `cycle`, `system`, `perimeter`, or `mutual-reinforcement` relationship. The count determines a native editable segmented triangle through dodecagon; it does not justify the topology by itself. Every vertex lies on one true circumcircle, every side is an independent trapezoidal beam with an upright editable marker, and its matched annotation module sits adjacent without a leader line. Each item requires `id`, `label`, and `body`; optional `marker` replaces its two-digit segment number, and optional `center` names the shared outcome or system. The center stays at the visual centroid, with a protected compact region for triangles. At most one point may set `emphasis: true`, which highlights the beam and its bound annotation without changing peer geometry or typography.
 
-The compiler binds equal native point surfaces to the polygon vertices. `SW032` rejects a missing semantic relationship, the wrong native polygon, unequal nodes, or vertex drift. Use `point-grid` instead when the items are merely parallel, and use steps or a timeline when order is one-way rather than cyclical.
+The compiler binds equal native point surfaces to the polygon segments. `SW032` rejects a missing semantic relationship, non-square ring bounds, circumcircle drift, the wrong native polygon, unequal nodes, leader-line reintroduction, or center drift. Use `point-grid` instead when the items are merely parallel, and use steps or a timeline when order is one-way rather than cyclical.
+
+## Quadrants, flows, and icon networks
+
+Use `layout: "quadrant-focus"` for exactly four `items` around one editable `center` statement. Every item requires `id`, `label`, `body`, `conceptId`, and `icon`. The result uses four equal open zones, one symmetric native diamond, and center-terminated dividers rendered below the diamond in its rim color. `SW033` enforces the separation contract.
+
+Use `layout: "chevron-flow"` for 3-5 ordered semantic-icon items. Optional `subtitle` clarifies scope and optional `takeaway` states the resulting implication. The native chevrons carry direction without leader lines. At most one step may set `emphasis: true`; `SW034` enforces equal geometry, baseline, gap, and intrinsic connector mode.
+
+Use `layout: "icon-network"` with `topology: "honeycomb"` and exactly seven items, `"pyramid"` with 3/6/10 items, or `"square"` with 4/9 items. Every node stays editable and may carry one icon, short label, and short body; at most one node may set `emphasis: true`. Honeycomb uses adjacency without connectors. Pyramid and square connectors render below nodes, bind exact endpoints, and match the destination node rim. `SW035` rejects invalid counts, geometry drift, visible/late connectors, detached endpoints, or color mismatch.
 
 ## Opposition and synthesis
 

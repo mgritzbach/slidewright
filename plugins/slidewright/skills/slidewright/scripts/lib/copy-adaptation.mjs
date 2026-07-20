@@ -199,6 +199,27 @@ function descriptorsFor(slide) {
     { key: "right-body", label: "RIGHT POSITION", path: ["right", "body"], shapeId: "s1-right-body", defaultBold: false },
     ...(slide.synthesis == null ? [] : [{ key: "synthesis", label: "SYNTHESIS", path: ["synthesis"], shapeId: "s1-synthesis", defaultBold: true }]),
   ];
+  if (slide.layout === "quadrant-focus") return (slide.items ?? []).map((item, index) => ({
+    key: `quadrant-${item.id ?? index + 1}`,
+    label: `${item.label ?? "QUADRANT"}`.toUpperCase(),
+    path: ["items", index, "body"],
+    shapeId: `s1-${item.id ?? `item-${index + 1}`}-body`,
+    defaultBold: false,
+  }));
+  if (slide.layout === "chevron-flow") return (slide.items ?? []).map((item, index) => ({
+    key: `step-${item.id ?? index + 1}`,
+    label: `${item.label ?? `STEP ${index + 1}`}`.toUpperCase(),
+    path: ["items", index, "body"],
+    shapeId: `s1-${item.id ?? `step-${index + 1}`}-body`,
+    defaultBold: false,
+  }));
+  if (slide.layout === "icon-network") return (slide.items ?? []).map((item, index) => ({
+    key: `network-${item.id ?? index + 1}`,
+    label: `${item.label ?? "NODE"}`.toUpperCase(),
+    path: ["items", index, "body"],
+    shapeId: `s1-${item.id ?? `node-${index + 1}`}-body`,
+    defaultBold: false,
+  }));
   // Table cells are validated cell-by-cell by the compiler and linter. They
   // cannot be moved into prose continuation slides without changing semantics.
   if (slide.layout === "table") return [];
