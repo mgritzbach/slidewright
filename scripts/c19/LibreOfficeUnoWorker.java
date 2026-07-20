@@ -12,7 +12,6 @@ import com.sun.star.lang.XComponent;
 import com.sun.star.text.XText;
 import com.sun.star.uno.UnoRuntime;
 import com.sun.star.uno.XComponentContext;
-import com.sun.star.util.XCloseable;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -86,9 +85,7 @@ public final class LibreOfficeUnoWorker {
 
   private static void close(XComponent document) throws Exception {
     if (document == null) return;
-    XCloseable closeable = UnoRuntime.queryInterface(XCloseable.class, document);
-    if (closeable != null) closeable.close(true);
-    else document.dispose();
+    document.dispose();
   }
 
   private static XComponentContext connect(int port) throws Exception {
